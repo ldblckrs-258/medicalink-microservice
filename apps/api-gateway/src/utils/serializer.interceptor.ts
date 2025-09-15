@@ -14,6 +14,7 @@ export interface SerializedResponse<T = any> {
   success: boolean;
   message: string;
   data: T;
+  meta?: any;
   timestamp: string;
   path: string;
   method: string;
@@ -38,6 +39,14 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
       map((data) => {
         const serializedData = this.serializeData(data);
 
+        // Check if data has paginated structure (data + meta)
+        const isPaginatedResponse =
+          serializedData &&
+          typeof serializedData === 'object' &&
+          'data' in serializedData &&
+          'meta' in serializedData &&
+          Array.isArray(serializedData.data);
+
         // Create standardized response format
         const standardResponse: SerializedResponse = {
           success: true,
@@ -45,12 +54,17 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
             String(method),
             Number(response.statusCode),
           ),
-          data: serializedData,
+          data: isPaginatedResponse ? serializedData.data : serializedData,
           timestamp: new Date().toISOString(),
           path: url,
           method: method,
           statusCode: response.statusCode,
         };
+
+        // Add meta if it's a paginated response
+        if (isPaginatedResponse) {
+          standardResponse.meta = serializedData.meta;
+        }
 
         return standardResponse;
       }),

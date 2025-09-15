@@ -7,6 +7,7 @@ import {
   StaffQueryDto,
   StaffAccountDto,
   StaffPaginatedResponseDto,
+  StaffStatsDto,
 } from '@app/contracts';
 
 @Injectable()
@@ -99,6 +100,10 @@ export class StaffsService {
 
     const staff = await this.staffRepository.softDelete(id);
     return this.mapToStaffAccountDto(staff);
+  }
+
+  async getStats(): Promise<StaffStatsDto> {
+    return this.staffRepository.getStats();
   }
 
   private mapToStaffAccountDto(staff: any): StaffAccountDto {

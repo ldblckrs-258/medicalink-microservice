@@ -7,6 +7,7 @@ import {
   StaffQueryDto,
   StaffAccountDto,
   StaffPaginatedResponseDto,
+  StaffStatsDto,
 } from '@app/contracts';
 
 @Controller()
@@ -42,5 +43,10 @@ export class StaffsController {
   @MessagePattern('staffs.remove')
   async remove(@Payload() id: string): Promise<StaffAccountDto> {
     return this.staffsService.remove(id);
+  }
+
+  @MessagePattern('staffs.stats')
+  async getStats(): Promise<StaffStatsDto> {
+    return this.staffsService.getStats();
   }
 }

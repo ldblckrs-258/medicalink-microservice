@@ -128,4 +128,74 @@ export class StaffRepository {
       },
     });
   }
+
+  async getStats(): Promise<{
+    total: number;
+    byRole: { SUPER_ADMIN: number; ADMIN: number; DOCTOR: number };
+    recentlyCreated: number;
+    deleted: number;
+  }> {
+    // Get start of current week (Monday)
+    const startOfWeek = new Date();
+    const dayOfWeek = startOfWeek.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0 is Sunday
+    startOfWeek.setDate(startOfWeek.getDate() - daysToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // Get total active staffs
+    const total = await this.prisma.staffAccount.count({
+      where: {
+        deletedAt: null,
+      },
+    });
+
+    // Get count by role for active staffs
+    const roleStats = await this.prisma.staffAccount.groupBy({
+      by: ['role'],
+      where: {
+        deletedAt: null,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Initialize byRole with 0 values
+    const byRole = {
+      SUPER_ADMIN: 0,
+      ADMIN: 0,
+      DOCTOR: 0,
+    };
+
+    // Populate with actual counts
+    roleStats.forEach((stat) => {
+      byRole[stat.role] = stat._count.id;
+    });
+
+    // Get recently created staffs (this week)
+    const recentlyCreated = await this.prisma.staffAccount.count({
+      where: {
+        deletedAt: null,
+        createdAt: {
+          gte: startOfWeek,
+        },
+      },
+    });
+
+    // Get deleted staffs count
+    const deleted = await this.prisma.staffAccount.count({
+      where: {
+        deletedAt: {
+          not: null,
+        },
+      },
+    });
+
+    return {
+      total,
+      byRole,
+      recentlyCreated,
+      deleted,
+    };
+  }
 }

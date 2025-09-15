@@ -14,7 +14,6 @@ import { randomUUID } from 'node:crypto';
 export interface ErrorResponse {
   success: false;
   message: string;
-  error: string;
   statusCode: number;
   timestamp: string;
   path: string;
@@ -27,7 +26,6 @@ export interface ErrorResponse {
 type Normalized = {
   status: number;
   message: string;
-  error: string;
   details?: any[];
   code?: string | number;
 };
@@ -108,7 +106,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const payload: ErrorResponse = {
       success: false,
       message: n.message,
-      error: n.error,
       statusCode: n.status,
       timestamp: new Date().toISOString(),
       path: (req as any).originalUrl ?? req.url,
@@ -121,7 +118,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     res.setHeader('X-Request-Id', requestId);
 
     const stack = isError(exception) ? exception.stack : undefined;
-    const logMsg = `[${requestId}] ${req.method} ${req.url} -> ${n.status} ${n.error} | ${n.message}`;
+    const logMsg = `[${requestId}] ${req.method} ${req.url} -> ${n.status} ${this.statusText(n.status)} | ${n.message}`;
     this.logger.error(logMsg, this.isProd ? undefined : stack);
 
     res.status(n.status).json(payload);
@@ -130,6 +127,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   // -------- helpers --------
 
   private normalize(exception: unknown): Normalized {
+    // Check if it's a serialized RpcException (from microservice)
+    if (this.isSerializedRpcException(exception)) {
+      const obj = exception as any;
+      const rpcPayload = obj.error; // Extract the actual RPC payload
+      const status = this.pickStatus(
+        rpcPayload.statusCode,
+        rpcPayload.status,
+        rpcPayload.code,
+      );
+      return {
+        status,
+        message: rpcPayload.message || 'Microservice error',
+        details: rpcPayload.details,
+        code: rpcPayload.code,
+      };
+    }
+
     // 1) HttpException (ValidationPipe included)
     if (exception instanceof HttpException) {
       const status =
@@ -142,12 +156,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const details = Array.isArray(anyResp.message)
           ? anyResp.message
           : (anyResp.details as any[] | undefined);
-        const error = (anyResp.error as string) ?? this.statusText(status);
         const code = anyResp.code as string | number | undefined;
         return {
           status,
           message: this.compactMessage(rawMsg),
-          error,
           details,
           code,
         };
@@ -159,18 +171,29 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             ? resp
             : (exception.message ?? this.statusText(status)),
         ),
-        error: this.statusText(status),
       };
     }
 
     // 2) RpcException
     if (exception instanceof RpcException) {
       const raw = exception.getError();
+
+      // Debug logging to understand the structure
+      this.logger.debug(
+        'RpcException raw error:',
+        JSON.stringify(raw, null, 2),
+      );
+
       if (raw && typeof raw === 'object') {
         const base =
           (raw as any).response && typeof (raw as any).response === 'object'
             ? (raw as any).response
             : (raw as Record<string, unknown>);
+
+        this.logger.debug(
+          'RpcException base error:',
+          JSON.stringify(base, null, 2),
+        );
 
         // Handle Prisma errors wrapped in RpcException
         if (this.isPrismaError(base)) {
@@ -178,23 +201,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
 
         const status = this.pickStatus(base.statusCode, base.status, base.code);
+        this.logger.debug(
+          `RpcException status picked: ${status} from statusCode: ${base.statusCode}, status: ${base.status}, code: ${base.code}`,
+        );
+
         const message =
           this.extractCleanMessage(base.message) ?? 'Microservice error';
-        const error =
-          (base.error as string) ??
-          this.statusText(status) ??
-          'Microservice Error';
         const details =
           (base.details as any[] | undefined) ??
           (Array.isArray(base.message) ? (base.message as any[]) : undefined);
         const code = base.code as string | number | undefined;
-        return { status, message, error, details, code };
+        return { status, message, details, code };
       }
       const msg = this.extractCleanMessage(raw) ?? 'RPC Exception';
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: msg,
-        error: 'RPC Exception',
       };
     }
 
@@ -220,7 +242,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return {
         status,
         message,
-        error: this.statusText(status),
         details: details as any[] | undefined,
         code: exception.code,
       };
@@ -237,7 +258,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return {
         status: HttpStatus.BAD_REQUEST,
         message: 'Validation failed',
-        error: this.statusText(HttpStatus.BAD_REQUEST),
         details,
       };
     }
@@ -254,7 +274,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message: this.compactMessage(
           exception.meta?.cause || exception.message || 'Database error',
         ),
-        error: this.statusText(status),
         code: exception.code,
       };
     }
@@ -264,7 +283,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return {
         status: HttpStatus.BAD_REQUEST,
         message: 'Malformed JSON in request body',
-        error: this.statusText(HttpStatus.BAD_REQUEST),
       };
     }
 
@@ -275,8 +293,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message: this.compactMessage(
           exception.message || 'Internal server error',
         ),
-        error:
-          exception.name || this.statusText(HttpStatus.INTERNAL_SERVER_ERROR),
       };
     }
 
@@ -285,14 +301,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const e = exception as Record<string, unknown>;
       const status = this.pickStatus(e.statusCode, e.status, e.code);
       const message = this.compactMessage(e.message ?? this.statusText(status));
-      const error = (e.error as string) ?? this.statusText(status);
       const details =
         (e.details as any[] | undefined) ??
         (Array.isArray(e.message) ? e.message : undefined);
       return {
         status,
         message,
-        error,
         details,
         code: e.code as string | number | undefined,
       };
@@ -302,7 +316,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
-      error: this.statusText(HttpStatus.INTERNAL_SERVER_ERROR),
     };
   }
 
@@ -311,18 +324,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     status?: unknown,
     code?: unknown,
   ): number {
-    // network-ish
+    // Try statusCode first (from microservice responses)
+    const fromStatusCode = this.toHttpStatus(statusCode);
+    if (fromStatusCode) {
+      return fromStatusCode;
+    }
+
+    // Then try status
+    const fromStatus = this.toHttpStatus(status);
+    if (fromStatus) {
+      return fromStatus;
+    }
+
+    // network-ish errors
     if (
       typeof code === 'string' &&
       (code === 'ECONNREFUSED' || code === 'ETIMEDOUT')
     ) {
       return HttpStatus.SERVICE_UNAVAILABLE;
     }
-    const n =
-      this.toHttpStatus(statusCode) ??
-      this.toHttpStatus(status) ??
-      HttpStatus.BAD_GATEWAY;
-    return n;
+
+    // Default to 500 for RPC errors (not 502)
+    return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
   private toHttpStatus(v: unknown): number | undefined {
@@ -423,7 +446,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return {
       status: HttpStatus.BAD_REQUEST,
       message: cleanMessage,
-      error: 'Bad Request',
       code: error.code,
     };
   }
@@ -458,5 +480,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     return null;
+  }
+
+  private isSerializedRpcException(exception: unknown): boolean {
+    if (!exception || typeof exception !== 'object') {
+      return false;
+    }
+
+    const obj = exception as any;
+    // Check if it has the structure: { error: { statusCode, message, ... }, message }
+    return (
+      obj.error &&
+      typeof obj.error === 'object' &&
+      typeof obj.error.statusCode === 'number' &&
+      typeof obj.error.message === 'string' &&
+      obj.error.statusCode >= 100 &&
+      obj.error.statusCode <= 599
+    );
   }
 }

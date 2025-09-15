@@ -18,6 +18,7 @@ import {
   StaffQueryDto,
   StaffAccountDto,
   StaffPaginatedResponseDto,
+  StaffStatsDto,
   Roles,
   CurrentUser,
 } from '@app/contracts';
@@ -45,6 +46,14 @@ export class StaffsController {
         'staffs.findAll',
         query,
       ),
+    );
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Get('stats')
+  async getStats(): Promise<StaffStatsDto> {
+    return firstValueFrom(
+      this.accountsClient.send<StaffStatsDto>('staffs.stats', {}),
     );
   }
 
