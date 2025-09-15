@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["accounts"]
+}
+
+enum StaffRole {
+  SUPER_ADMIN
+  ADMIN
+  DOCTOR
+
+  @@schema("accounts")
+}
+
+model StaffAccount {
+  id           String    @id @default(cuid())
+  fullName     String    @map("full_name") @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         StaffRole @default(ADMIN)
+  phone        String?   @db.VarChar(32)
+  isMale       Boolean?  @map("is_male")
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@map("staff_accounts")
+  @@schema("accounts")
+}
+
+model Patient {
+  id           String    @id @default(cuid())
+  fullName     String    @map("full_name") @db.VarChar(120)
+  email        String?   @unique @db.VarChar(255)
+  phone        String?   @db.VarChar(32)
+  isMale       Boolean?  @map("is_male")
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  nationalId   String?   @map("national_id") @db.VarChar(50)
+  insuranceNo  String?   @map("insurance_no") @db.VarChar(50)
+  addressLine1 String?   @map("address_line1") @db.VarChar(255)
+  addressLine2 String?   @map("address_line2") @db.VarChar(255)
+  city         String?   @db.VarChar(100)
+  province     String?   @db.VarChar(100)
+  postalCode   String?   @map("postal_code") @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@index([fullName], map: "idx_patients_full_name")
+  @@index([phone], map: "idx_patients_phone")
+  @@map("patients")
+  @@schema("accounts")
+}

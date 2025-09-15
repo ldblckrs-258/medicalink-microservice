@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["booking"]
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED_BY_PATIENT
+  CANCELLED_BY_STAFF
+  NO_SHOW
+  COMPLETED
+
+  @@schema("booking")
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  patientId   String            @map("patient_id") @db.VarChar(27)
+  doctorId    String            @map("doctor_id") @db.VarChar(27)
+  scheduleId  String            @map("schedule_id") @db.VarChar(27)
+  locationId  String            @map("location_id") @db.VarChar(27)
+  serviceDate DateTime          @map("service_date") @db.Date
+  timeStart   DateTime          @map("time_start") @db.Time(6)
+  timeEnd     DateTime          @map("time_end") @db.Time(6)
+  status      AppointmentStatus @default(BOOKED)
+  reason      String?           @db.VarChar(255)
+  notes       String?           @db.Text
+  priceAmount Decimal?          @map("price_amount") @db.Decimal(12, 2)
+  currency    String            @default("VND") @db.VarChar(3)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  cancelledAt DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  completedAt DateTime?         @map("completed_at") @db.Timestamptz(6)
+
+  appointmentEvents AppointmentEvent[]
+
+  @@unique([scheduleId, patientId])
+  @@index([patientId, serviceDate], map: "idx_appointments_patient_date")
+  @@index([doctorId, serviceDate], map: "idx_appointments_doctor_date")
+  @@index([status, serviceDate], map: "idx_appointments_status_date")
+  @@index([serviceDate, timeStart], map: "idx_appointments_date_time")
+  @@map("appointments")
+  @@schema("booking")
+}
+
+model AppointmentEvent {
+  id            String   @id @default(cuid())
+  appointmentId String   @map("appointment_id") @db.VarChar(27)
+  eventType     String   @map("event_type") @db.VarChar(40)
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  metadata      Json?
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId, occurredAt], map: "idx_appointment_events_appt_time")
+  @@map("appointment_events")
+  @@schema("booking")
+}
+
+model ScheduleHold {
+  id         String   @id @default(cuid())
+  scheduleId String   @map("schedule_id") @db.VarChar(27)
+  patientId  String   @map("patient_id") @db.VarChar(27)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  status     String   @default("HELD") @db.VarChar(16)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([scheduleId], map: "idx_schedule_holds_schedule")
+  @@index([patientId], map: "idx_schedule_holds_patient")
+  @@index([expiresAt], map: "idx_schedule_holds_expires")
+  @@map("schedule_holds")
+  @@schema("booking")
+}

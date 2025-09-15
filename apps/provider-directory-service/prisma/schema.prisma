@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["provider"]
+}
+
+model Specialty {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(120)
+  slug        String   @unique @db.VarChar(140)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  doctorSpecialties DoctorSpecialty[]
+
+  @@map("specialties")
+  @@schema("provider")
+}
+
+model WorkLocation {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(160)
+  address   String?  @db.VarChar(255)
+  phone     String?  @db.VarChar(32)
+  timezone  String   @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  doctorWorkLocations DoctorWorkLocation[]
+  schedules           Schedule[]
+
+  @@index([name], map: "idx_work_locations_name")
+  @@map("work_locations")
+  @@schema("provider")
+}
+
+model Doctor {
+  id              String   @id @default(cuid())
+  staffAccountId  String   @map("staff_account_id") @db.VarChar(27)
+  displayName     String   @map("display_name") @db.VarChar(120)
+  bio             String?  @db.Text
+  avatarUrl       String?  @map("avatar_url") @db.VarChar(500)
+  licenseNo       String?  @map("license_no") @db.VarChar(64)
+  yearsExperience Int?     @map("years_experience") @db.SmallInt
+  ratingAvg       Float    @default(0.0) @map("rating_avg") @db.Real
+  reviewCount     Int      @default(0) @map("review_count")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  doctorSpecialties   DoctorSpecialty[]
+  doctorWorkLocations DoctorWorkLocation[]
+  schedules           Schedule[]
+
+  @@index([staffAccountId], map: "idx_doctors_staff_account")
+  @@index([displayName], map: "idx_doctors_display_name")
+  @@map("doctors")
+  @@schema("provider")
+}
+
+model DoctorSpecialty {
+  id          String   @id @default(cuid())
+  doctorId    String   @map("doctor_id") @db.VarChar(27)
+  specialtyId String   @map("specialty_id") @db.VarChar(27)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  doctor    Doctor    @relation(fields: [doctorId], references: [id])
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@unique([doctorId, specialtyId])
+  @@index([specialtyId], map: "idx_doctor_specialties_specialty")
+  @@map("doctor_specialties")
+  @@schema("provider")
+}
+
+model DoctorWorkLocation {
+  id         String   @id @default(cuid())
+  doctorId   String   @map("doctor_id") @db.VarChar(27)
+  locationId String   @map("location_id") @db.VarChar(27)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  doctor   Doctor       @relation(fields: [doctorId], references: [id])
+  location WorkLocation @relation(fields: [locationId], references: [id])
+
+  @@unique([doctorId, locationId])
+  @@map("doctor_work_locations")
+  @@schema("provider")
+}
+
+model Schedule {
+  id          String   @id @default(cuid())
+  doctorId    String   @map("doctor_id") @db.VarChar(27)
+  locationId  String   @map("location_id") @db.VarChar(27)
+  serviceDate DateTime @map("service_date") @db.Date
+  timeStart   DateTime @map("time_start") @db.Time(6)
+  timeEnd     DateTime @map("time_end") @db.Time(6)
+  capacity    Int      @default(1) @db.SmallInt
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  doctor   Doctor       @relation(fields: [doctorId], references: [id])
+  location WorkLocation @relation(fields: [locationId], references: [id])
+
+  @@unique([doctorId, locationId, serviceDate, timeStart, timeEnd])
+  @@index([serviceDate], map: "idx_schedules_service_date")
+  @@index([doctorId, serviceDate], map: "idx_schedules_doctor_date")
+  @@index([locationId, serviceDate], map: "idx_schedules_location_date")
+  @@map("schedules")
+  @@schema("provider")
+}

@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["notification"]
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WS
+
+  @@schema("notification")
+}
+
+enum DeliveryStatus {
+  QUEUED
+  SENT
+  FAILED
+
+  @@schema("notification")
+}
+
+enum RecipientType {
+  PATIENT
+  STAFF
+
+  @@schema("notification")
+}
+
+model NotificationTemplate {
+  id        String              @id @default(cuid())
+  key       String              @unique @db.VarChar(120)
+  channel   NotificationChannel
+  subject   String?             @db.VarChar(200)
+  body      String              @db.Text
+  isActive  Boolean             @default(true) @map("is_active")
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("notification_templates")
+  @@schema("notification")
+}
+
+model NotificationPreference {
+  id          String              @id @default(cuid())
+  userId      String              @map("user_id") @db.VarChar(27)
+  recipientAs RecipientType       @map("recipient_as")
+  channel     NotificationChannel
+  enabled     Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, recipientAs, channel])
+  @@map("notification_preferences")
+  @@schema("notification")
+}
+
+model NotificationDelivery {
+  id           String              @id @default(cuid())
+  templateKey  String              @map("template_key") @db.VarChar(120)
+  channel      NotificationChannel
+  recipientId  String              @map("recipient_id") @db.VarChar(27)
+  recipientAs  RecipientType       @map("recipient_as")
+  payload      Json
+  status       DeliveryStatus      @default(QUEUED)
+  errorMessage String?             @map("error_message") @db.Text
+  sentAt       DateTime?           @map("sent_at") @db.Timestamptz(6)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([recipientId, createdAt], map: "idx_notification_deliveries_recipient_created")
+  @@index([status, createdAt], map: "idx_notification_deliveries_status_created")
+  @@index([templateKey], map: "idx_notification_deliveries_template")
+  @@map("notification_deliveries")
+  @@schema("notification")
+}
