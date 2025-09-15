@@ -46,9 +46,6 @@ export class RolesGuard implements CanActivate {
       );
     }
 
-    this.logger.debug(
-      `User ${user.email} with role ${user.role} granted access`,
-    );
     return true;
   }
 }

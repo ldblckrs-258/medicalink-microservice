@@ -142,6 +142,11 @@ export class StaffsController {
       throw new BadRequestException('Access denied');
     }
 
+    // PREVENT delete SUPER_ADMIN
+    if (existingStaff.role === 'SUPER_ADMIN') {
+      throw new BadRequestException('Cannot delete SUPER_ADMIN');
+    }
+
     return firstValueFrom(
       this.accountsClient.send<StaffAccountDto>('staffs.remove', id),
     );

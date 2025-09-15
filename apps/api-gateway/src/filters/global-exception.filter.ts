@@ -101,8 +101,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const n = this.normalize(exception);
 
-    this.logger.debug(n);
-
     const payload: ErrorResponse = {
       success: false,
       message: n.message,
@@ -178,22 +176,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof RpcException) {
       const raw = exception.getError();
 
-      // Debug logging to understand the structure
-      this.logger.debug(
-        'RpcException raw error:',
-        JSON.stringify(raw, null, 2),
-      );
-
       if (raw && typeof raw === 'object') {
         const base =
           (raw as any).response && typeof (raw as any).response === 'object'
             ? (raw as any).response
             : (raw as Record<string, unknown>);
-
-        this.logger.debug(
-          'RpcException base error:',
-          JSON.stringify(base, null, 2),
-        );
 
         // Handle Prisma errors wrapped in RpcException
         if (this.isPrismaError(base)) {
@@ -201,9 +188,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
 
         const status = this.pickStatus(base.statusCode, base.status, base.code);
-        this.logger.debug(
-          `RpcException status picked: ${status} from statusCode: ${base.statusCode}, status: ${base.status}, code: ${base.code}`,
-        );
 
         const message =
           this.extractCleanMessage(base.message) ?? 'Microservice error';
