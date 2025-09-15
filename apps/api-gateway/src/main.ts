@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ApiGatewayModule } from './api-gateway.module';
-import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
+import { ResolvePromisesInterceptor } from './interceptors/serializer.interceptor';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
 import * as dotenv from 'dotenv';
 

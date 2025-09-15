@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RedisModule } from '@app/redis';
 import { JwtAuthGuard, RolesGuard } from '@app/contracts';
 import { ApiGatewayController } from './api-gateway.controller';
@@ -11,6 +11,10 @@ import { ApiGatewayService } from './api-gateway.service';
 import { AuthController } from './auth/auth.controller';
 import { PatientsController } from './patients/patients.controller';
 import { StaffsController } from './staffs/staffs.controller';
+import { HealthController } from './health/health.controller';
+import { HealthService } from './health/health.service';
+import { MicroserviceService } from './utils/microservice.service';
+import { MicroserviceErrorInterceptor } from './interceptors/microservice-error.interceptor';
 import { MorganMiddleware } from './middleware';
 
 @Module({
@@ -84,9 +88,16 @@ import { MorganMiddleware } from './middleware';
     AuthController,
     PatientsController,
     StaffsController,
+    HealthController,
   ],
   providers: [
     ApiGatewayService,
+    HealthService,
+    MicroserviceService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MicroserviceErrorInterceptor,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

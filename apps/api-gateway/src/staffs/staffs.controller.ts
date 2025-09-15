@@ -11,7 +11,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
 import {
   CreateStaffDto,
   UpdateStaffDto,
@@ -23,11 +22,13 @@ import {
   CurrentUser,
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
+import { MicroserviceService } from '../utils/microservice.service';
 
 @Controller('staffs')
 export class StaffsController {
   constructor(
     @Inject('ACCOUNTS_SERVICE') private readonly accountsClient: ClientProxy,
+    private readonly microserviceService: MicroserviceService,
   ) {}
 
   @Roles('SUPER_ADMIN', 'ADMIN')
@@ -41,19 +42,21 @@ export class StaffsController {
       query.role = 'DOCTOR';
     }
 
-    return firstValueFrom(
-      this.accountsClient.send<StaffPaginatedResponseDto>(
-        'staffs.findAll',
-        query,
-      ),
+    return this.microserviceService.sendWithTimeout<StaffPaginatedResponseDto>(
+      this.accountsClient,
+      'staffs.findAll',
+      query,
+      { timeoutMs: 15000 },
     );
   }
 
   @Roles('SUPER_ADMIN', 'ADMIN')
   @Get('stats')
   async getStats(): Promise<StaffStatsDto> {
-    return firstValueFrom(
-      this.accountsClient.send<StaffStatsDto>('staffs.stats', {}),
+    return this.microserviceService.sendWithTimeout<StaffStatsDto>(
+      this.accountsClient,
+      'staffs.stats',
+      {},
     );
   }
 
@@ -63,9 +66,12 @@ export class StaffsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
-    const staff = await firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('staffs.findOne', id),
-    );
+    const staff =
+      await this.microserviceService.sendWithTimeout<StaffAccountDto>(
+        this.accountsClient,
+        'staffs.findOne',
+        id,
+      );
 
     // ADMIN can only get DOCTOR role staff
     if (user.role === 'ADMIN' && staff.role !== 'DOCTOR') {
@@ -88,11 +94,11 @@ export class StaffsController {
       );
     }
 
-    return firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>(
-        'staffs.create',
-        createStaffDto,
-      ),
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'staffs.create',
+      createStaffDto,
+      { timeoutMs: 12000 },
     );
   }
 
@@ -104,9 +110,12 @@ export class StaffsController {
     @CurrentUser() user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
     // First check if the staff member exists and get their current role
-    const existingStaff = await firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('staffs.findOne', id),
-    );
+    const existingStaff =
+      await this.microserviceService.sendWithTimeout<StaffAccountDto>(
+        this.accountsClient,
+        'staffs.findOne',
+        id,
+      );
 
     // ADMIN can only update DOCTOR role staff
     if (user.role === 'ADMIN' && existingStaff.role !== 'DOCTOR') {
@@ -118,11 +127,14 @@ export class StaffsController {
       throw new BadRequestException('Admin cannot update staff role');
     }
 
-    return firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('staffs.update', {
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'staffs.update',
+      {
         id,
         data: updateStaffDto,
-      }),
+      },
+      { timeoutMs: 12000 },
     );
   }
 
@@ -133,9 +145,12 @@ export class StaffsController {
     @CurrentUser() user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
     // First check if the staff member exists and get their current role
-    const existingStaff = await firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('staffs.findOne', id),
-    );
+    const existingStaff =
+      await this.microserviceService.sendWithTimeout<StaffAccountDto>(
+        this.accountsClient,
+        'staffs.findOne',
+        id,
+      );
 
     // ADMIN can only delete DOCTOR role staff
     if (user.role === 'ADMIN' && existingStaff.role !== 'DOCTOR') {
@@ -147,8 +162,10 @@ export class StaffsController {
       throw new BadRequestException('Cannot delete SUPER_ADMIN');
     }
 
-    return firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('staffs.remove', id),
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'staffs.remove',
+      id,
     );
   }
 }

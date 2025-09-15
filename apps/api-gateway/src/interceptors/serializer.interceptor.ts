@@ -8,7 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { map, mergeMap, tap } from 'rxjs/operators';
 import { instanceToPlain } from 'class-transformer';
-import deepResolvePromises from './deep-resolver';
+import deepResolvePromises from '../utils/deep-resolver';
 
 export interface SerializedResponse<T = any> {
   success: boolean;
@@ -72,7 +72,7 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
       // Log the response time and details
       tap(() => {
         const duration = Date.now() - startTime;
-        this.logger.log(
+        this.logger.debug(
           `${method} ${url} - ${response.statusCode} - ${duration}ms`,
         );
       }),

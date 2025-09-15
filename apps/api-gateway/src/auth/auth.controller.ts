@@ -1,6 +1,5 @@
 import { Body, Controller, Inject, Post, Get } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
 import type {
   LoginResponseDto,
   RefreshTokenResponseDto,
@@ -17,18 +16,22 @@ import {
   CurrentUser,
   Roles,
 } from '@app/contracts';
+import { MicroserviceService } from '../utils/microservice.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     @Inject('ACCOUNTS_SERVICE') private readonly accountsClient: ClientProxy,
+    private readonly microserviceService: MicroserviceService,
   ) {}
 
   @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
-    return await firstValueFrom(
-      this.accountsClient.send<LoginResponseDto>('auth.login', loginDto),
+    return this.microserviceService.sendWithTimeout<LoginResponseDto>(
+      this.accountsClient,
+      'auth.login',
+      loginDto,
     );
   }
 
@@ -37,11 +40,10 @@ export class AuthController {
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<RefreshTokenResponseDto> {
-    return firstValueFrom(
-      this.accountsClient.send<RefreshTokenResponseDto>(
-        'auth.refresh',
-        refreshTokenDto,
-      ),
+    return this.microserviceService.sendWithTimeout<RefreshTokenResponseDto>(
+      this.accountsClient,
+      'auth.refresh',
+      refreshTokenDto,
     );
   }
 
@@ -50,11 +52,10 @@ export class AuthController {
   async register(
     @Body() createStaffDto: CreateStaffDto,
   ): Promise<StaffAccountDto> {
-    return await firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>(
-        'auth.register',
-        createStaffDto,
-      ),
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'auth.register',
+      createStaffDto,
     );
   }
 
@@ -62,10 +63,10 @@ export class AuthController {
   async getProfile(
     @CurrentUser() user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
-    return firstValueFrom(
-      this.accountsClient.send<StaffAccountDto>('auth.profile', {
-        userId: user.sub,
-      }),
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'auth.profile',
+      { userId: user.sub },
     );
   }
 
@@ -74,14 +75,13 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
     @CurrentUser() user: JwtPayloadDto,
   ): Promise<ChangePasswordResponseDto> {
-    return firstValueFrom(
-      this.accountsClient.send<ChangePasswordResponseDto>(
-        'auth.change-password',
-        {
-          staffId: user.sub,
-          changePasswordDto,
-        },
-      ),
+    return this.microserviceService.sendWithTimeout<ChangePasswordResponseDto>(
+      this.accountsClient,
+      'auth.change-password',
+      {
+        staffId: user.sub,
+        changePasswordDto,
+      },
     );
   }
 }
