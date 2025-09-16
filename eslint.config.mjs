@@ -8,6 +8,7 @@ export default tseslint.config(
   {
     ignores: [
       'eslint.config.mjs',
+      'commitlint.config.mjs',
       '**/prisma/generated/**',
       '**/node_modules/**',
       '**/dist/**',
