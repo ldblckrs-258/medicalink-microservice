@@ -1,4 +1,165 @@
-import { SpecialtyDto, WorkLocationDto } from './common.dto';
+import {
+  SpecialtyDto,
+  WorkLocationDto,
+  PaginationDto,
+  PaginatedResponse,
+} from './common.dto';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+
+// Specialty DTOs
+export class CreateSpecialtyDto {
+  @IsString({ message: 'Name must be a string' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(120, { message: 'Name must not exceed 120 characters' })
+  name: string;
+
+  @IsOptional()
+  @IsString({ message: 'Description must be a string' })
+  description?: string;
+}
+
+export class UpdateSpecialtyDto {
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(120, { message: 'Name must not exceed 120 characters' })
+  name?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Description must be a string' })
+  description?: string;
+}
+
+export class SpecialtyQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString({ message: 'Sort field must be a string' })
+  sortBy?: string = 'name';
+
+  @IsOptional()
+  @IsBoolean({ message: 'Active filter must be a boolean' })
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'Include metadata must be a boolean' })
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  includeMetadata?: boolean;
+}
+
+export interface SpecialtyResponseDto {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SpecialtyPaginatedResponseDto =
+  PaginatedResponse<SpecialtyResponseDto>;
+
+// Work Location DTOs
+export class CreateWorkLocationDto {
+  @IsString({ message: 'Name must be a string' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(160, { message: 'Name must not exceed 160 characters' })
+  name: string;
+
+  @IsOptional()
+  @IsString({ message: 'Address must be a string' })
+  @MaxLength(255, { message: 'Address must not exceed 255 characters' })
+  address?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Phone must be a string' })
+  @MaxLength(32, { message: 'Phone must not exceed 32 characters' })
+  phone?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Timezone must be a string' })
+  @MaxLength(64, { message: 'Timezone must not exceed 64 characters' })
+  timezone?: string = 'Asia/Ho_Chi_Minh';
+}
+
+export class UpdateWorkLocationDto {
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(160, { message: 'Name must not exceed 160 characters' })
+  name?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Address must be a string' })
+  @MaxLength(255, { message: 'Address must not exceed 255 characters' })
+  address?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Phone must be a string' })
+  @MaxLength(32, { message: 'Phone must not exceed 32 characters' })
+  phone?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Timezone must be a string' })
+  @MaxLength(64, { message: 'Timezone must not exceed 64 characters' })
+  timezone?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'IsActive must be a boolean' })
+  isActive?: boolean;
+}
+
+export class WorkLocationQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsBoolean({ message: 'IsActive must be a boolean' })
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Sort field must be a string' })
+  sortBy?: string = 'name';
+
+  @IsOptional()
+  @IsBoolean({ message: 'Include metadata must be a boolean' })
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  includeMetadata?: boolean;
+}
+
+export interface WorkLocationResponseDto {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  timezone: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type WorkLocationPaginatedResponseDto =
+  PaginatedResponse<WorkLocationResponseDto>;
 
 // Doctor and Provider Directory DTOs
 export interface DoctorDto {
@@ -24,3 +185,8 @@ export interface ScheduleDto {
   timeEnd: string;
   capacity: number;
 }
+
+// Public DTOs (aliases from common.dto.ts)
+// These DTOs exclude sensitive fields like isActive, createdAt, updatedAt
+export type { SpecialtyDto as PublicSpecialtyDto } from './common.dto';
+export type { WorkLocationDto as PublicWorkLocationDto } from './common.dto';

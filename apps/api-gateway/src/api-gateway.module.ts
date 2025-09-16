@@ -11,6 +11,8 @@ import { ApiGatewayService } from './api-gateway.service';
 import { AuthController } from './auth/auth.controller';
 import { PatientsController } from './patients/patients.controller';
 import { StaffsController } from './staffs/staffs.controller';
+import { SpecialtiesController } from './specialties/specialties.controller';
+import { WorkLocationsController } from './work-locations/work-locations.controller';
 import { HealthController } from './health/health.controller';
 import { HealthService } from './health/health.service';
 import { MicroserviceService } from './utils/microservice.service';
@@ -81,6 +83,36 @@ import { MorganMiddleware } from './middleware';
         },
         inject: [ConfigService],
       },
+      {
+        name: 'PROVIDER_DIRECTORY_SERVICE',
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => {
+          return {
+            transport: Transport.REDIS,
+            options: {
+              host: configService.get<string>('REDIS_HOST', { infer: true }),
+              port:
+                +configService.get<number>('REDIS_PORT', { infer: true }) ||
+                6379,
+              username: configService.get<string>('REDIS_USERNAME', {
+                infer: true,
+              }),
+              password: configService.get<string>('REDIS_PASSWORD', {
+                infer: true,
+              }),
+              db: parseInt(
+                configService.get<string>('REDIS_DB', { infer: true }) || '0',
+              ),
+              retryAttempts: 5,
+              retryDelay: 3000,
+              maxRetriesPerRequest: 3,
+              connectTimeout: 10000,
+              lazyConnect: true,
+            },
+          };
+        },
+        inject: [ConfigService],
+      },
     ]),
   ],
   controllers: [
@@ -88,6 +120,8 @@ import { MorganMiddleware } from './middleware';
     AuthController,
     PatientsController,
     StaffsController,
+    SpecialtiesController,
+    WorkLocationsController,
     HealthController,
   ],
   providers: [

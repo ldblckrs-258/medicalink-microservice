@@ -96,7 +96,7 @@ async function createSuperAdmin() {
     console.log(`   Email: ${superAdmin.email}`);
     console.log(`   Full Name: ${superAdmin.fullName}`);
     console.log(`   Role: ${superAdmin.role}`);
-    console.log(`   Created At: ${superAdmin.createdAt}`);
+    console.log(`   Created At: ${superAdmin.createdAt?.toDateString()}`);
   } catch (error) {
     console.error('❌ Error creating super admin:');
 
