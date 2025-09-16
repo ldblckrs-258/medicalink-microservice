@@ -29,8 +29,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     const { method, url } = request;
-    const startTime = Date.now();
-
     return next.handle().pipe(
       // Resolve any nested promises first
       mergeMap((data) => deepResolvePromises(data)),
@@ -67,14 +65,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
         }
 
         return standardResponse;
-      }),
-
-      // Log the response time and details
-      tap(() => {
-        const duration = Date.now() - startTime;
-        this.logger.debug(
-          `${method} ${url} - ${response.statusCode} - ${duration}ms`,
-        );
       }),
     );
   }

@@ -43,10 +43,6 @@ export class MicroserviceService {
           }),
         ),
       );
-
-      this.logger.debug(
-        `Microservice call successful - Pattern: ${pattern}, Service: ${serviceName}`,
-      );
       return result;
     } catch (error) {
       this.logger.error(

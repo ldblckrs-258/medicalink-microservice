@@ -4,10 +4,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  schemas   = ["provider"]
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
+  schemas      = ["provider"]
+  relationMode = "prisma"
 }
 
 model Specialty {
@@ -20,8 +21,24 @@ model Specialty {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   doctorSpecialties DoctorSpecialty[]
+  infoSections      SpecialtyInfoSection[]
 
   @@map("specialties")
+  @@schema("provider")
+}
+
+model SpecialtyInfoSection {
+  id          String   @id @default(cuid())
+  specialtyId String   @map("specialty_id") @db.VarChar(27)
+  name        String   @db.VarChar(120)
+  content     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@index([specialtyId], map: "idx_specialty_info_sections_specialty")
+  @@map("specialty_info_sections")
   @@schema("provider")
 }
 

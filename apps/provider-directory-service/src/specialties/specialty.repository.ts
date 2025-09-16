@@ -12,7 +12,7 @@ import { slugify } from '../utils/slugify';
 export class SpecialtyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMany(
+  async findManyWithMetadata(
     query: SpecialtyQueryDto,
   ): Promise<{ data: any[]; total: number }> {
     const {
@@ -22,7 +22,6 @@ export class SpecialtyRepository {
       sortBy = 'name',
       sortOrder = 'DESC',
       isActive,
-      includeMetadata = false,
     } = query;
 
     const skip = (page - 1) * limit;
@@ -36,7 +35,6 @@ export class SpecialtyRepository {
       ];
     }
 
-    // Admin can filter by isActive status
     if (isActive !== undefined) {
       where.isActive = isActive;
     }
@@ -44,34 +42,98 @@ export class SpecialtyRepository {
     const orderBy: Prisma.SpecialtyOrderByWithRelationInput = {};
     orderBy[sortBy] = sortOrder.toLowerCase() as Prisma.SortOrder;
 
-    // Determine what fields to select based on includeMetadata
-    const selectFields = includeMetadata
-      ? undefined // Select all fields when includeMetadata is true
-      : {
-          id: true,
-          name: true,
-          slug: true,
-          description: true,
-          // Exclude isActive, createdAt, updatedAt when includeMetadata is false
-        };
-
     const [data, total] = await Promise.all([
       this.prisma.specialty.findMany({
         where,
         skip,
         take: limit,
         orderBy,
-        select: selectFields,
+        include: {
+          _count: {
+            select: {
+              infoSections: true,
+            },
+          },
+        },
       }),
       this.prisma.specialty.count({ where }),
     ]);
 
-    return { data, total };
+    // Map data to include infoSectionsCount
+    const mappedData = data.map((specialty) => ({
+      ...specialty,
+      infoSectionsCount: specialty._count.infoSections,
+    }));
+
+    return { data: mappedData, total };
+  }
+
+  async findManyPublic(
+    query: SpecialtyQueryDto,
+  ): Promise<{ data: any[]; total: number }> {
+    const { page = 1, limit = 10, search } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.SpecialtyWhereInput = {
+      isActive: true,
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    try {
+      // Simplified query without select to avoid field issues
+      const [allData, total] = await Promise.all([
+        this.prisma.specialty.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: {
+            name: 'asc',
+          },
+        }),
+        this.prisma.specialty.count({ where }),
+      ]);
+
+      // Map to only include public fields
+      const data = allData.map((specialty) => ({
+        id: specialty.id,
+        name: specialty.name,
+        slug: specialty.slug,
+        description: specialty.description,
+      }));
+
+      return { data, total };
+    } catch (error) {
+      console.error('Prisma query error in findManyPublic:', error);
+      console.error('Query params:', { page, limit, search, where, skip });
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Specialty | null> {
     return this.prisma.specialty.findUnique({
       where: { id },
+    });
+  }
+
+  async findByIdWithInfoSectionsCount(
+    id: string,
+  ): Promise<(Specialty & { _count: { infoSections: number } }) | null> {
+    return this.prisma.specialty.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            infoSections: true,
+          },
+        },
+      },
     });
   }
 
@@ -84,6 +146,24 @@ export class SpecialtyRepository {
   async findBySlug(slug: string): Promise<Specialty | null> {
     return this.prisma.specialty.findUnique({
       where: { slug },
+    });
+  }
+
+  async findBySlugWithInfoSections(
+    slug: string,
+  ): Promise<(Specialty & { infoSections: any[] }) | null> {
+    return this.prisma.specialty.findUnique({
+      where: {
+        slug,
+        isActive: true,
+      },
+      include: {
+        infoSections: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
     });
   }
 

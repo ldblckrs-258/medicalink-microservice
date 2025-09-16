@@ -10,6 +10,7 @@ import {
   IsBoolean,
   MinLength,
   MaxLength,
+  IsNotEmpty,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -66,12 +67,73 @@ export interface SpecialtyResponseDto {
   name: string;
   slug: string;
   description?: string;
+  isActive: boolean;
+  infoSectionsCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export interface SpecialtyWithInfoSectionsResponseDto {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  infoSections: SpecialtyInfoSectionResponseDto[];
+}
+
+export interface SpecialtyPublicResponseDto {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
 export type SpecialtyPaginatedResponseDto =
   PaginatedResponse<SpecialtyResponseDto>;
+
+export type SpecialtyPublicPaginatedResponseDto =
+  PaginatedResponse<SpecialtyPublicResponseDto>;
+
+// Specialty Info Section DTOs
+export class CreateSpecialtyInfoSectionDto {
+  @IsString({ message: 'Specialty ID must be a string' })
+  @IsNotEmpty({ message: 'Specialty ID is required' })
+  specialtyId: string;
+
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty({ message: 'Name is required' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(120, { message: 'Name must not exceed 120 characters' })
+  name: string;
+
+  @IsOptional()
+  @IsString({ message: 'Content must be a string' })
+  content?: string;
+}
+
+export class UpdateSpecialtyInfoSectionDto {
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @MaxLength(120, { message: 'Name must not exceed 120 characters' })
+  name?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Content must be a string' })
+  content?: string;
+}
+
+export interface SpecialtyInfoSectionResponseDto {
+  id: string;
+  specialtyId: string;
+  name: string;
+  content?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SpecialtyInfoSectionPaginatedResponseDto =
+  PaginatedResponse<SpecialtyInfoSectionResponseDto>;
 
 // Work Location DTOs
 export class CreateWorkLocationDto {

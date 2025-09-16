@@ -14,7 +14,11 @@ import {
   CreateSpecialtyDto,
   UpdateSpecialtyDto,
   SpecialtyQueryDto,
-  SpecialtyDto,
+  SpecialtyResponseDto,
+  SpecialtyWithInfoSectionsResponseDto,
+  CreateSpecialtyInfoSectionDto,
+  UpdateSpecialtyInfoSectionDto,
+  SpecialtyInfoSectionResponseDto,
   Roles,
   Public,
 } from '@app/contracts';
@@ -28,44 +32,33 @@ export class SpecialtiesController {
     private readonly microserviceService: MicroserviceService,
   ) {}
 
-  // Public - get all active specialties
   @Public()
   @Get('public')
   findAllPublic() {
     const publicQuery = {
-      isActive: true,
       page: 1,
-      limit: 100, // Get all active specialties
+      limit: 100,
       sortBy: 'name',
       sortOrder: 'ASC' as const,
-      includeMetadata: false, // Exclude isActive, createdAt, updatedAt
     };
 
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'specialties.findAll',
+      'specialties.findAllPublic',
       publicQuery,
     );
   }
 
-  // Admin only - get all specialties with flexible filtering
   @Roles('SUPER_ADMIN', 'ADMIN')
   @Get()
   findAll(@Query() query: SpecialtyQueryDto) {
-    // Default to include metadata for admin endpoints
-    const adminQuery = {
-      ...query,
-      includeMetadata: query.includeMetadata ?? true,
-    };
-
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'specialties.findAll',
-      adminQuery,
+      'specialties.findAllAdmin',
+      query,
     );
   }
 
-  // Public - get specialties stats
   @Public()
   @Get('stats')
   getStats(): Promise<{
@@ -78,24 +71,88 @@ export class SpecialtiesController {
     }>(this.providerDirectoryClient, 'specialties.stats', {});
   }
 
-  // Public - get specialty by id
   @Public()
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<SpecialtyDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyDto>(
+  findOne(@Param('id') id: string): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
       this.providerDirectoryClient,
       'specialties.findOne',
       id,
     );
   }
 
-  // Admin only - create new specialty
+  @Public()
+  @Get('public/:slug')
+  findBySlug(
+    @Param('slug') slug: string,
+  ): Promise<SpecialtyWithInfoSectionsResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyWithInfoSectionsResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.findBySlug',
+      slug,
+    );
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Get(':specialtyId/info-sections')
+  findInfoSectionsBySpecialtyId(
+    @Param('specialtyId') specialtyId: string,
+  ): Promise<SpecialtyInfoSectionResponseDto[]> {
+    return this.microserviceService.sendWithTimeout<
+      SpecialtyInfoSectionResponseDto[]
+    >(
+      this.providerDirectoryClient,
+      'specialties.findInfoSectionsBySpecialtyId',
+      specialtyId,
+    );
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Post('info-sections')
+  createInfoSection(
+    @Body() createInfoSectionDto: CreateSpecialtyInfoSectionDto,
+  ): Promise<SpecialtyInfoSectionResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyInfoSectionResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.createInfoSection',
+      createInfoSectionDto,
+    );
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Patch('info-sections/:id')
+  updateInfoSection(
+    @Param('id') id: string,
+    @Body() updateInfoSectionDto: UpdateSpecialtyInfoSectionDto,
+  ): Promise<SpecialtyInfoSectionResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyInfoSectionResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.updateInfoSection',
+      {
+        id,
+        data: updateInfoSectionDto,
+      },
+    );
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Delete('info-sections/:id')
+  deleteInfoSection(
+    @Param('id') id: string,
+  ): Promise<SpecialtyInfoSectionResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyInfoSectionResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.deleteInfoSection',
+      id,
+    );
+  }
+
   @Roles('SUPER_ADMIN', 'ADMIN')
   @Post()
   create(
     @Body() createSpecialtyDto: CreateSpecialtyDto,
-  ): Promise<SpecialtyDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyDto>(
+  ): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
       this.providerDirectoryClient,
       'specialties.create',
       createSpecialtyDto,
@@ -108,8 +165,8 @@ export class SpecialtiesController {
   update(
     @Param('id') id: string,
     @Body() updateSpecialtyDto: UpdateSpecialtyDto,
-  ): Promise<SpecialtyDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyDto>(
+  ): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
       this.providerDirectoryClient,
       'specialties.update',
       {
@@ -122,8 +179,8 @@ export class SpecialtiesController {
   // Admin only - delete specialty
   @Roles('SUPER_ADMIN', 'ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<SpecialtyDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyDto>(
+  remove(@Param('id') id: string): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
       this.providerDirectoryClient,
       'specialties.remove',
       id,

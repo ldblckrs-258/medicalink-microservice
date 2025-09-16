@@ -22,13 +22,6 @@ export type RpcErrorPayload = {
 export function toRpcException(e: unknown): RpcException {
   if (e instanceof RpcException) return e;
 
-  // Handle Prisma errors specifically
-  if (isPrismaError(e)) {
-    return new RpcException(
-      payload(400, 'Bad Request', extractPrismaMessage(e), 'PRISMA_ERROR'),
-    );
-  }
-
   if (e instanceof ValidationError) {
     return new RpcException(
       payload(400, 'Bad Request', e.message, e.code, e.details),
@@ -56,6 +49,13 @@ export function toRpcException(e: unknown): RpcException {
   if (e instanceof DomainError) {
     return new RpcException(
       payload(400, 'Bad Request', e.message, e.code, e.details),
+    );
+  }
+
+  // Handle Prisma errors specifically
+  if (isPrismaError(e)) {
+    return new RpcException(
+      payload(400, 'Bad Request', extractPrismaMessage(e), 'PRISMA_ERROR'),
     );
   }
 
@@ -110,8 +110,7 @@ function isPrismaError(e: unknown): boolean {
 
   return (
     typeof message === 'string' &&
-    (message.includes('Invalid `') ||
-      message.includes('Prisma') ||
+    (message.includes('Prisma') ||
       message.includes('invocation') ||
       (typeof error.code === 'string' && /^P\d{4}$/.test(error.code)))
   );

@@ -60,6 +60,19 @@ Table specialties {
   updated_at  timestamptz  [not null, default: `now()`]
 }
 
+Table specialty_info_sections {
+  id           varchar(27) [pk, not null, note: 'cuid']
+  specialty_id varchar(27) [not null, note: 'ref Provider.specialties.id (same DB)']
+  name         varchar(120) [not null]
+  content      text
+  created_at   timestamptz [not null, default: `now()`]
+  updated_at   timestamptz [not null, default: `now()`]
+  indexes {
+    (specialty_id)
+  }
+  Note: 'Thông tin chi tiết theo section của chuyên khoa; content có thể là HTML/Markdown.'
+}
+
 Table work_locations {
   id          varchar(27) [pk, not null, note: 'cuid']
   name        varchar(160) [not null]
