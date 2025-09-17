@@ -19,6 +19,7 @@ import { MicroserviceService } from './utils/microservice.service';
 import { PermissionService } from './auth/permission.service';
 import { PermissionMiddleware } from './middleware/permission.middleware';
 import { MicroserviceErrorInterceptor } from './interceptors/microservice-error.interceptor';
+import { PermissionsController } from './permissions/permissions.controller';
 import { MorganMiddleware } from './middleware';
 
 @Module({
@@ -124,6 +125,7 @@ import { MorganMiddleware } from './middleware';
     StaffsController,
     SpecialtiesController,
     WorkLocationsController,
+    PermissionsController,
     HealthController,
   ],
   providers: [

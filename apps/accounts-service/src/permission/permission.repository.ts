@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuthVersionService } from '../auth-version/auth-version.service';
 
 export interface UserPermissionSnapshot {
   userId: string;
@@ -23,21 +24,24 @@ export interface UserPermissionDetails {
 
 @Injectable()
 export class PermissionRepository {
-  constructor(private prisma: PrismaService) {}
+  // Define action hierarchy - manage includes all CRUD operations
+  private readonly actionHierarchy = {
+    manage: ['read', 'write', 'create', 'update', 'delete'],
+    write: ['create', 'update'],
+  };
+
+  constructor(
+    private prisma: PrismaService,
+    private authVersionService: AuthVersionService,
+  ) {}
 
   async getUserPermissionSnapshot(
     userId: string,
     tenantId: string = 'global',
   ): Promise<UserPermissionSnapshot | null> {
     try {
-      // Get auth version
-      const authVersion = await this.prisma.authVersion.findUnique({
-        where: { userId },
-      });
-
-      if (!authVersion) {
-        return null;
-      }
+      // Get auth version using the service
+      const version = await this.authVersionService.getUserAuthVersion(userId);
 
       // Get direct user permissions
       const userPermissions = await this.prisma.userPermission.findMany({
@@ -72,12 +76,23 @@ export class PermissionRepository {
       // Flatten all permissions
       const allPermissions = new Set<string>();
 
+      // Helper function to expand permissions based on hierarchy
+      const expandPermissions = (resource: string, action: string) => {
+        // Add the original permission
+        allPermissions.add(`${resource}:${action}`);
+
+        // Add implied permissions if this is a higher-level permission
+        if (this.actionHierarchy[action]) {
+          this.actionHierarchy[action].forEach((impliedAction) => {
+            allPermissions.add(`${resource}:${impliedAction}`);
+          });
+        }
+      };
+
       // Add direct user permissions
       userPermissions.forEach((up) => {
         if (up.effect === 'ALLOW') {
-          allPermissions.add(
-            `${up.permission.resource}:${up.permission.action}`,
-          );
+          expandPermissions(up.permission.resource, up.permission.action);
         }
       });
 
@@ -85,26 +100,36 @@ export class PermissionRepository {
       groupPermissions.forEach((ug) => {
         ug.group.groupPermissions.forEach((gp) => {
           if (gp.effect === 'ALLOW') {
-            allPermissions.add(
-              `${gp.permission.resource}:${gp.permission.action}`,
-            );
+            expandPermissions(gp.permission.resource, gp.permission.action);
           }
         });
       });
 
-      // Handle DENY permissions (they override ALLOW)
+      // Handle DENY permissions (they override ALLOW) - also need to expand denials
       userPermissions.forEach((up) => {
         if (up.effect === 'DENY') {
+          // Remove the denied permission
           allPermissions.delete(
             `${up.permission.resource}:${up.permission.action}`,
           );
+
+          // If denying a higher-level permission, also deny implied permissions
+          if (this.actionHierarchy[up.permission.action]) {
+            this.actionHierarchy[up.permission.action].forEach(
+              (impliedAction) => {
+                allPermissions.delete(
+                  `${up.permission.resource}:${impliedAction}`,
+                );
+              },
+            );
+          }
         }
       });
 
       return {
         userId,
         tenant: tenantId,
-        version: authVersion.version,
+        version,
         permissions: Array.from(allPermissions),
       };
     } catch (error) {
@@ -194,10 +219,18 @@ export class PermissionRepository {
         tenantId,
       );
 
-      // Find matching permissions
-      const matchingPermissions = permissionDetails.filter(
-        (p) => p.resource === resource && p.action === action,
-      );
+      // Find matching permissions (exact match or higher-level permissions)
+      const matchingPermissions = permissionDetails.filter((p) => {
+        if (p.resource !== resource) return false;
+
+        // Exact match
+        if (p.action === action) return true;
+
+        // Check if user has higher-level permission that includes the requested action
+        if (this.actionHierarchy[p.action]?.includes(action)) return true;
+
+        return false;
+      });
 
       if (matchingPermissions.length === 0) {
         return false;
@@ -414,17 +447,6 @@ export class PermissionRepository {
   }
 
   private async incrementUserAuthVersion(userId: string): Promise<void> {
-    await this.prisma.authVersion.upsert({
-      where: { userId },
-      update: {
-        version: {
-          increment: 1,
-        },
-      },
-      create: {
-        userId,
-        version: 1,
-      },
-    });
+    await this.authVersionService.incrementUserAuthVersion(userId);
   }
 }

@@ -119,9 +119,15 @@ export class PermissionGuard implements CanActivate {
       if (params.id) {
         // Generic ID parameter
         context.resourceId = params.id;
+        // For staff endpoints, params.id is usually the targetUserId
+        if (request.url.includes('/staff')) {
+          context.targetUserId = params.id;
+          context.isSelfUpdate = params.id === user.sub;
+        }
       }
       if (params.userId) {
         context.targetUserId = params.userId;
+        context.isSelfUpdate = params.userId === user.sub;
       }
       if (params.doctorId) {
         context.doctorId = params.doctorId;

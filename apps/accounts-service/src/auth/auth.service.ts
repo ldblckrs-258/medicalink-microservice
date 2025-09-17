@@ -8,7 +8,7 @@ import {
   ConflictError,
 } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
-import { AuthVersionRepository } from './auth-version.repository';
+import { AuthVersionService } from '../auth-version/auth-version.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
   CreateStaffDto,
@@ -25,7 +25,7 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
-    private readonly authVersionRepository: AuthVersionRepository,
+    private readonly authVersionService: AuthVersionService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -52,7 +52,7 @@ export class AuthService {
 
   async login(staff: StaffAccount): Promise<Omit<LoginResponseDto, 'user'>> {
     // Get or create auth version for cache invalidation
-    const authVersion = await this.authVersionRepository.getOrCreateAuthVersion(
+    const authVersion = await this.authVersionService.getUserAuthVersion(
       staff.id,
     );
 

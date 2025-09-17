@@ -1,9 +1,9 @@
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from '../prisma/generated/client';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
 // Load environment variables from root directory
-config({ path: resolve(__dirname, '../../../../.env') });
+config({ path: resolve(__dirname, '../../../.env') });
 
 const prisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL,
@@ -241,6 +241,7 @@ const ROLE_PERMISSION_MAPPING = {
     'system:admin',
     'permissions:manage',
     'groups:manage',
+    'staff:read',
     'staff:manage',
     'patients:*',
     'appointments:manage',
@@ -460,6 +461,42 @@ export async function migrateExistingUsers() {
       } else {
         console.warn(`⚠️  Group not found for role: ${staff.role}`);
       }
+
+      // 3. Add self-update permission for all users (they can update their own profile)
+      const profileUpdatePermission = await prisma.permission.findUnique({
+        where: {
+          resource_action: {
+            resource: 'profile',
+            action: 'update',
+          },
+        },
+      });
+
+      if (profileUpdatePermission) {
+        await prisma.userPermission.upsert({
+          where: {
+            userId_permissionId_tenantId: {
+              userId: staff.id,
+              permissionId: profileUpdatePermission.id,
+              tenantId: 'global',
+            },
+          },
+          update: {},
+          create: {
+            userId: staff.id,
+            permissionId: profileUpdatePermission.id,
+            tenantId: 'global',
+            effect: 'ALLOW',
+            conditions: [
+              {
+                field: 'isSelfUpdate',
+                operator: 'eq',
+                value: true,
+              },
+            ] as any,
+          },
+        });
+      }
     }
 
     console.log('✅ User migration completed!');
@@ -469,11 +506,86 @@ export async function migrateExistingUsers() {
   }
 }
 
+// Function to seed context-based permissions for self-updates
+export async function seedSelfUpdatePermissions() {
+  console.log('🔐 Seeding self-update permissions...');
+
+  try {
+    // Get staff update permission
+    const staffUpdatePermission = await prisma.permission.findUnique({
+      where: {
+        resource_action: {
+          resource: 'staff',
+          action: 'update',
+        },
+      },
+    });
+
+    if (!staffUpdatePermission) {
+      console.warn('Staff update permission not found, skipping...');
+      return;
+    }
+
+    // Get all admin users (ADMIN role, not SUPER_ADMIN)
+    const adminUsers = await prisma.staffAccount.findMany({
+      where: {
+        role: 'ADMIN',
+        deletedAt: null,
+      },
+    });
+
+    console.log(`Found ${adminUsers.length} admin users`);
+
+    // Give each admin permission to update only their own account
+    for (const admin of adminUsers) {
+      await prisma.userPermission.upsert({
+        where: {
+          userId_permissionId_tenantId: {
+            userId: admin.id,
+            permissionId: staffUpdatePermission.id,
+            tenantId: 'global',
+          },
+        },
+        update: {
+          conditions: [
+            {
+              field: 'targetUserId',
+              operator: 'eq',
+              value: admin.id, // Only allow updating their own account
+            },
+          ] as any,
+        },
+        create: {
+          userId: admin.id,
+          permissionId: staffUpdatePermission.id,
+          tenantId: 'global',
+          effect: 'ALLOW',
+          conditions: [
+            {
+              field: 'targetUserId',
+              operator: 'eq',
+              value: admin.id, // Only allow updating their own account
+            },
+          ] as any,
+        },
+      });
+
+      console.log(`✅ Added self-update permission for admin: ${admin.email}`);
+    }
+
+    console.log('✅ Self-update permissions seeded successfully!');
+  } catch (error) {
+    console.error('❌ Error seeding self-update permissions:', error);
+    throw error;
+  }
+}
+
 // Main seed function
 export async function main() {
   try {
     await seedPermissions();
     await migrateExistingUsers();
+    await seedSelfUpdatePermissions();
   } catch (error) {
     console.error('Error in seed script:', error);
     process.exit(1);

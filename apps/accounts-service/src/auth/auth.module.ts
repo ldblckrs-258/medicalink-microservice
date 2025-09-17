@@ -2,14 +2,13 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
-import { PermissionController } from './permission.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
-import { AuthVersionRepository } from './auth-version.repository';
-import { PermissionRepository } from './permission.repository';
+import { AuthVersionModule } from '../auth-version/auth-version.module';
 
 @Module({
   imports: [
+    AuthVersionModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -25,18 +24,8 @@ import { PermissionRepository } from './permission.repository';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController, PermissionController],
-  providers: [
-    AuthService,
-    AuthRepository,
-    AuthVersionRepository,
-    PermissionRepository,
-  ],
-  exports: [
-    AuthService,
-    AuthRepository,
-    AuthVersionRepository,
-    PermissionRepository,
-  ],
+  controllers: [AuthController],
+  providers: [AuthService, AuthRepository],
+  exports: [AuthService, AuthRepository],
 })
 export class AuthModule {}

@@ -7,3 +7,4 @@ export * from './booking.dto';
 export * from './notification.dto';
 export * from './content.dto';
 export * from './common.dto';
+export * from './permission-management.dto';
