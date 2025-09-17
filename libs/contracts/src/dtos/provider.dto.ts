@@ -11,6 +11,7 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
+  IsIn,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -41,7 +42,17 @@ export class UpdateSpecialtyDto {
 export class SpecialtyQueryDto extends PaginationDto {
   @IsOptional()
   @IsString({ message: 'Sort field must be a string' })
-  sortBy?: string = 'name';
+  @IsIn(['name', 'createdAt', 'updatedAt'], {
+    message: 'Sort field must be one of: name, createdAt, updatedAt',
+  })
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' = 'name';
+
+  @IsOptional()
+  @IsString({ message: 'Sort order must be a string' })
+  @IsIn(['ASC', 'DESC'], {
+    message: 'Sort order must be either ASC or DESC',
+  })
+  sortOrder?: 'ASC' | 'DESC' = 'ASC';
 
   @IsOptional()
   @IsBoolean({ message: 'Active filter must be a boolean' })

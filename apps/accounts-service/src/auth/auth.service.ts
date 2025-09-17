@@ -8,6 +8,7 @@ import {
   ConflictError,
 } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
+import { AuthVersionRepository } from './auth-version.repository';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
   CreateStaffDto,
@@ -24,6 +25,7 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
+    private readonly authVersionRepository: AuthVersionRepository,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -49,10 +51,16 @@ export class AuthService {
   }
 
   async login(staff: StaffAccount): Promise<Omit<LoginResponseDto, 'user'>> {
+    // Get or create auth version for cache invalidation
+    const authVersion = await this.authVersionRepository.getOrCreateAuthVersion(
+      staff.id,
+    );
+
     const payload: JwtPayloadDto = {
       email: staff.email,
       sub: staff.id,
-      role: staff.role,
+      tenant: 'global', // Default tenant, can be customized per organization
+      ver: authVersion,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

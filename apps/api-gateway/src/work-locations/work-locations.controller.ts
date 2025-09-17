@@ -15,8 +15,10 @@ import {
   UpdateWorkLocationDto,
   WorkLocationQueryDto,
   WorkLocationDto,
-  Roles,
   Public,
+  RequireReadPermission,
+  RequireWritePermission,
+  RequireDeletePermission,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
@@ -50,7 +52,7 @@ export class WorkLocationsController {
   }
 
   // Admin only - get all work locations with flexible filtering
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireReadPermission('work-locations')
   @Get()
   findAll(@Query() query: WorkLocationQueryDto) {
     // Default to include metadata for admin endpoints
@@ -92,7 +94,7 @@ export class WorkLocationsController {
 
   // Admin only - create new work location
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('work-locations')
   @Post()
   create(
     @Body() createWorkLocationDto: CreateWorkLocationDto,
@@ -104,7 +106,7 @@ export class WorkLocationsController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('work-locations')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -117,7 +119,7 @@ export class WorkLocationsController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireDeletePermission('work-locations')
   @Delete(':id')
   remove(@Param('id') id: string): Promise<WorkLocationDto> {
     return this.microserviceService.sendWithTimeout<WorkLocationDto>(

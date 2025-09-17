@@ -9,7 +9,6 @@ import {
   SpecialtyPaginatedResponseDto,
   SpecialtyPublicPaginatedResponseDto,
   SpecialtyWithInfoSectionsResponseDto,
-  SpecialtyPublicResponseDto,
   CreateSpecialtyInfoSectionDto,
   UpdateSpecialtyInfoSectionDto,
   SpecialtyInfoSectionResponseDto,
