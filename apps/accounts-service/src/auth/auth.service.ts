@@ -8,6 +8,8 @@ import {
   ConflictError,
 } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
+import { AuthVersionService } from '../auth-version/auth-version.service';
+import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
   CreateStaffDto,
@@ -24,6 +26,8 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
+    private readonly authVersionService: AuthVersionService,
+    private readonly permissionAssignmentService: PermissionAssignmentService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -49,10 +53,16 @@ export class AuthService {
   }
 
   async login(staff: StaffAccount): Promise<Omit<LoginResponseDto, 'user'>> {
+    // Get or create auth version for cache invalidation
+    const authVersion = await this.authVersionService.getUserAuthVersion(
+      staff.id,
+    );
+
     const payload: JwtPayloadDto = {
       email: staff.email,
       sub: staff.id,
-      role: staff.role,
+      tenant: 'global', // Default tenant, can be customized per organization
+      ver: authVersion,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
@@ -147,6 +157,20 @@ export class AuthService {
     };
 
     const staff = await this.authRepository.create(staffData);
+
+    // 🆕 Auto-assign permissions based on role
+    try {
+      await this.permissionAssignmentService.assignPermissionsToNewUser(
+        staff.id,
+        staff.role,
+      );
+    } catch (error) {
+      // Log error but don't fail the staff creation
+      console.error(
+        `Failed to assign permissions to staff ${staff.email}:`,
+        error,
+      );
+    }
 
     return staff;
   }

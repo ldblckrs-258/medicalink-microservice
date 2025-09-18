@@ -13,10 +13,13 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   CreateWorkLocationDto,
   UpdateWorkLocationDto,
+  WorkLocationPublicQueryDto,
   WorkLocationQueryDto,
   WorkLocationDto,
-  Roles,
   Public,
+  RequireReadPermission,
+  RequireWritePermission,
+  RequireDeletePermission,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
@@ -31,15 +34,14 @@ export class WorkLocationsController {
   // Public - get all active work locations
   @Public()
   @Get('public')
-  findAllPublic() {
-    // Hard-coded filter: only active work locations, no pagination for public use
+  findAllPublic(@Query() query: WorkLocationPublicQueryDto) {
     const publicQuery = {
       isActive: true,
       page: 1,
-      limit: 100, // Get all active work locations
-      sortBy: 'name',
-      sortOrder: 'ASC' as const,
-      includeMetadata: false, // Exclude isActive, createdAt, updatedAt
+      limit: 100,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      includeMetadata: false,
     };
 
     return this.microserviceService.sendWithTimeout(
@@ -50,10 +52,9 @@ export class WorkLocationsController {
   }
 
   // Admin only - get all work locations with flexible filtering
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireReadPermission('work-locations')
   @Get()
   findAll(@Query() query: WorkLocationQueryDto) {
-    // Default to include metadata for admin endpoints
     const adminQuery = {
       ...query,
       includeMetadata: query.includeMetadata ?? true,
@@ -79,8 +80,7 @@ export class WorkLocationsController {
     }>(this.providerDirectoryClient, 'work-locations.stats', {});
   }
 
-  // Public - get work location by id
-  @Public()
+  @RequireReadPermission('work-locations')
   @Get(':id')
   findOne(@Param('id') id: string): Promise<WorkLocationDto> {
     return this.microserviceService.sendWithTimeout<WorkLocationDto>(
@@ -91,8 +91,7 @@ export class WorkLocationsController {
   }
 
   // Admin only - create new work location
-
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('work-locations')
   @Post()
   create(
     @Body() createWorkLocationDto: CreateWorkLocationDto,
@@ -104,7 +103,7 @@ export class WorkLocationsController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('work-locations')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -117,7 +116,7 @@ export class WorkLocationsController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireDeletePermission('work-locations')
   @Delete(':id')
   remove(@Param('id') id: string): Promise<WorkLocationDto> {
     return this.microserviceService.sendWithTimeout<WorkLocationDto>(

@@ -5,7 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RedisModule } from '@app/redis';
-import { JwtAuthGuard, RolesGuard } from '@app/contracts';
+import { JwtAuthGuard, PermissionGuard } from '@app/contracts';
 import { ApiGatewayController } from './api-gateway.controller';
 import { ApiGatewayService } from './api-gateway.service';
 import { AuthController } from './auth/auth.controller';
@@ -16,7 +16,10 @@ import { WorkLocationsController } from './work-locations/work-locations.control
 import { HealthController } from './health/health.controller';
 import { HealthService } from './health/health.service';
 import { MicroserviceService } from './utils/microservice.service';
+import { PermissionService } from './auth/permission.service';
+import { PermissionMiddleware } from './middleware/permission.middleware';
 import { MicroserviceErrorInterceptor } from './interceptors/microservice-error.interceptor';
+import { PermissionsController } from './permissions/permissions.controller';
 import { MorganMiddleware } from './middleware';
 
 @Module({
@@ -122,12 +125,14 @@ import { MorganMiddleware } from './middleware';
     StaffsController,
     SpecialtiesController,
     WorkLocationsController,
+    PermissionsController,
     HealthController,
   ],
   providers: [
     ApiGatewayService,
     HealthService,
     MicroserviceService,
+    PermissionService,
     {
       provide: APP_INTERCEPTOR,
       useClass: MicroserviceErrorInterceptor,
@@ -142,12 +147,16 @@ import { MorganMiddleware } from './middleware';
     },
     {
       provide: APP_GUARD,
-      useClass: RolesGuard,
+      useClass: PermissionGuard,
     },
   ],
 })
 export class ApiGatewayModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(MorganMiddleware).forRoutes('*');
+    consumer
+      .apply(MorganMiddleware)
+      .forRoutes('*')
+      .apply(PermissionMiddleware)
+      .forRoutes('*');
   }
 }

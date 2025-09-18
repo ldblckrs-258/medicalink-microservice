@@ -11,6 +11,7 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
+  IsIn,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -41,7 +42,17 @@ export class UpdateSpecialtyDto {
 export class SpecialtyQueryDto extends PaginationDto {
   @IsOptional()
   @IsString({ message: 'Sort field must be a string' })
-  sortBy?: string = 'name';
+  @IsIn(['name', 'createdAt', 'updatedAt'], {
+    message: 'Sort field must be one of: name, createdAt, updatedAt',
+  })
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' = 'name';
+
+  @IsOptional()
+  @IsString({ message: 'Sort order must be a string' })
+  @IsIn(['ASC', 'DESC'], {
+    message: 'Sort order must be either ASC or DESC',
+  })
+  sortOrder?: 'ASC' | 'DESC' = 'ASC';
 
   @IsOptional()
   @IsBoolean({ message: 'Active filter must be a boolean' })
@@ -185,7 +196,20 @@ export class UpdateWorkLocationDto {
   isActive?: boolean;
 }
 
-export class WorkLocationQueryDto extends PaginationDto {
+export class WorkLocationPublicQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString({ message: 'Sort field must be a string' })
+  sortBy?: string = 'name';
+
+  @IsOptional()
+  @IsString({ message: 'Sort order must be a string' })
+  @IsIn(['ASC', 'DESC'], {
+    message: 'Sort order must be either ASC or DESC',
+  })
+  sortOrder?: 'ASC' | 'DESC' = 'ASC';
+}
+
+export class WorkLocationQueryDto extends WorkLocationPublicQueryDto {
   @IsOptional()
   @IsBoolean({ message: 'IsActive must be a boolean' })
   @Transform(({ value }) => {
@@ -194,10 +218,6 @@ export class WorkLocationQueryDto extends PaginationDto {
     return value;
   })
   isActive?: boolean;
-
-  @IsOptional()
-  @IsString({ message: 'Sort field must be a string' })
-  sortBy?: string = 'name';
 
   @IsOptional()
   @IsBoolean({ message: 'Include metadata must be a boolean' })

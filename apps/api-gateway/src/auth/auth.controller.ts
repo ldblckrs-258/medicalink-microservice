@@ -14,7 +14,7 @@ import {
   ChangePasswordDto,
   Public,
   CurrentUser,
-  Roles,
+  RequireUserManagement,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
@@ -47,7 +47,7 @@ export class AuthController {
     );
   }
 
-  @Roles('SUPER_ADMIN')
+  @RequireUserManagement()
   @Post('register')
   async register(
     @Body() createStaffDto: CreateStaffDto,

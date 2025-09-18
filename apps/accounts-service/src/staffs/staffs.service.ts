@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
 import { StaffRepository } from './staff.repository';
+import { PermissionAssignmentService } from '../permission/permission-assignment.service';
+import { StaffRole } from '../../prisma/generated/client';
 import {
   CreateStaffDto,
   UpdateStaffDto,
@@ -12,7 +14,12 @@ import {
 
 @Injectable()
 export class StaffsService {
-  constructor(private readonly staffRepository: StaffRepository) {}
+  private readonly logger = new Logger(StaffsService.name);
+
+  constructor(
+    private readonly staffRepository: StaffRepository,
+    private readonly permissionAssignmentService: PermissionAssignmentService,
+  ) {}
 
   async findAll(query: StaffQueryDto): Promise<StaffPaginatedResponseDto> {
     const { data, total } = await this.staffRepository.findMany(query);
@@ -43,6 +50,10 @@ export class StaffsService {
   }
 
   async create(createStaffDto: CreateStaffDto): Promise<StaffAccountDto> {
+    this.logger.log(
+      `Creating new staff: ${createStaffDto.email} (${createStaffDto.role})`,
+    );
+
     // Check if email already exists
     const existingStaff = await this.staffRepository.findByEmail(
       createStaffDto.email,
@@ -54,7 +65,34 @@ export class StaffsService {
       });
     }
 
+    // Create staff account
     const staff = await this.staffRepository.create(createStaffDto);
+
+    try {
+      // 🆕 Auto-assign permissions based on role
+      const permissionResult =
+        await this.permissionAssignmentService.assignPermissionsToNewUser(
+          staff.id,
+          staff.role,
+        );
+
+      this.logger.log(
+        `✅ Staff created and permissions assigned: ${staff.email} - ${permissionResult.assignedPermissions.length} permissions`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to assign permissions to new staff ${staff.email}:`,
+        error.stack,
+      );
+
+      // Note: We don't throw here to avoid rolling back staff creation
+      // The staff will be created but without permissions
+      // Admin can manually assign permissions later
+      this.logger.warn(
+        `⚠️ Staff ${staff.email} created without permissions. Manual assignment required.`,
+      );
+    }
+
     return this.mapToStaffAccountDto(staff);
   }
 
@@ -104,6 +142,52 @@ export class StaffsService {
 
   async getStats(): Promise<StaffStatsDto> {
     return this.staffRepository.getStats();
+  }
+
+  /**
+   * Manual permission assignment for existing staff
+   */
+  async assignPermissionsToUser(
+    userId: string,
+    roleOverride?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get staff to determine role
+      const staff = await this.staffRepository.findById(userId);
+
+      if (!staff) {
+        throw new NotFoundError('Staff member not found', {
+          code: ErrorCode.USER_NOT_FOUND,
+        });
+      }
+
+      const role = roleOverride || staff.role;
+
+      const result =
+        await this.permissionAssignmentService.assignPermissionsToNewUser(
+          userId,
+          role as StaffRole,
+        );
+
+      this.logger.log(
+        `✅ Manual permission assignment completed for ${staff.email}: ${result.assignedPermissions.length} permissions`,
+      );
+
+      return {
+        success: true,
+        message: `Permissions assigned successfully. ${result.assignedPermissions.length} permissions granted.`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to manually assign permissions to user ${userId}:`,
+        error.stack,
+      );
+
+      return {
+        success: false,
+        message: `Failed to assign permissions: ${error.message}`,
+      };
+    }
   }
 
   private mapToStaffAccountDto(staff: any): StaffAccountDto {

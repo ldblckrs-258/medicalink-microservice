@@ -49,4 +49,14 @@ export class StaffsController {
   async getStats(): Promise<StaffStatsDto> {
     return this.staffsService.getStats();
   }
+
+  @MessagePattern('staffs.assignPermissions')
+  async assignPermissions(
+    @Payload() payload: { userId: string; role?: string },
+  ): Promise<{ success: boolean; message: string }> {
+    return this.staffsService.assignPermissionsToUser(
+      payload.userId,
+      payload.role,
+    );
+  }
 }

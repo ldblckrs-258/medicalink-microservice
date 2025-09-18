@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SpecialtiesService } from './specialties.service';
 import {
@@ -9,7 +9,6 @@ import {
   SpecialtyPaginatedResponseDto,
   SpecialtyPublicPaginatedResponseDto,
   SpecialtyWithInfoSectionsResponseDto,
-  SpecialtyPublicResponseDto,
   CreateSpecialtyInfoSectionDto,
   UpdateSpecialtyInfoSectionDto,
   SpecialtyInfoSectionResponseDto,

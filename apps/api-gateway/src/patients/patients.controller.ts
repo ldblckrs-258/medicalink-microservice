@@ -15,7 +15,9 @@ import {
   CreatePatientDto,
   UpdatePatientDto,
   PaginationDto,
-  Roles,
+  RequireReadPermission,
+  RequireWritePermission,
+  RequireDeletePermission,
   CurrentUser,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
@@ -27,7 +29,7 @@ export class PatientsController {
     private readonly microserviceService: MicroserviceService,
   ) {}
 
-  @Roles('ADMIN', 'DOCTOR')
+  @RequireWritePermission('patients')
   @Post()
   async create(
     @Body() createPatientDto: CreatePatientDto,
@@ -43,7 +45,7 @@ export class PatientsController {
     );
   }
 
-  @Roles('ADMIN', 'DOCTOR')
+  @RequireReadPermission('patients')
   @Get()
   async findAll(@Query() paginationDto: PaginationDto): Promise<PatientDto[]> {
     return this.microserviceService.sendWithTimeout<PatientDto[]>(
@@ -54,7 +56,7 @@ export class PatientsController {
     );
   }
 
-  @Roles('ADMIN', 'DOCTOR')
+  @RequireReadPermission('patients')
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<PatientDto> {
     return this.microserviceService.sendWithTimeout<PatientDto>(
@@ -64,7 +66,7 @@ export class PatientsController {
     );
   }
 
-  @Roles('ADMIN', 'DOCTOR')
+  @RequireWritePermission('patients')
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -82,7 +84,7 @@ export class PatientsController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireDeletePermission('patients')
   @Delete(':id')
   async remove(
     @Param('id') id: string,

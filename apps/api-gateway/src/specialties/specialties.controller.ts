@@ -8,9 +8,11 @@ import {
   Post,
   Patch,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  Public,
   CreateSpecialtyDto,
   UpdateSpecialtyDto,
   SpecialtyQueryDto,
@@ -19,11 +21,12 @@ import {
   CreateSpecialtyInfoSectionDto,
   UpdateSpecialtyInfoSectionDto,
   SpecialtyInfoSectionResponseDto,
-  Roles,
-  Public,
+  RequireReadPermission,
+  RequireWritePermission,
+  RequireDeletePermission,
+  RequirePermission,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
-
 @Controller('specialties')
 export class SpecialtiesController {
   constructor(
@@ -49,7 +52,7 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireReadPermission('specialties')
   @Get()
   findAll(@Query() query: SpecialtyQueryDto) {
     return this.microserviceService.sendWithTimeout(
@@ -72,16 +75,6 @@ export class SpecialtiesController {
   }
 
   @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string): Promise<SpecialtyResponseDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
-      this.providerDirectoryClient,
-      'specialties.findOne',
-      id,
-    );
-  }
-
-  @Public()
   @Get('public/:slug')
   findBySlug(
     @Param('slug') slug: string,
@@ -93,7 +86,17 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequirePermission('specialties', 'read')
+  @Get(':id')
+  findOne(@Param('id') id: string): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.findOne',
+      id,
+    );
+  }
+
+  @RequireReadPermission('specialties')
   @Get(':specialtyId/info-sections')
   findInfoSectionsBySpecialtyId(
     @Param('specialtyId') specialtyId: string,
@@ -107,7 +110,7 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('specialties')
   @Post('info-sections')
   createInfoSection(
     @Body() createInfoSectionDto: CreateSpecialtyInfoSectionDto,
@@ -119,7 +122,7 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('specialties')
   @Patch('info-sections/:id')
   updateInfoSection(
     @Param('id') id: string,
@@ -135,7 +138,7 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireDeletePermission('specialties')
   @Delete('info-sections/:id')
   deleteInfoSection(
     @Param('id') id: string,
@@ -147,7 +150,7 @@ export class SpecialtiesController {
     );
   }
 
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('specialties')
   @Post()
   create(
     @Body() createSpecialtyDto: CreateSpecialtyDto,
@@ -160,7 +163,7 @@ export class SpecialtiesController {
   }
 
   // Admin only - update specialty
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireWritePermission('specialties')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -177,7 +180,7 @@ export class SpecialtiesController {
   }
 
   // Admin only - delete specialty
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @RequireDeletePermission('specialties')
   @Delete(':id')
   remove(@Param('id') id: string): Promise<SpecialtyResponseDto> {
     return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
