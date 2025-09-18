@@ -9,6 +9,7 @@ import {
 } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
 import { AuthVersionService } from '../auth-version/auth-version.service';
+import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
   CreateStaffDto,
@@ -26,6 +27,7 @@ export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authVersionService: AuthVersionService,
+    private readonly permissionAssignmentService: PermissionAssignmentService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -155,6 +157,20 @@ export class AuthService {
     };
 
     const staff = await this.authRepository.create(staffData);
+
+    // 🆕 Auto-assign permissions based on role
+    try {
+      await this.permissionAssignmentService.assignPermissionsToNewUser(
+        staff.id,
+        staff.role,
+      );
+    } catch (error) {
+      // Log error but don't fail the staff creation
+      console.error(
+        `Failed to assign permissions to staff ${staff.email}:`,
+        error,
+      );
+    }
 
     return staff;
   }

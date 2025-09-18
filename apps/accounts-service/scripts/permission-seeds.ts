@@ -7,6 +7,8 @@ config({ path: resolve(__dirname, '../../../.env') });
 
 const prisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL,
+  log: ['error', 'warn'],
+  errorFormat: 'pretty',
 });
 
 // Core permissions mapping based on microservice resources
@@ -54,6 +56,11 @@ const CORE_PERMISSIONS = [
     action: 'delete',
     description: 'Delete patient records',
   },
+  {
+    resource: 'patients',
+    action: 'manage',
+    description: 'Full patient management access',
+  },
 
   // Appointments Management (Booking Service)
   {
@@ -99,6 +106,11 @@ const CORE_PERMISSIONS = [
     action: 'delete',
     description: 'Delete doctor profiles',
   },
+  {
+    resource: 'doctors',
+    action: 'manage',
+    description: 'Full doctor management access',
+  },
 
   {
     resource: 'specialties',
@@ -115,6 +127,11 @@ const CORE_PERMISSIONS = [
     resource: 'specialties',
     action: 'delete',
     description: 'Delete specialties',
+  },
+  {
+    resource: 'specialties',
+    action: 'manage',
+    description: 'Full specialties management access',
   },
 
   {
@@ -137,6 +154,11 @@ const CORE_PERMISSIONS = [
     action: 'delete',
     description: 'Delete work locations',
   },
+  {
+    resource: 'work-locations',
+    action: 'manage',
+    description: 'Full work locations management access',
+  },
 
   {
     resource: 'schedules',
@@ -158,6 +180,11 @@ const CORE_PERMISSIONS = [
     action: 'delete',
     description: 'Delete doctor schedules',
   },
+  {
+    resource: 'schedules',
+    action: 'manage',
+    description: 'Full doctor schedules management access',
+  },
 
   // Content Management
   { resource: 'blogs', action: 'create', description: 'Create blog posts' },
@@ -165,6 +192,11 @@ const CORE_PERMISSIONS = [
   { resource: 'blogs', action: 'update', description: 'Update blog posts' },
   { resource: 'blogs', action: 'delete', description: 'Delete blog posts' },
   { resource: 'blogs', action: 'publish', description: 'Publish blog posts' },
+  {
+    resource: 'blogs',
+    action: 'manage',
+    description: 'Full blog management access',
+  },
 
   {
     resource: 'questions',
@@ -183,6 +215,11 @@ const CORE_PERMISSIONS = [
     description: 'Delete Q&A questions',
   },
   { resource: 'questions', action: 'answer', description: 'Answer questions' },
+  {
+    resource: 'questions',
+    action: 'manage',
+    description: 'Full Q&A management access',
+  },
 
   // Notifications
   {
@@ -241,31 +278,30 @@ const ROLE_PERMISSION_MAPPING = {
     'system:admin',
     'permissions:manage',
     'groups:manage',
-    'staff:read',
     'staff:manage',
-    'patients:*',
+    'patients:manage',
     'appointments:manage',
-    'doctors:*',
-    'specialties:*',
-    'work-locations:*',
-    'schedules:*',
-    'blogs:*',
-    'questions:*',
-    'notifications:*',
+    'doctors:manage',
+    'specialties:manage',
+    'work-locations:manage',
+    'schedules:manage',
+    'blogs:manage',
+    'questions:manage',
+    'notifications:manage',
   ],
   ADMIN: [
     // Management access without system admin
     'staff:read',
     'staff:update',
-    'patients:*',
+    'patients:manage',
     'appointments:manage',
-    'doctors:*',
+    'doctors:manage',
     'specialties:read',
     'specialties:update',
-    'work-locations:*',
-    'schedules:*',
-    'blogs:*',
-    'questions:*',
+    'work-locations:manage',
+    'schedules:manage',
+    'blogs:manage',
+    'questions:manage',
     'notifications:send',
     'notifications:read',
   ],
@@ -291,21 +327,48 @@ export async function seedPermissions() {
   console.log('🌱 Seeding permissions...');
 
   try {
-    // 1. Create core permissions
+    // Test database connection first
+    console.log('Testing database connection...');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+
+    // 1. Create core permissions in batches
     console.log('Creating core permissions...');
-    for (const permission of CORE_PERMISSIONS) {
-      await prisma.permission.upsert({
-        where: {
-          resource_action: {
-            resource: permission.resource,
-            action: permission.action,
-          },
-        },
-        update: {
-          description: permission.description,
-        },
-        create: permission,
-      });
+    const batchSize = 10;
+    for (let i = 0; i < CORE_PERMISSIONS.length; i += batchSize) {
+      const batch = CORE_PERMISSIONS.slice(i, i + batchSize);
+
+      for (const permission of batch) {
+        try {
+          await prisma.permission.upsert({
+            where: {
+              resource_action: {
+                resource: permission.resource,
+                action: permission.action,
+              },
+            },
+            update: {
+              description: permission.description,
+            },
+            create: permission,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to create permission ${permission.resource}:${permission.action}:`,
+            error.message,
+          );
+          // Continue with next permission instead of failing completely
+        }
+      }
+
+      console.log(
+        `✅ Processed ${Math.min(i + batchSize, CORE_PERMISSIONS.length)}/${CORE_PERMISSIONS.length} permissions`,
+      );
+
+      // Small delay between batches to avoid overwhelming the database
+      if (i + batchSize < CORE_PERMISSIONS.length) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
 
     // 2. Create default groups
@@ -340,52 +403,30 @@ export async function seedPermissions() {
       for (const permissionPattern of permissions) {
         const [resource, action] = permissionPattern.split(':');
 
-        if (action === '*') {
-          // Assign all permissions for this resource
-          const resourcePermissions = await prisma.permission.findMany({
-            where: { resource },
-          });
+        // Assign specific permission (no more wildcard support)
+        const permission = await prisma.permission.findUnique({
+          where: {
+            resource_action: { resource, action },
+          },
+        });
 
-          for (const permission of resourcePermissions) {
-            await prisma.groupPermission.upsert({
-              where: {
-                groupId_permissionId: {
-                  groupId: group.id,
-                  permissionId: permission.id,
-                },
-              },
-              update: {},
-              create: {
+        if (permission) {
+          await prisma.groupPermission.upsert({
+            where: {
+              groupId_permissionId: {
                 groupId: group.id,
                 permissionId: permission.id,
-                effect: 'ALLOW',
               },
-            });
-          }
-        } else {
-          // Assign specific permission
-          const permission = await prisma.permission.findUnique({
-            where: {
-              resource_action: { resource, action },
+            },
+            update: {},
+            create: {
+              groupId: group.id,
+              permissionId: permission.id,
+              effect: 'ALLOW',
             },
           });
-
-          if (permission) {
-            await prisma.groupPermission.upsert({
-              where: {
-                groupId_permissionId: {
-                  groupId: group.id,
-                  permissionId: permission.id,
-                },
-              },
-              update: {},
-              create: {
-                groupId: group.id,
-                permissionId: permission.id,
-                effect: 'ALLOW',
-              },
-            });
-          }
+        } else {
+          console.warn(`Permission not found: ${resource}:${action}`);
         }
       }
     }

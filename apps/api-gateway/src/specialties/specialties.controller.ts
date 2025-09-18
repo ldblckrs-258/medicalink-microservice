@@ -8,6 +8,7 @@ import {
   Post,
   Patch,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -23,6 +24,7 @@ import {
   RequireReadPermission,
   RequireWritePermission,
   RequireDeletePermission,
+  RequirePermission,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 @Controller('specialties')
@@ -73,16 +75,6 @@ export class SpecialtiesController {
   }
 
   @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string): Promise<SpecialtyResponseDto> {
-    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
-      this.providerDirectoryClient,
-      'specialties.findOne',
-      id,
-    );
-  }
-
-  @Public()
   @Get('public/:slug')
   findBySlug(
     @Param('slug') slug: string,
@@ -91,6 +83,16 @@ export class SpecialtiesController {
       this.providerDirectoryClient,
       'specialties.findBySlug',
       slug,
+    );
+  }
+
+  @RequirePermission('specialties', 'read')
+  @Get(':id')
+  findOne(@Param('id') id: string): Promise<SpecialtyResponseDto> {
+    return this.microserviceService.sendWithTimeout<SpecialtyResponseDto>(
+      this.providerDirectoryClient,
+      'specialties.findOne',
+      id,
     );
   }
 
