@@ -19,6 +19,11 @@ export interface PermissionContext {
   doctorId?: string;
   locationId?: string;
   appointmentId?: string;
+  targetUserId?: string;
+  targetRole?: string;
+  isSelfUpdate?: boolean;
+  resourceId?: string;
+  patientId?: string;
   [key: string]: any;
 }
 
@@ -86,7 +91,7 @@ export class PermissionGuard implements CanActivate {
             `User ${user.email} denied access - missing permission: ${requirement.resource}:${requirement.action}`,
           );
           throw new ForbiddenException(
-            `Insufficient permissions. Required: ${requirement.resource}:${requirement.action}`,
+            `You don't have permission to ${requirement.action} ${requirement.resource}.`,
           );
         }
       }
@@ -119,11 +124,6 @@ export class PermissionGuard implements CanActivate {
       if (params.id) {
         // Generic ID parameter
         context.resourceId = params.id;
-        // For staff endpoints, params.id is usually the targetUserId
-        if (request.url.includes('/staff')) {
-          context.targetUserId = params.id;
-          context.isSelfUpdate = params.id === user.sub;
-        }
       }
       if (params.userId) {
         context.targetUserId = params.userId;
@@ -162,6 +162,10 @@ export class PermissionGuard implements CanActivate {
       }
       if (body.doctorId) {
         context.doctorId = body.doctorId;
+      }
+      // For staff creation/update, targetUserId might be in body
+      if (body.id) {
+        context.targetUserId = body.id;
       }
     }
 

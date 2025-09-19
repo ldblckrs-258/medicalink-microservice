@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: medicalink-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+      TZ: "UTC"
+    ports:
+      - "54321:5432"
+    volumes:
+      - medicalink_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:latest
+    container_name: medicalink-redis
+    # (A) Using named volume (persistent storage):
+    volumes:
+      - medicalink_redis:/data
+    # (B) Using tmpfs (in-memory storage, data lost on container restart):
+    # tmpfs:
+    #   - /data
+    command: [
+      "redis-server",
+      "--appendonly", "yes",
+      "--appendfsync", "everysec",
+      "--save", "900", "1",
+      "--save", "300", "10",
+      "--save", "60", "10000",
+    ]
+    ports:
+      - "15796:6379"
+    # Authentication (uncomment to enable):
+    # command: >
+    #   sh -c "redis-server --requirepass yourStrongPass
+    #          --appendonly yes --appendfsync everysec
+    #          --save 900 1 --save 300 10 --save 60 10000"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  medicalink_db:
+  medicalink_redis:

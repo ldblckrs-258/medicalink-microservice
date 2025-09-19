@@ -69,7 +69,7 @@ export class PermissionAssignmentService {
 
       result.success = true;
       this.logger.log(
-        `✅ Permissions assigned successfully for user ${userId}: ${result.assignedPermissions.length} permissions`,
+        `Permissions assigned successfully for user ${userId}: ${result.assignedPermissions.length} permissions`,
       );
     } catch (error) {
       result.success = false;

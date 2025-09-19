@@ -8,7 +8,6 @@ import {
   Post,
   Patch,
   Query,
-  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {

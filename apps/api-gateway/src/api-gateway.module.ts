@@ -11,6 +11,7 @@ import { ApiGatewayService } from './api-gateway.service';
 import { AuthController } from './auth/auth.controller';
 import { PatientsController } from './patients/patients.controller';
 import { StaffsController } from './staffs/staffs.controller';
+import { DoctorsController } from './doctors/doctors.controller';
 import { SpecialtiesController } from './specialties/specialties.controller';
 import { WorkLocationsController } from './work-locations/work-locations.controller';
 import { HealthController } from './health/health.controller';
@@ -121,11 +122,12 @@ import { MorganMiddleware } from './middleware';
   controllers: [
     ApiGatewayController,
     AuthController,
-    PatientsController,
+    PermissionsController,
     StaffsController,
+    DoctorsController,
     SpecialtiesController,
     WorkLocationsController,
-    PermissionsController,
+    PatientsController,
     HealthController,
   ],
   providers: [

@@ -4,10 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  schemas   = ["booking"]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["booking"]
 }
 
 enum AppointmentStatus {
@@ -19,6 +18,29 @@ enum AppointmentStatus {
   NO_SHOW
   COMPLETED
 
+  @@schema("booking")
+}
+
+model Patient {
+  id           String         @id @default(cuid()) @db.VarChar(27)
+  fullName     String         @map("full_name") @db.VarChar(120)
+  email        String?        @unique @db.VarChar(255)
+  phone        String?        @db.VarChar(32)
+  isMale       Boolean?       @map("is_male")
+  dateOfBirth  DateTime?      @map("date_of_birth") @db.Date
+  addressLine  String?        @map("address_line") @db.VarChar(255)
+  district     String?        @db.VarChar(100)
+  province     String?        @db.VarChar(100)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  Appointment  Appointment[]
+  ScheduleHold ScheduleHold[]
+
+  // Relations
+  @@index([fullName], map: "idx_patients_full_name")
+  @@index([phone], map: "idx_patients_phone")
+  @@map("patients")
   @@schema("booking")
 }
 
@@ -41,6 +63,7 @@ model Appointment {
   cancelledAt DateTime?         @map("cancelled_at") @db.Timestamptz(6)
   completedAt DateTime?         @map("completed_at") @db.Timestamptz(6)
 
+  patient           Patient            @relation(fields: [patientId], references: [id])
   appointmentEvents AppointmentEvent[]
 
   @@unique([scheduleId, patientId])
@@ -73,6 +96,8 @@ model ScheduleHold {
   expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
   status     String   @default("HELD") @db.VarChar(16)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  patient Patient @relation(fields: [patientId], references: [id])
 
   @@index([scheduleId], map: "idx_schedule_holds_schedule")
   @@index([patientId], map: "idx_schedule_holds_patient")

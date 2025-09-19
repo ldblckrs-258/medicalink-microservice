@@ -43,7 +43,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ResolvePromisesInterceptor());
   app.useGlobalFilters(new GlobalExceptionFilter());
-  // app.enableCors();
+  app.enableCors();
   app.setGlobalPrefix('api');
 
   const port = process.env.API_GATEWAY_PORT || 3000;

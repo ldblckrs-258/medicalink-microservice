@@ -6,7 +6,7 @@ export interface UserPermissionSnapshot {
   userId: string;
   tenant: string;
   version: number;
-  permissions: string[]; // Array of "resource:action" strings
+  permissions: string[];
 }
 
 export interface PermissionCondition {
@@ -267,11 +267,11 @@ export class PermissionRepository {
     context?: Record<string, any>,
   ): boolean {
     if (!conditions || conditions.length === 0) {
-      return true; // No conditions means permission applies
+      return true;
     }
 
     if (!context) {
-      return false; // Conditions exist but no context provided
+      return false;
     }
 
     // All conditions must be satisfied

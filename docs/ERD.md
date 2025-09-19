@@ -23,30 +23,6 @@ Table staff_accounts {
   Note: 'Tài khoản nhân sự; DOCTOR sẽ map sang Provider.doctors qua staff_account_id (logic, không FK cross-DB).'
 }
 
-Table patients {
-  id              varchar(27) [pk, not null, note: 'cuid string, generated in app']
-  full_name       varchar(120) [not null]
-  email           varchar(255) [unique] // optional
-  phone           varchar(32)
-  is_male         boolean
-  date_of_birth   date
-  national_id     varchar(50) // optional
-  insurance_no    varchar(50) // optional
-  address_line1   varchar(255)
-  address_line2   varchar(255)
-  city            varchar(100)
-  province        varchar(100)
-  postal_code     varchar(20)
-  created_at      timestamptz [not null, default: `now()`]
-  updated_at      timestamptz [not null, default: `now()`]
-  deleted_at      timestamptz
-  indexes {
-    (full_name)
-    (phone)
-  }
-  Note: 'Hồ sơ bệnh nhân; được tham chiếu logic từ Booking/Content theo patients.id.'
-}
-
 /////////////////////////////////////////////////////
 // MICROSERVICE 2 — PROVIDER DIRECTORY (PostgreSQL)
 /////////////////////////////////////////////////////
@@ -225,6 +201,26 @@ Table schedule_holds {
     (expires_at)
   }
   Note: 'Giữ chỗ tạm thời (TTL) trong quá trình đặt lịch theo mô hình Saga.'
+}
+
+Table patients {
+  id              varchar(27) [pk, not null, note: 'cuid string, generated in app']
+  full_name       varchar(120) [not null]
+  email           varchar(255) [unique] // optional
+  phone           varchar(32)
+  is_male         boolean
+  date_of_birth   date
+  address_line    varchar(255)
+  district        varchar(100)
+  province        varchar(100)
+  created_at      timestamptz [not null, default: `now()`]
+  updated_at      timestamptz [not null, default: `now()`]
+  deleted_at      timestamptz
+  indexes {
+    (full_name)
+    (phone)
+  }
+  Note: 'Hồ sơ bệnh nhân; được tham chiếu logic từ Booking/Content theo patients.id.'
 }
 
 /////////////////////////////////////////////////////

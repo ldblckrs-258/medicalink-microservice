@@ -20,20 +20,19 @@ import {
   RequireReadPermission,
   RequireWritePermission,
   RequireDeletePermission,
-  RequireUserManagement,
   CurrentUser,
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
-@Controller('staffs')
-export class StaffsController {
+@Controller('doctors')
+export class DoctorsController {
   constructor(
     @Inject('ACCOUNTS_SERVICE') private readonly accountsClient: ClientProxy,
     private readonly microserviceService: MicroserviceService,
   ) {}
 
-  @RequireReadPermission('staff')
+  @RequireReadPermission('doctor-accounts')
   @Get()
   async findAll(
     @Query() query: StaffQueryDto,
@@ -41,76 +40,73 @@ export class StaffsController {
   ): Promise<StaffPaginatedResponseDto> {
     return this.microserviceService.sendWithTimeout<StaffPaginatedResponseDto>(
       this.accountsClient,
-      'staffs.findAll',
+      'doctor-accounts.findAll',
       query,
       { timeoutMs: 15000 },
     );
   }
 
-  @RequireReadPermission('staff')
+  @RequireReadPermission('doctor-accounts')
   @Get('stats')
   async getStats(): Promise<StaffStatsDto> {
     return this.microserviceService.sendWithTimeout<StaffStatsDto>(
       this.accountsClient,
-      'staffs.stats',
+      'doctor-accounts.stats',
       {},
     );
   }
 
-  @RequireReadPermission('staff')
+  @RequireReadPermission('doctor-accounts')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
     @CurrentUser() _user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
-    const staff =
-      await this.microserviceService.sendWithTimeout<StaffAccountDto>(
-        this.accountsClient,
-        'staffs.findOne',
-        id,
-      );
-
-    return staff;
+    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+      this.accountsClient,
+      'doctor-accounts.findOne',
+      id,
+    );
   }
 
-  @RequireUserManagement()
+  @RequireWritePermission('doctor-accounts')
   @Post()
   async create(
-    @Body() createStaffDto: CreateStaffDto,
+    @Body() createDoctorDto: CreateStaffDto,
     @CurrentUser() _user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
     return this.microserviceService.sendWithTimeout<StaffAccountDto>(
       this.accountsClient,
-      'staffs.create',
-      createStaffDto,
+      'doctor-accounts.create',
+      createDoctorDto,
       { timeoutMs: 12000 },
     );
   }
 
-  @RequireWritePermission('staff')
+  @RequireWritePermission('doctor-accounts')
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateStaffDto: UpdateStaffDto,
+    @Body() updateDoctorDto: UpdateStaffDto,
     @CurrentUser() _user: JwtPayloadDto,
   ): Promise<StaffAccountDto> {
     return this.microserviceService.sendWithTimeout<StaffAccountDto>(
       this.accountsClient,
-      'staffs.update',
+      'doctor-accounts.update',
       {
         id,
-        data: updateStaffDto,
+        data: updateDoctorDto,
       },
       { timeoutMs: 12000 },
     );
   }
 
-  @RequireDeletePermission('staff')
+  @RequireDeletePermission('doctor-accounts')
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<StaffAccountDto> {
     return this.microserviceService.sendWithTimeout<StaffAccountDto>(
       this.accountsClient,
-      'staffs.remove',
+      'doctor-accounts.remove',
       id,
       { timeoutMs: 12000 },
     );

@@ -89,9 +89,7 @@ export class PermissionService {
     );
 
     if (!hasPermission) {
-      throw new Error(
-        `Insufficient permissions. Required: ${resource}:${action}`,
-      );
+      throw new Error(`You do not have permission to ${action} ${resource}.`);
     }
   }
 

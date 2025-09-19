@@ -115,9 +115,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     res.setHeader('X-Request-Id', requestId);
 
-    const stack = isError(exception) ? exception.stack : undefined;
+    const stack = isError(exception)
+      ? exception.stack?.slice(0, 300) + '...'
+      : undefined;
+
     const logMsg = `[${requestId}] ${req.method} ${req.url} -> ${n.status} ${this.statusText(n.status)} | ${n.message}`;
-    this.logger.error(logMsg, this.isProd ? undefined : stack);
+    this.logger.debug(logMsg, this.isProd ? undefined : stack);
 
     res.status(n.status).json(payload);
   }

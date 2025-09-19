@@ -1,8 +1,8 @@
 import { PrismaClient } from '../prisma/generated/client';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { Logger } from '@nestjs/common';
 
-// Load environment variables from root directory
 config({ path: resolve(__dirname, '../../../.env') });
 
 const prisma = new PrismaClient({
@@ -24,22 +24,61 @@ const CORE_PERMISSIONS = [
   { resource: 'profile', action: 'read', description: 'View own profile' },
   { resource: 'profile', action: 'update', description: 'Update own profile' },
 
-  // Staff Management (Accounts Service)
+  // Staff Management (Accounts Service) - Only for admin/super admin management
   {
     resource: 'staff',
     action: 'create',
-    description: 'Create new staff account',
+    description: 'Create new admin/superadmin staff account',
   },
-  { resource: 'staff', action: 'read', description: 'View staff accounts' },
-  { resource: 'staff', action: 'update', description: 'Update staff accounts' },
-  { resource: 'staff', action: 'delete', description: 'Delete staff accounts' },
+  {
+    resource: 'staff',
+    action: 'read',
+    description: 'View admin/superadmin staff accounts',
+  },
+  {
+    resource: 'staff',
+    action: 'update',
+    description: 'Update admin/superadmin staff accounts',
+  },
+  {
+    resource: 'staff',
+    action: 'delete',
+    description: 'Delete admin/superadmin staff accounts',
+  },
   {
     resource: 'staff',
     action: 'manage',
-    description: 'Full staff management access',
+    description: 'Full admin/superadmin staff management access',
   },
 
-  // Patient Management (Accounts Service)
+  // Doctor Management
+  {
+    resource: 'doctors',
+    action: 'create',
+    description: 'Create new doctor account and profile',
+  },
+  {
+    resource: 'doctors',
+    action: 'read',
+    description: 'View doctor account and profiles',
+  },
+  {
+    resource: 'doctors',
+    action: 'update',
+    description: 'Update doctor account and profiles',
+  },
+  {
+    resource: 'doctors',
+    action: 'delete',
+    description: 'Delete doctor accounts and profiles',
+  },
+  {
+    resource: 'doctors',
+    action: 'manage',
+    description: 'Full doctor management access',
+  },
+
+  // Patient Management (Booking Service)
   {
     resource: 'patients',
     action: 'create',
@@ -257,7 +296,7 @@ const DEFAULT_GROUPS = [
   {
     name: 'super_admin',
     description: 'Super Administrator with full system access',
-    tenantId: 'global', // Use 'global' instead of null
+    tenantId: 'global',
   },
   {
     name: 'admin',
@@ -274,11 +313,11 @@ const DEFAULT_GROUPS = [
 // Role-based permission mapping
 const ROLE_PERMISSION_MAPPING = {
   SUPER_ADMIN: [
-    // Full system access
     'system:admin',
     'permissions:manage',
     'groups:manage',
     'staff:manage',
+    'doctors:manage',
     'patients:manage',
     'appointments:manage',
     'doctors:manage',
@@ -290,9 +329,8 @@ const ROLE_PERMISSION_MAPPING = {
     'notifications:manage',
   ],
   ADMIN: [
-    // Management access without system admin
     'staff:read',
-    'staff:update',
+    'doctors:manage',
     'patients:manage',
     'appointments:manage',
     'doctors:manage',
@@ -306,7 +344,6 @@ const ROLE_PERMISSION_MAPPING = {
     'notifications:read',
   ],
   DOCTOR: [
-    // Doctor-specific access
     'profile:read',
     'profile:update',
     'patients:read',
@@ -315,7 +352,7 @@ const ROLE_PERMISSION_MAPPING = {
     'appointments:update',
     'doctors:read',
     'schedules:read',
-    'schedules:update', // Own schedules only
+    'schedules:update',
     'blogs:read',
     'questions:read',
     'questions:answer',
@@ -324,16 +361,16 @@ const ROLE_PERMISSION_MAPPING = {
 };
 
 export async function seedPermissions() {
-  console.log('🌱 Seeding permissions...');
+  Logger.log('Seeding permissions...');
 
   try {
     // Test database connection first
-    console.log('Testing database connection...');
+    Logger.log('Testing database connection...');
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    Logger.log('Database connected successfully');
 
     // 1. Create core permissions in batches
-    console.log('Creating core permissions...');
+    Logger.log('Creating core permissions...');
     const batchSize = 10;
     for (let i = 0; i < CORE_PERMISSIONS.length; i += batchSize) {
       const batch = CORE_PERMISSIONS.slice(i, i + batchSize);
@@ -353,7 +390,7 @@ export async function seedPermissions() {
             create: permission,
           });
         } catch (error) {
-          console.error(
+          Logger.error(
             `Failed to create permission ${permission.resource}:${permission.action}:`,
             error.message,
           );
@@ -361,8 +398,8 @@ export async function seedPermissions() {
         }
       }
 
-      console.log(
-        `✅ Processed ${Math.min(i + batchSize, CORE_PERMISSIONS.length)}/${CORE_PERMISSIONS.length} permissions`,
+      Logger.log(
+        `Processed ${Math.min(i + batchSize, CORE_PERMISSIONS.length)}/${CORE_PERMISSIONS.length} permissions`,
       );
 
       // Small delay between batches to avoid overwhelming the database
@@ -372,7 +409,7 @@ export async function seedPermissions() {
     }
 
     // 2. Create default groups
-    console.log('Creating default groups...');
+    Logger.log('Creating default groups...');
     const createdGroups: Record<string, any> = {};
     for (const group of DEFAULT_GROUPS) {
       const createdGroup = await prisma.group.upsert({
@@ -391,7 +428,7 @@ export async function seedPermissions() {
     }
 
     // 3. Assign permissions to groups
-    console.log('Assigning permissions to groups...');
+    Logger.log('Assigning permissions to groups...');
     for (const [roleName, permissions] of Object.entries(
       ROLE_PERMISSION_MAPPING,
     )) {
@@ -426,30 +463,30 @@ export async function seedPermissions() {
             },
           });
         } else {
-          console.warn(`Permission not found: ${resource}:${action}`);
+          Logger.warn(`Permission not found: ${resource}:${action}`);
         }
       }
     }
 
-    console.log('✅ Permissions seeded successfully!');
+    Logger.log('Permissions seeded successfully!');
 
     // Summary
     const permissionCount = await prisma.permission.count();
     const groupCount = await prisma.group.count();
     const groupPermissionCount = await prisma.groupPermission.count();
 
-    console.log(`📊 Summary:`);
-    console.log(`  - Permissions: ${permissionCount}`);
-    console.log(`  - Groups: ${groupCount}`);
-    console.log(`  - Group Permissions: ${groupPermissionCount}`);
+    Logger.log(`Summary:`);
+    Logger.log(`  - Permissions: ${permissionCount}`);
+    Logger.log(`  - Groups: ${groupCount}`);
+    Logger.log(`  - Group Permissions: ${groupPermissionCount}`);
   } catch (error) {
-    console.error('❌ Error seeding permissions:', error);
+    Logger.error('Error seeding permissions:', error);
     throw error;
   }
 }
 
 export async function migrateExistingUsers() {
-  console.log('🔄 Migrating existing users to permission system...');
+  Logger.log('Migrating existing users to permission system...');
 
   try {
     // Get all existing staff accounts
@@ -457,7 +494,7 @@ export async function migrateExistingUsers() {
       where: { deletedAt: null },
     });
 
-    console.log(`Found ${staffAccounts.length} staff accounts to migrate`);
+    Logger.log(`Found ${staffAccounts.length} staff accounts to migrate`);
 
     for (const staff of staffAccounts) {
       // 1. Create auth version record
@@ -496,11 +533,11 @@ export async function migrateExistingUsers() {
           },
         });
 
-        console.log(
-          `✅ Migrated ${staff.email} (${staff.role}) to group ${groupName}`,
+        Logger.log(
+          `Migrated ${staff.email} (${staff.role}) to group ${groupName}`,
         );
       } else {
-        console.warn(`⚠️  Group not found for role: ${staff.role}`);
+        Logger.warn(`  Group not found for role: ${staff.role}`);
       }
 
       // 3. Add self-update permission for all users (they can update their own profile)
@@ -540,16 +577,16 @@ export async function migrateExistingUsers() {
       }
     }
 
-    console.log('✅ User migration completed!');
+    Logger.log(' User migration completed!');
   } catch (error) {
-    console.error('❌ Error migrating users:', error);
+    Logger.error(' Error migrating users:', error);
     throw error;
   }
 }
 
 // Function to seed context-based permissions for self-updates
 export async function seedSelfUpdatePermissions() {
-  console.log('🔐 Seeding self-update permissions...');
+  Logger.log('Seeding self-update permissions...');
 
   try {
     // Get staff update permission
@@ -563,7 +600,7 @@ export async function seedSelfUpdatePermissions() {
     });
 
     if (!staffUpdatePermission) {
-      console.warn('Staff update permission not found, skipping...');
+      Logger.warn('> Staff update permission not found, skipping...');
       return;
     }
 
@@ -575,7 +612,7 @@ export async function seedSelfUpdatePermissions() {
       },
     });
 
-    console.log(`Found ${adminUsers.length} admin users`);
+    Logger.log(`> Found ${adminUsers.length} admin users`);
 
     // Give each admin permission to update only their own account
     for (const admin of adminUsers) {
@@ -611,12 +648,12 @@ export async function seedSelfUpdatePermissions() {
         },
       });
 
-      console.log(`✅ Added self-update permission for admin: ${admin.email}`);
+      Logger.log(`Added self-update permission for admin: ${admin.email}`);
     }
 
-    console.log('✅ Self-update permissions seeded successfully!');
+    Logger.log('> Self-update permissions seeded successfully!');
   } catch (error) {
-    console.error('❌ Error seeding self-update permissions:', error);
+    Logger.error('> Error seeding self-update permissions:', error);
     throw error;
   }
 }
@@ -628,7 +665,7 @@ export async function main() {
     await migrateExistingUsers();
     await seedSelfUpdatePermissions();
   } catch (error) {
-    console.error('Error in seed script:', error);
+    Logger.error('Error in seed script:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

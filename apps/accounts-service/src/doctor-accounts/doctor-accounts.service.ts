@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
-import { StaffRepository } from './staff.repository';
+import { StaffRepository } from '../staffs/staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffRole } from '../../prisma/generated/client';
 import {
@@ -13,8 +13,8 @@ import {
 } from '@app/contracts';
 
 @Injectable()
-export class StaffsService {
-  private readonly logger = new Logger(StaffsService.name);
+export class DoctorAccountsService {
+  private readonly logger = new Logger(DoctorAccountsService.name);
 
   constructor(
     private readonly staffRepository: StaffRepository,
@@ -22,11 +22,9 @@ export class StaffsService {
   ) {}
 
   async findAll(query: StaffQueryDto): Promise<StaffPaginatedResponseDto> {
-    const staffQuery = {
-      ...query,
-      role: query.role || StaffRole.ADMIN,
-    };
-    const { data, total } = await this.staffRepository.findMany(staffQuery);
+    // Force filter to only show doctors
+    const doctorQuery = { ...query, role: 'DOCTOR' as StaffRole };
+    const { data, total } = await this.staffRepository.findMany(doctorQuery);
     const { skip = 0, limit = 10 } = query;
 
     return {
@@ -45,7 +43,13 @@ export class StaffsService {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
-      throw new NotFoundError('Staff member not found', {
+      throw new NotFoundError('Doctor not found', {
+        code: ErrorCode.USER_NOT_FOUND,
+      });
+    }
+
+    if (staff.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found', {
         code: ErrorCode.USER_NOT_FOUND,
       });
     }
@@ -53,14 +57,13 @@ export class StaffsService {
     return this.mapToStaffAccountDto(staff);
   }
 
-  async create(createStaffDto: CreateStaffDto): Promise<StaffAccountDto> {
-    this.logger.log(
-      `Creating new staff: ${createStaffDto.email} (${createStaffDto.role})`,
-    );
+  async create(createDoctorDto: CreateStaffDto): Promise<StaffAccountDto> {
+    this.logger.log(`Creating new doctor account: ${createDoctorDto.email}`);
 
-    // Check if email already exists
+    const doctorData = { ...createDoctorDto, role: StaffRole.DOCTOR };
+
     const existingStaff = await this.staffRepository.findByEmail(
-      createStaffDto.email,
+      doctorData.email,
     );
 
     if (existingStaff) {
@@ -69,51 +72,56 @@ export class StaffsService {
       });
     }
 
-    // Create staff account
-    const staff = await this.staffRepository.create(createStaffDto);
+    const doctor = await this.staffRepository.create(doctorData);
 
     try {
-      // Auto-assign permissions based on role
       const permissionResult =
         await this.permissionAssignmentService.assignPermissionsToNewUser(
-          staff.id,
-          staff.role,
+          doctor.id,
+          StaffRole.DOCTOR,
         );
 
       this.logger.log(
-        `Staff created and permissions assigned: ${staff.email} - ${permissionResult.assignedPermissions.length} permissions`,
+        `Doctor created and permissions assigned: ${doctor.email} - ${permissionResult.assignedPermissions.length} permissions`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to assign permissions to new staff ${staff.email}:`,
+        `Failed to assign permissions to new doctor ${doctor.email}:`,
         error.stack,
       );
 
       this.logger.warn(
-        `Staff ${staff.email} created without permissions. Manual assignment required.`,
+        `Doctor ${doctor.email} created without permissions. Manual assignment required.`,
       );
     }
 
-    return this.mapToStaffAccountDto(staff);
+    return this.mapToStaffAccountDto(doctor);
   }
 
   async update(
     id: string,
-    updateStaffDto: UpdateStaffDto,
+    updateDoctorDto: UpdateStaffDto,
   ): Promise<StaffAccountDto> {
-    // Check if staff exists
-    const existingStaff = await this.staffRepository.findById(id);
+    const existingDoctor = await this.staffRepository.findById(id);
 
-    if (!existingStaff) {
-      throw new NotFoundError('Staff member not found', {
+    if (!existingDoctor) {
+      throw new NotFoundError('Doctor not found', {
         code: ErrorCode.USER_NOT_FOUND,
       });
     }
 
-    // Check if email is being updated and already exists
-    if (updateStaffDto.email && updateStaffDto.email !== existingStaff.email) {
+    if (existingDoctor.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found', {
+        code: ErrorCode.USER_NOT_FOUND,
+      });
+    }
+
+    const doctorData = { ...updateDoctorDto };
+    delete doctorData.role;
+
+    if (doctorData.email && doctorData.email !== existingDoctor.email) {
       const staffWithEmail = await this.staffRepository.findByEmail(
-        updateStaffDto.email,
+        doctorData.email,
       );
 
       if (staffWithEmail) {
@@ -123,46 +131,71 @@ export class StaffsService {
       }
     }
 
-    const staff = await this.staffRepository.update(id, updateStaffDto);
-    return this.mapToStaffAccountDto(staff);
+    const doctor = await this.staffRepository.update(id, doctorData);
+    return this.mapToStaffAccountDto(doctor);
   }
 
   async remove(id: string): Promise<StaffAccountDto> {
-    // Check if staff exists
-    const existingStaff = await this.staffRepository.findById(id);
+    const existingDoctor = await this.staffRepository.findById(id);
 
-    if (!existingStaff) {
-      throw new NotFoundError('Staff member not found', {
+    if (!existingDoctor) {
+      throw new NotFoundError('Doctor not found', {
         code: ErrorCode.USER_NOT_FOUND,
       });
     }
 
-    const staff = await this.staffRepository.softDelete(id);
-    return this.mapToStaffAccountDto(staff);
+    if (existingDoctor.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found', {
+        code: ErrorCode.USER_NOT_FOUND,
+      });
+    }
+
+    const doctor = await this.staffRepository.softDelete(id);
+    return this.mapToStaffAccountDto(doctor);
   }
 
   async getStats(): Promise<StaffStatsDto> {
-    return await this.staffRepository.getStats();
+    const query = { role: StaffRole.DOCTOR };
+    const { total } = await this.staffRepository.findMany(query);
+
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+    return {
+      total,
+      byRole: {
+        DOCTOR: total,
+        ADMIN: 0,
+        SUPER_ADMIN: 0,
+      },
+      recentlyCreated: 0,
+      deleted: 0,
+    };
   }
 
   /**
-   * Manual permission assignment for existing staff
+   * Manual permission assignment for existing doctors
    */
   async assignPermissionsToUser(
     userId: string,
     roleOverride?: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Get staff to determine role
-      const staff = await this.staffRepository.findById(userId);
+      const doctor = await this.staffRepository.findById(userId);
 
-      if (!staff) {
-        throw new NotFoundError('Staff member not found', {
+      if (!doctor) {
+        throw new NotFoundError('Doctor not found', {
           code: ErrorCode.USER_NOT_FOUND,
         });
       }
 
-      const role = roleOverride || staff.role;
+      if (doctor.role !== StaffRole.DOCTOR) {
+        throw new NotFoundError('Doctor not found', {
+          code: ErrorCode.USER_NOT_FOUND,
+        });
+      }
+
+      const role = roleOverride || StaffRole.DOCTOR;
 
       const result =
         await this.permissionAssignmentService.assignPermissionsToNewUser(
@@ -171,7 +204,7 @@ export class StaffsService {
         );
 
       this.logger.log(
-        `Manual permission assignment completed for ${staff.email}: ${result.assignedPermissions.length} permissions`,
+        `Manual permission assignment completed for doctor ${doctor.email}: ${result.assignedPermissions.length} permissions`,
       );
 
       return {
@@ -180,7 +213,7 @@ export class StaffsService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to manually assign permissions to user ${userId}:`,
+        `Failed to manually assign permissions to doctor ${userId}:`,
         error.stack,
       );
 
