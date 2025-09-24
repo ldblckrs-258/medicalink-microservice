@@ -54,10 +54,6 @@ export class StaffsService {
   }
 
   async create(createStaffDto: CreateStaffDto): Promise<StaffAccountDto> {
-    this.logger.log(
-      `Creating new staff: ${createStaffDto.email} (${createStaffDto.role})`,
-    );
-
     // Check if email already exists
     const existingStaff = await this.staffRepository.findByEmail(
       createStaffDto.email,
@@ -73,24 +69,14 @@ export class StaffsService {
     const staff = await this.staffRepository.create(createStaffDto);
 
     try {
-      // Auto-assign permissions based on role
-      const permissionResult =
-        await this.permissionAssignmentService.assignPermissionsToNewUser(
-          staff.id,
-          staff.role,
-        );
-
-      this.logger.log(
-        `Staff created and permissions assigned: ${staff.email} - ${permissionResult.assignedPermissions.length} permissions`,
+      await this.permissionAssignmentService.assignPermissionsToNewUser(
+        staff.id,
+        staff.role,
       );
     } catch (error) {
       this.logger.error(
         `Failed to assign permissions to new staff ${staff.email}:`,
         error.stack,
-      );
-
-      this.logger.warn(
-        `Staff ${staff.email} created without permissions. Manual assignment required.`,
       );
     }
 

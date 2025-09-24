@@ -32,7 +32,7 @@ export class DoctorsController {
     private readonly microserviceService: MicroserviceService,
   ) {}
 
-  @RequireReadPermission('doctor-accounts')
+  @RequireReadPermission('doctors')
   @Get()
   async findAll(
     @Query() query: StaffQueryDto,
@@ -46,7 +46,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireReadPermission('doctor-accounts')
+  @RequireReadPermission('doctors')
   @Get('stats')
   async getStats(): Promise<StaffStatsDto> {
     return this.microserviceService.sendWithTimeout<StaffStatsDto>(
@@ -56,7 +56,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireReadPermission('doctor-accounts')
+  @RequireReadPermission('doctors')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -69,7 +69,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireWritePermission('doctor-accounts')
+  @RequireWritePermission('doctors')
   @Post()
   async create(
     @Body() createDoctorDto: CreateStaffDto,
@@ -83,7 +83,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireWritePermission('doctor-accounts')
+  @RequireWritePermission('doctors')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -101,7 +101,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireDeletePermission('doctor-accounts')
+  @RequireDeletePermission('doctors')
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<StaffAccountDto> {
     return this.microserviceService.sendWithTimeout<StaffAccountDto>(

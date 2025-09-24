@@ -23,20 +23,96 @@ Table staff_accounts {
   Note: 'Tài khoản nhân sự; DOCTOR sẽ map sang Provider.doctors qua staff_account_id (logic, không FK cross-DB).'
 }
 
+Enum "permission_effect" {
+  ALLOW
+  DENY
+}
+
+Table "permissions" {
+  id          varchar(27) [pk, not null, note: 'cuid']
+  resource    varchar(100) [not null] // e.g., appointments, doctors, schedules
+  action      varchar(50)  [not null] // e.g., create, read, update, delete
+  description varchar(255)
+  created_at  timestamptz  [not null, default: `now()`]
+  unique {
+    resource, action
+  }
+}
+
+Table "user_permission" {
+  id          varchar(27) [pk, not null, note: 'cuid']
+  userId      varchar(27) [not null, note: 'ref Accounts.staff_accounts.id (same DB)']
+  permissionId varchar(27) [not null, note: 'ref Accounts.permissions.id (same DB)']
+  effect      permission_effect [not null, default: 'ALLOW']
+  tenantId    varchar(27) // optional, for multi-tenant scenarios
+  conditions  jsonb     // optional, e.g., {"location_id": "loc_123"}
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+  unique {
+    userId, permissionId, tenantId
+  }
+}
+
+Table "groups" {
+  id          varchar(27) [pk, not null, note: 'cuid']
+  name        varchar(100) [not null, unique]
+  description varchar(255)
+  tenantId    varchar(27) // optional, for multi-tenant scenarios
+  is_active   boolean    [not null, default: true]
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+}
+
+Table "user_group" {
+  id        varchar(27) [pk, not null, note: 'cuid']
+  userId    varchar(27) [not null, note: 'ref Accounts.staff_accounts.id (same DB)']
+  groupId   varchar(27) [not null, note: 'ref Accounts.groups.id (same DB)']
+  tenantId  varchar(27) // optional, for multi-tenant scenarios
+  created_at timestamptz [not null, default: `now()`]
+  unique {
+    userId, groupId
+  }
+}
+
+Table "group_permission" {
+  id          varchar(27) [pk, not null, note: 'cuid']
+  groupId     varchar(27) [not null, note: 'ref Accounts.groups.id (same DB)']
+  permissionId varchar(27) [not null, note: 'ref Accounts.permissions.id (same DB)']
+  effect      permission_effect [not null, default: 'ALLOW']
+  conditions  jsonb     // optional, e.g., {"location_id": "loc_123"}
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+  unique {
+    groupId, permissionId
+  }
+}
+
+Table "auth_version" {
+  id          varchar(27) [pk, not null, note: 'cuid']
+  userId      varchar(27) [not null, note: 'ref Accounts.staff_accounts.id (same DB)']
+  version     integer    [not null, default: 1]
+  updated_at  timestamptz [not null, default: `now()`]
+  unique {
+    userId
+  }
+  Note: 'Dùng để invalid token khi thay đổi quyền hoặc mật khẩu.'
+}
+
 /////////////////////////////////////////////////////
 // MICROSERVICE 2 — PROVIDER DIRECTORY (PostgreSQL)
 /////////////////////////////////////////////////////
 
-Table specialties {
+Table specialty {
   id          varchar(27) [pk, not null, note: 'cuid']
   name        varchar(120) [not null, unique]
   slug        varchar(140) [not null, unique]
   description text
+  is_active   boolean      [not null, default: true]
   created_at  timestamptz  [not null, default: `now()`]
   updated_at  timestamptz  [not null, default: `now()`]
 }
 
-Table specialty_info_sections {
+Table specialty_info_section {
   id           varchar(27) [pk, not null, note: 'cuid']
   specialty_id varchar(27) [not null, note: 'ref Provider.specialties.id (same DB)']
   name         varchar(120) [not null]
@@ -49,7 +125,20 @@ Table specialty_info_sections {
   Note: 'Thông tin chi tiết theo section của chuyên khoa; content có thể là HTML/Markdown.'
 }
 
-Table work_locations {
+Table specialty_info_section {
+  id           varchar(27) [pk, not null, note: 'cuid']
+  specialty_id varchar(27) [not null, note: 'ref Provider.specialties.id (same DB)']
+  name         varchar(120) [not null]
+  content      text
+  created_at   timestamptz [not null, default: `now()`]
+  updated_at   timestamptz [not null, default: `now()`]
+  indexes {
+    (specialty_id)
+  }
+  Note: 'Thông tin chi tiết theo section của chuyên khoa; content có thể là HTML/Markdown.'
+}
+
+Table work_location {
   id          varchar(27) [pk, not null, note: 'cuid']
   name        varchar(160) [not null]
   address     varchar(255)
@@ -63,26 +152,28 @@ Table work_locations {
   }
 }
 
-Table doctors {
+Table doctor {
   id                varchar(27) [pk, not null, note: 'cuid']
-  staff_account_id  varchar(27) [not null, note: 'ref Accounts.staff_accounts.id (logical)']
-  display_name      varchar(120) [not null]
-  bio               text
-  avatar_url        varchar(500)
-  license_no        varchar(64)
-  years_experience  smallint
-  rating_avg        numeric(3,2) [default: 0.0]
-  review_count      integer      [default: 0]
+  staff_account_id  varchar(27) [unique, not null, note: 'ref Accounts.staff_accounts.id (logical)']
+  degree            varchar(100)
+  position          text[]
+  introduction      text
+  memberships       text[]
+  awards            text[]
+  research          text
+  training_process  text[]
+  experience        text[]
+  avatar_url        varchar
+  portrait          varchar
   is_active         boolean      [not null, default: true]
   created_at        timestamptz  [not null, default: `now()`]
   updated_at        timestamptz  [not null, default: `now()`]
   indexes {
-    (staff_account_id) // logical join key
-    (display_name)
+    (staff_account_id)
   }
 }
 
-Table doctor_specialties {
+Table doctor_specialty {
   id           varchar(27) [pk, not null, note: 'cuid']
   doctor_id    varchar(27) [not null, note: 'ref Provider.doctors.id (same DB)']
   specialty_id varchar(27) [not null, note: 'ref Provider.specialties.id (same DB)']
@@ -95,7 +186,7 @@ Table doctor_specialties {
   }
 }
 
-Table doctor_work_locations {
+Table doctor_work_location {
   id           varchar(27) [pk, not null, note: 'cuid']
   doctor_id    varchar(27) [not null, note: 'ref Provider.doctors.id (same DB)']
   location_id  varchar(27) [not null, note: 'ref Provider.work_locations.id (same DB)']

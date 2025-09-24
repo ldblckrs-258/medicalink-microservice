@@ -60,15 +60,17 @@ model WorkLocation {
 
 model Doctor {
   id              String   @id @default(cuid())
-  staffAccountId  String   @map("staff_account_id") @db.VarChar(27)
-  displayName     String   @map("display_name") @db.VarChar(120)
-  bio             String?  @db.Text
-  avatarUrl       String?  @map("avatar_url") @db.VarChar(500)
-  licenseNo       String?  @map("license_no") @db.VarChar(64)
-  yearsExperience Int?     @map("years_experience") @db.SmallInt
-  ratingAvg       Float    @default(0.0) @map("rating_avg") @db.Real
-  reviewCount     Int      @default(0) @map("review_count")
-  isActive        Boolean  @default(true) @map("is_active")
+  staffAccountId  String   @unique @map("staff_account_id")
+  degree          String?  @db.VarChar(100)
+  position        String[]
+  introduction    String?  @db.Text
+  memberships     String[]
+  awards          String[]
+  research        String?  @db.Text
+  trainingProcess String[] @map("training_process")
+  experience      String[]
+  avatarUrl       String?  @map("avatar_url") @db.VarChar
+  portrait        String?  @db.VarChar
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -76,8 +78,6 @@ model Doctor {
   doctorWorkLocations DoctorWorkLocation[]
   schedules           Schedule[]
 
-  @@index([staffAccountId], map: "idx_doctors_staff_account")
-  @@index([displayName], map: "idx_doctors_display_name")
   @@map("doctors")
   @@schema("provider")
 }
