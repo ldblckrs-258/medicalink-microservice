@@ -204,8 +204,26 @@ export class PermissionAssignmentService {
       }
 
       case 'DOCTOR': {
+        // Doctors get additional permissions: allow self-update on doctors
+        const doctorSelfUpdate = await this.assignPermissionWithCondition(
+          tx,
+          userId,
+          'doctors',
+          'update',
+          [
+            {
+              field: 'isSelfUpdate',
+              operator: 'eq',
+              value: true,
+            },
+          ],
+        );
+
+        if (doctorSelfUpdate) {
+          assignedPermissions.push('doctors:update(self)');
+        }
         // Doctors get additional permissions through groups
-        // No individual permissions needed here
+        // No other individual permissions needed here
         break;
       }
 

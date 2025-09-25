@@ -52,6 +52,12 @@ export class PaginationDto {
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }
 
+export interface PostResponseDto<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
 // Response DTOs
 export interface ApiResponse<T = any> {
   success: boolean;

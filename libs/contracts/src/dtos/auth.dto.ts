@@ -63,6 +63,12 @@ export interface ChangePasswordResponseDto {
   message: string;
 }
 
+export class VerifyPasswordDto {
+  @IsString({ message: 'Password must be a string' })
+  @Length(6, 50, { message: 'Password must be between 6 and 50 characters' })
+  password: string;
+}
+
 export class CreateStaffDto {
   @IsString({ message: 'Full name must be a string' })
   @Length(2, 100, { message: 'Full name must be between 2 and 100 characters' })

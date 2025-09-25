@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { DoctorsService } from './doctors/doctors.service';
-import { DoctorsController } from './doctors/doctors.controller';
+import { DoctorsModule } from './doctors/doctors.module';
 import { SpecialtiesModule } from './specialties/specialties.module';
 import { WorkLocationsModule } from './work-locations/work-locations.module';
 
@@ -13,8 +12,9 @@ import { WorkLocationsModule } from './work-locations/work-locations.module';
     }),
     SpecialtiesModule,
     WorkLocationsModule,
+    DoctorsModule,
   ],
-  controllers: [DoctorsController],
-  providers: [PrismaService, DoctorsService],
+  controllers: [],
+  providers: [PrismaService],
 })
 export class ProviderDirectoryServiceModule {}

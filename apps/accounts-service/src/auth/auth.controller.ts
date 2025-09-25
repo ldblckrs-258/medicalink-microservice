@@ -2,14 +2,15 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import type {
-  LoginDto,
-  LoginResponseDto,
-  RefreshTokenDto,
-  RefreshTokenResponseDto,
-  CreateStaffDto,
-  StaffAccountDto,
   ChangePasswordDto,
   ChangePasswordResponseDto,
+  CreateStaffDto,
+  LoginDto,
+  LoginResponseDto,
+  PostResponseDto,
+  RefreshTokenDto,
+  RefreshTokenResponseDto,
+  StaffAccountDto,
 } from '@app/contracts';
 
 @Controller()
@@ -25,7 +26,7 @@ export class AuthController {
 
     const tokens = await this.authService.login(staff);
 
-    const response = {
+    return {
       ...tokens,
       user: {
         id: staff.id,
@@ -39,8 +40,6 @@ export class AuthController {
         updatedAt: staff.updatedAt,
       },
     };
-
-    return response;
   }
 
   @MessagePattern('auth.refresh')
@@ -88,5 +87,16 @@ export class AuthController {
       payload.staffId,
       payload.changePasswordDto,
     );
+  }
+
+  @MessagePattern('auth.verify-password')
+  async verifyPassword(
+    @Payload()
+    payload: {
+      email: string;
+      password: string;
+    },
+  ): Promise<PostResponseDto> {
+    return this.authService.verifyPassword(payload.email, payload.password);
   }
 }

@@ -1,17 +1,17 @@
 import {
+  PaginatedResponse,
+  PaginationDto,
   SpecialtyDto,
   WorkLocationDto,
-  PaginationDto,
-  PaginatedResponse,
 } from './common.dto';
 import {
-  IsString,
-  IsOptional,
   IsBoolean,
-  MinLength,
-  MaxLength,
-  IsNotEmpty,
   IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -272,3 +272,13 @@ export interface ScheduleDto {
 // These DTOs exclude sensitive fields like isActive, createdAt, updatedAt
 export type { SpecialtyDto as PublicSpecialtyDto } from './common.dto';
 export type { WorkLocationDto as PublicWorkLocationDto } from './common.dto';
+
+export class GetPublicListDto extends PaginationDto {
+  @IsOptional()
+  @IsString({ message: 'Specialty ID must be a string' })
+  specialtyId?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Work Location ID must be a string' })
+  workLocationId?: string;
+}

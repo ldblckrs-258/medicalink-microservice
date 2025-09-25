@@ -30,14 +30,11 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse();
     const { method, url } = request;
     return next.handle().pipe(
-      // Resolve any nested promises first
       mergeMap((data) => deepResolvePromises(data)),
 
-      // Transform and serialize the response
       map((data) => {
         const serializedData = this.serializeData(data);
 
-        // Check if data has paginated structure (data + meta)
         const isPaginatedResponse =
           serializedData &&
           typeof serializedData === 'object' &&
@@ -45,21 +42,32 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
           'meta' in serializedData &&
           Array.isArray(serializedData.data);
 
-        // Create standardized response format
+        const isStandardResponse =
+          serializedData &&
+          typeof serializedData === 'object' &&
+          'success' in serializedData &&
+          'message' in serializedData;
+
+        const responseData =
+          serializedData && ('data' in serializedData || isStandardResponse)
+            ? serializedData.data
+            : serializedData;
+
         const standardResponse: SerializedResponse = {
           success: true,
-          message: this.getSuccessMessage(
-            String(method),
-            Number(response.statusCode),
-          ),
-          data: isPaginatedResponse ? serializedData.data : serializedData,
+          message: isStandardResponse
+            ? serializedData.message
+            : this.getSuccessMessage(
+                String(method),
+                Number(response.statusCode),
+              ),
+          data: responseData,
           timestamp: new Date().toISOString(),
           path: url,
           method: method,
           statusCode: response.statusCode,
         };
 
-        // Add meta if it's a paginated response
         if (isPaginatedResponse) {
           standardResponse.meta = serializedData.meta;
         }
@@ -77,7 +85,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
       return data;
     }
 
-    // Handle arrays
     if (Array.isArray(data)) {
       return data.map((item) => this.serializeData(item));
     }
@@ -85,7 +92,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
     // Handle objects with class-transformer
     if (typeof data === 'object') {
       try {
-        // Try to use instanceToPlain for class instances
         if (data.constructor && data.constructor !== Object) {
           return instanceToPlain(data, {
             excludeExtraneousValues: false,
@@ -94,7 +100,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
           });
         }
 
-        // For plain objects, serialize each property
         const serialized: any = {};
         for (const [key, value] of Object.entries(
           data as Record<string, any>,
@@ -108,12 +113,6 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
       }
     }
 
-    // Handle dates - convert to ISO string
-    if (data instanceof Date) {
-      return data.toISOString();
-    }
-
-    // Return primitive values as-is
     return data;
   }
 

@@ -127,30 +127,6 @@ const CORE_PERMISSIONS = [
     action: 'manage',
     description: 'Full appointment management',
   },
-
-  // Provider Directory Management
-  {
-    resource: 'doctors',
-    action: 'create',
-    description: 'Create doctor profiles',
-  },
-  { resource: 'doctors', action: 'read', description: 'View doctor profiles' },
-  {
-    resource: 'doctors',
-    action: 'update',
-    description: 'Update doctor profiles',
-  },
-  {
-    resource: 'doctors',
-    action: 'delete',
-    description: 'Delete doctor profiles',
-  },
-  {
-    resource: 'doctors',
-    action: 'manage',
-    description: 'Full doctor management access',
-  },
-
   {
     resource: 'specialties',
     action: 'create',
@@ -346,6 +322,8 @@ const ROLE_PERMISSION_MAPPING = {
   DOCTOR: [
     'profile:read',
     'profile:update',
+    'doctors:read',
+    // 'doctors:update' removed from role-level permissions to enforce self-update via conditional userPermission
     'patients:read',
     'patients:update',
     'appointments:read',
@@ -412,7 +390,7 @@ export async function seedPermissions() {
     Logger.log('Creating default groups...');
     const createdGroups: Record<string, any> = {};
     for (const group of DEFAULT_GROUPS) {
-      const createdGroup = await prisma.group.upsert({
+      createdGroups[group.name] = await prisma.group.upsert({
         where: {
           name_tenantId: {
             name: group.name,
@@ -424,7 +402,6 @@ export async function seedPermissions() {
         },
         create: group,
       });
-      createdGroups[group.name] = createdGroup;
     }
 
     // 3. Assign permissions to groups
@@ -533,6 +510,53 @@ export async function migrateExistingUsers() {
           },
         });
 
+        // If the staff is a DOCTOR, ensure they have a user-level conditional permission
+        // that allows them to update their own doctor profile (isSelfUpdate = true).
+        try {
+          if (staff.role === 'DOCTOR') {
+            const permission = await prisma.permission.findUnique({
+              where: {
+                resource_action: { resource: 'doctors', action: 'update' },
+              },
+            });
+
+            if (permission) {
+              await prisma.userPermission.upsert({
+                where: {
+                  userId_permissionId_tenantId: {
+                    userId: staff.id,
+                    permissionId: permission.id,
+                    tenantId: 'global',
+                  },
+                },
+                update: {},
+                create: {
+                  userId: staff.id,
+                  permissionId: permission.id,
+                  tenantId: 'global',
+                  effect: 'ALLOW',
+                  // Conditions stored as JSON: enforce self-update semantics
+                  conditions: [
+                    {
+                      field: 'isSelfUpdate',
+                      operator: 'eq',
+                      value: true,
+                    },
+                  ],
+                },
+              });
+            } else {
+              Logger.warn(
+                'Permission doctors:update not found while seeding userPermissions for existing doctors',
+              );
+            }
+          }
+        } catch (err) {
+          Logger.error(
+            'Failed to assign conditional doctors:update to existing doctor',
+            err?.message || err,
+          );
+        }
         Logger.log(
           `Migrated ${staff.email} (${staff.role}) to group ${groupName}`,
         );

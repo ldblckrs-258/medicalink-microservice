@@ -19,6 +19,7 @@ import {
   StaffAccountDto,
   ChangePasswordDto,
   ChangePasswordResponseDto,
+  PostResponseDto,
 } from '@app/contracts';
 import * as bcrypt from 'bcrypt';
 
@@ -262,6 +263,32 @@ export class AuthService {
     return {
       totalStaff,
       staffByRole,
+    };
+  }
+
+  async verifyPassword(
+    email: string,
+    password: string,
+  ): Promise<PostResponseDto> {
+    const staff = await this.authRepository.findByEmail(email);
+
+    if (!staff) {
+      throw new NotFoundError('User not found', {
+        code: ErrorCode.USER_NOT_FOUND,
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedError('Invalid password', {
+        code: ErrorCode.PASSWORD_INCORRECT,
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Password verified successfully',
     };
   }
 }

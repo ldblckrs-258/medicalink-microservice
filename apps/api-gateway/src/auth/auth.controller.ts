@@ -6,12 +6,14 @@ import type {
   StaffAccountDto,
   JwtPayloadDto,
   ChangePasswordResponseDto,
+  PostResponseDto,
 } from '@app/contracts';
 import {
   LoginDto,
   RefreshTokenDto,
   CreateStaffDto,
   ChangePasswordDto,
+  VerifyPasswordDto,
   Public,
   CurrentUser,
   RequireUserManagement,
@@ -81,6 +83,21 @@ export class AuthController {
       {
         staffId: user.sub,
         changePasswordDto,
+      },
+    );
+  }
+
+  @Post('verify-password')
+  async verifyPassword(
+    @Body() verifyPasswordDto: VerifyPasswordDto,
+    @CurrentUser() user: JwtPayloadDto,
+  ): Promise<PostResponseDto> {
+    return this.microserviceService.sendWithTimeout<PostResponseDto>(
+      this.accountsClient,
+      'auth.verify-password',
+      {
+        email: user.email,
+        password: verifyPasswordDto.password,
       },
     );
   }
