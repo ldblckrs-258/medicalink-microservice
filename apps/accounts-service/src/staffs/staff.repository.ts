@@ -16,6 +16,8 @@ export class StaffRepository {
       limit = 10,
       role,
       search,
+      email,
+      isMale,
       createdFrom,
       createdTo,
       sortBy = 'createdAt',
@@ -35,6 +37,14 @@ export class StaffRepository {
         { fullName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    if (email) {
+      where.email = { contains: email, mode: 'insensitive' };
+    }
+
+    if (typeof isMale === 'boolean') {
+      where.isMale = isMale;
     }
 
     if (createdFrom || createdTo) {

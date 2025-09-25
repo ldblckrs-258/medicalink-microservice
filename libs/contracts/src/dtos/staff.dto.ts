@@ -6,6 +6,7 @@ import {
   Min,
   Max,
   IsDateString,
+  IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -32,6 +33,19 @@ export class StaffQueryDto {
   @IsOptional()
   @IsString({ message: 'Search term must be a string' })
   search?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Email must be a string' })
+  email?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'isMale must be a boolean' })
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
+  isMale?: boolean;
 
   @IsOptional()
   @IsDateString(
