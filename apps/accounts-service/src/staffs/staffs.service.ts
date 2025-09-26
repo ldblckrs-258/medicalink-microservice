@@ -2,14 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
 import { StaffRepository } from './staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
-import { StaffRole } from '../../prisma/generated/client';
+import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
-  CreateStaffDto,
+  CreateAccountDto,
   UpdateStaffDto,
   StaffQueryDto,
-  StaffAccountDto,
-  StaffPaginatedResponseDto,
   StaffStatsDto,
+  PaginatedResponse,
 } from '@app/contracts';
 
 @Injectable()
@@ -21,27 +20,30 @@ export class StaffsService {
     private readonly permissionAssignmentService: PermissionAssignmentService,
   ) {}
 
-  async findAll(query: StaffQueryDto): Promise<StaffPaginatedResponseDto> {
+  async findAll(
+    query: StaffQueryDto,
+  ): Promise<PaginatedResponse<StaffAccount>> {
     const staffQuery = {
       ...query,
       role: query.role || StaffRole.ADMIN,
     };
     const { data, total } = await this.staffRepository.findMany(staffQuery);
-    const { skip = 0, limit = 10 } = query;
+    const { page = 1, limit = 10 } = query;
 
     return {
-      data: data.map((staff) => this.mapToStaffAccountDto(staff)),
+      data,
       meta: {
-        skip,
+        page,
         limit,
         total,
-        hasNext: skip + limit < total,
-        hasPrev: skip > 0,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
 
-  async findOne(id: string): Promise<StaffAccountDto> {
+  async findOne(id: string): Promise<StaffAccount> {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
@@ -50,13 +52,13 @@ export class StaffsService {
       });
     }
 
-    return this.mapToStaffAccountDto(staff);
+    return staff;
   }
 
-  async create(createStaffDto: CreateStaffDto): Promise<StaffAccountDto> {
+  async create(createAccountDto: CreateAccountDto): Promise<StaffAccount> {
     // Check if email already exists
     const existingStaff = await this.staffRepository.findByEmail(
-      createStaffDto.email,
+      createAccountDto.email,
     );
 
     if (existingStaff) {
@@ -66,7 +68,7 @@ export class StaffsService {
     }
 
     // Create staff account
-    const staff = await this.staffRepository.create(createStaffDto);
+    const staff = await this.staffRepository.create(createAccountDto);
 
     try {
       await this.permissionAssignmentService.assignPermissionsToNewUser(
@@ -80,13 +82,13 @@ export class StaffsService {
       );
     }
 
-    return this.mapToStaffAccountDto(staff);
+    return staff;
   }
 
   async update(
     id: string,
     updateStaffDto: UpdateStaffDto,
-  ): Promise<StaffAccountDto> {
+  ): Promise<StaffAccount> {
     // Check if staff exists
     const existingStaff = await this.staffRepository.findById(id);
 
@@ -110,10 +112,10 @@ export class StaffsService {
     }
 
     const staff = await this.staffRepository.update(id, updateStaffDto);
-    return this.mapToStaffAccountDto(staff);
+    return staff;
   }
 
-  async remove(id: string): Promise<StaffAccountDto> {
+  async remove(id: string): Promise<StaffAccount> {
     // Check if staff exists
     const existingStaff = await this.staffRepository.findById(id);
 
@@ -124,7 +126,7 @@ export class StaffsService {
     }
 
     const staff = await this.staffRepository.softDelete(id);
-    return this.mapToStaffAccountDto(staff);
+    return staff;
   }
 
   async getStats(): Promise<StaffStatsDto> {
@@ -156,10 +158,6 @@ export class StaffsService {
           role as StaffRole,
         );
 
-      this.logger.log(
-        `Manual permission assignment completed for ${staff.email}: ${result.assignedPermissions.length} permissions`,
-      );
-
       return {
         success: true,
         message: `Permissions assigned successfully. ${result.assignedPermissions.length} permissions granted.`,
@@ -175,19 +173,5 @@ export class StaffsService {
         message: `Failed to assign permissions: ${error.message}`,
       };
     }
-  }
-
-  private mapToStaffAccountDto(staff: any): StaffAccountDto {
-    return {
-      id: staff.id,
-      fullName: staff.fullName,
-      email: staff.email,
-      role: staff.role,
-      phone: staff.phone,
-      isMale: staff.isMale,
-      dateOfBirth: staff.dateOfBirth,
-      createdAt: staff.createdAt,
-      updatedAt: staff.updatedAt,
-    };
   }
 }

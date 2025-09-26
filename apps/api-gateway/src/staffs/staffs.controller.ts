@@ -10,18 +10,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { IStaffAccount } from '@app/contracts/interfaces';
 import {
-  CreateStaffDto,
+  CreateAccountDto,
   UpdateStaffDto,
   StaffQueryDto,
-  StaffAccountDto,
-  StaffPaginatedResponseDto,
   StaffStatsDto,
   RequireReadPermission,
   RequireWritePermission,
   RequireDeletePermission,
   RequireUserManagement,
   CurrentUser,
+  PaginatedResponse,
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
@@ -38,13 +38,10 @@ export class StaffsController {
   async findAll(
     @Query() query: StaffQueryDto,
     @CurrentUser() _user: JwtPayloadDto,
-  ): Promise<StaffPaginatedResponseDto> {
-    return this.microserviceService.sendWithTimeout<StaffPaginatedResponseDto>(
-      this.accountsClient,
-      'staffs.findAll',
-      query,
-      { timeoutMs: 15000 },
-    );
+  ): Promise<PaginatedResponse<IStaffAccount>> {
+    return this.microserviceService.sendWithTimeout<
+      PaginatedResponse<IStaffAccount>
+    >(this.accountsClient, 'staffs.findAll', query, { timeoutMs: 15000 });
   }
 
   @RequireReadPermission('staff')
@@ -62,13 +59,12 @@ export class StaffsController {
   async findOne(
     @Param('id') id: string,
     @CurrentUser() _user: JwtPayloadDto,
-  ): Promise<StaffAccountDto> {
-    const staff =
-      await this.microserviceService.sendWithTimeout<StaffAccountDto>(
-        this.accountsClient,
-        'staffs.findOne',
-        id,
-      );
+  ): Promise<IStaffAccount> {
+    const staff = await this.microserviceService.sendWithTimeout<IStaffAccount>(
+      this.accountsClient,
+      'staffs.findOne',
+      id,
+    );
 
     return staff;
   }
@@ -76,13 +72,13 @@ export class StaffsController {
   @RequireUserManagement()
   @Post()
   async create(
-    @Body() createStaffDto: CreateStaffDto,
+    @Body() createAccountDto: CreateAccountDto,
     @CurrentUser() _user: JwtPayloadDto,
-  ): Promise<StaffAccountDto> {
-    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+  ): Promise<IStaffAccount> {
+    return this.microserviceService.sendWithTimeout<IStaffAccount>(
       this.accountsClient,
       'staffs.create',
-      createStaffDto,
+      createAccountDto,
       { timeoutMs: 12000 },
     );
   }
@@ -93,8 +89,8 @@ export class StaffsController {
     @Param('id') id: string,
     @Body() updateStaffDto: UpdateStaffDto,
     @CurrentUser() _user: JwtPayloadDto,
-  ): Promise<StaffAccountDto> {
-    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+  ): Promise<IStaffAccount> {
+    return this.microserviceService.sendWithTimeout<IStaffAccount>(
       this.accountsClient,
       'staffs.update',
       {
@@ -107,8 +103,8 @@ export class StaffsController {
 
   @RequireDeletePermission('staff')
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<StaffAccountDto> {
-    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+  async remove(@Param('id') id: string): Promise<IStaffAccount> {
+    return this.microserviceService.sendWithTimeout<IStaffAccount>(
       this.accountsClient,
       'staffs.remove',
       id,

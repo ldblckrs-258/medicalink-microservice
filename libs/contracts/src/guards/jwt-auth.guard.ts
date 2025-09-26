@@ -1,15 +1,15 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
+  Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { JwtPayloadDto } from '../dtos/auth.dto';
+import { JwtPayloadDto } from '../dtos/auth';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()

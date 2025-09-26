@@ -7,7 +7,6 @@ import {
 } from '@app/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// For now using any type until Prisma schema is properly generated
 export type Patient = any;
 
 @Injectable()
@@ -70,7 +69,6 @@ export class PatientRepository extends BaseRepository<
     });
   }
 
-  // Override create to add CUID
   async create(data: CreatePatientDto): Promise<Patient> {
     const { createId } = await import('@paralleldrive/cuid2');
     return await this.model.create({
@@ -81,14 +79,12 @@ export class PatientRepository extends BaseRepository<
     });
   }
 
-  // Override findAll to exclude soft deleted
   async findAll(): Promise<Patient[]> {
     return await this.model.findMany({
       where: { deletedAt: null },
     });
   }
 
-  // Soft delete method
   async softDelete(id: string): Promise<Patient> {
     return await this.model.update({
       where: { id },
@@ -96,7 +92,6 @@ export class PatientRepository extends BaseRepository<
     });
   }
 
-  // Find non-deleted patients
   async findAllActive(): Promise<Patient[]> {
     return await this.model.findMany({
       where: { deletedAt: null },

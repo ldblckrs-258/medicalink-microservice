@@ -1,4 +1,3 @@
-// Booking Service DTOs
 export interface AppointmentDto {
   id: string;
   patientId: string;

@@ -2,8 +2,8 @@ import { IBaseRepository } from '@app/contracts';
 
 export abstract class BaseRepository<
   T,
-  CreateDto,
-  UpdateDto,
+  CreateDto = null,
+  UpdateDto = null,
   FilterOptions = any,
 > implements IBaseRepository<T, CreateDto, UpdateDto, FilterOptions>
 {

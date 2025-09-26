@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DoctorRepository } from './doctor.repository';
-import { GetPublicListDto } from 'libs/contracts/src/dtos/provider.dto';
+import { GetPublicListDto } from 'libs/contracts/src/dtos/provider';
+import { PaginatedResponse } from '@app/contracts';
 
 @Injectable()
 export class DoctorsService {
@@ -10,7 +11,9 @@ export class DoctorsService {
     return this.doctorRepo.create(createDoctorDto);
   }
 
-  async getPublicList(filters?: GetPublicListDto) {
+  async getPublicList(
+    filters?: GetPublicListDto,
+  ): Promise<PaginatedResponse<any>> {
     const where: any = {};
 
     if (filters?.specialtyId) {
@@ -33,10 +36,30 @@ export class DoctorsService {
       };
     }
 
-    return this.doctorRepo.findAll(where, {
+    const include = {
       doctorSpecialties: { include: { specialty: true } },
       doctorWorkLocations: { include: { location: true } },
-    });
+    };
+
+    const { data, total } = await this.doctorRepo.findManyPublic(
+      where,
+      include,
+      filters,
+    );
+
+    const { page = 1, limit = 10 } = filters ?? {};
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string) {

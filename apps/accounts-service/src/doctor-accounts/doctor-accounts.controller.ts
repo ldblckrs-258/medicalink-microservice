@@ -2,13 +2,13 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DoctorAccountsService } from './doctor-accounts.service';
 import {
-  CreateStaffDto,
+  CreateAccountDto,
   UpdateStaffDto,
   StaffQueryDto,
-  StaffAccountDto,
-  StaffPaginatedResponseDto,
   StaffStatsDto,
-} from '@app/contracts';
+} from '@app/contracts/dtos/staff';
+import { PaginatedResponse } from '@app/contracts/dtos/common';
+import { StaffAccount } from '../../prisma/generated/client';
 
 @Controller()
 export class DoctorAccountsController {
@@ -17,31 +17,31 @@ export class DoctorAccountsController {
   @MessagePattern('doctor-accounts.findAll')
   async findAll(
     @Payload() query: StaffQueryDto,
-  ): Promise<StaffPaginatedResponseDto> {
+  ): Promise<PaginatedResponse<Partial<StaffAccount>>> {
     return await this.doctorAccountsService.findAll(query);
   }
 
   @MessagePattern('doctor-accounts.findOne')
-  async findOne(@Payload() id: string): Promise<StaffAccountDto> {
+  async findOne(@Payload() id: string): Promise<Partial<StaffAccount>> {
     return await this.doctorAccountsService.findOne(id);
   }
 
   @MessagePattern('doctor-accounts.create')
   async create(
-    @Payload() createDoctorDto: CreateStaffDto,
-  ): Promise<StaffAccountDto> {
+    @Payload() createDoctorDto: CreateAccountDto,
+  ): Promise<Partial<StaffAccount>> {
     return await this.doctorAccountsService.create(createDoctorDto);
   }
 
   @MessagePattern('doctor-accounts.update')
   async update(
     @Payload() payload: { id: string; data: UpdateStaffDto },
-  ): Promise<StaffAccountDto> {
+  ): Promise<Partial<StaffAccount>> {
     return await this.doctorAccountsService.update(payload.id, payload.data);
   }
 
   @MessagePattern('doctor-accounts.remove')
-  async remove(@Payload() id: string): Promise<StaffAccountDto> {
+  async remove(@Payload() id: string): Promise<Partial<StaffAccount>> {
     return await this.doctorAccountsService.remove(id);
   }
 

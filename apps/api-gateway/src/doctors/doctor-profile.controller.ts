@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import type { JwtPayloadDto } from '@app/contracts';
+import { GetPublicListDto } from '@app/contracts';
 import {
   CurrentUser,
   Public,
@@ -30,7 +31,7 @@ export class DoctorProfileController {
 
   @Public()
   @Get('/public')
-  findAll(@Query() query: any) {
+  findAll(@Query() query: GetPublicListDto) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.getPublicList',

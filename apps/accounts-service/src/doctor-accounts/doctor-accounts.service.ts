@@ -2,14 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
 import { StaffRepository } from '../staffs/staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
-import { StaffRole } from '../../prisma/generated/client';
+import { StaffAccount, StaffRole } from '../../prisma/generated/client';
 import {
-  CreateStaffDto,
+  CreateAccountDto,
   UpdateStaffDto,
   StaffQueryDto,
-  StaffAccountDto,
-  StaffPaginatedResponseDto,
   StaffStatsDto,
+  PaginatedResponse,
 } from '@app/contracts';
 
 @Injectable()
@@ -21,25 +20,28 @@ export class DoctorAccountsService {
     private readonly permissionAssignmentService: PermissionAssignmentService,
   ) {}
 
-  async findAll(query: StaffQueryDto): Promise<StaffPaginatedResponseDto> {
+  async findAll(
+    query: StaffQueryDto,
+  ): Promise<PaginatedResponse<StaffAccount>> {
     // Force filter to only show doctors
     const doctorQuery = { ...query, role: 'DOCTOR' as StaffRole };
     const { data, total } = await this.staffRepository.findMany(doctorQuery);
-    const { skip = 0, limit = 10 } = query;
+    const { page = 1, limit = 10 } = query;
 
     return {
-      data: data.map((staff) => this.mapToStaffAccountDto(staff)),
+      data,
       meta: {
-        skip,
+        page,
         limit,
         total,
-        hasNext: skip + limit < total,
-        hasPrev: skip > 0,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
 
-  async findOne(id: string): Promise<StaffAccountDto> {
+  async findOne(id: string): Promise<StaffAccount> {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
@@ -54,12 +56,10 @@ export class DoctorAccountsService {
       });
     }
 
-    return this.mapToStaffAccountDto(staff);
+    return staff;
   }
 
-  async create(createDoctorDto: CreateStaffDto): Promise<StaffAccountDto> {
-    this.logger.log(`Creating new doctor account: ${createDoctorDto.email}`);
-
+  async create(createDoctorDto: CreateAccountDto): Promise<StaffAccount> {
     const doctorData = { ...createDoctorDto, role: StaffRole.DOCTOR };
 
     const existingStaff = await this.staffRepository.findByEmail(
@@ -75,33 +75,24 @@ export class DoctorAccountsService {
     const doctor = await this.staffRepository.create(doctorData);
 
     try {
-      const permissionResult =
-        await this.permissionAssignmentService.assignPermissionsToNewUser(
-          doctor.id,
-          StaffRole.DOCTOR,
-        );
-
-      this.logger.log(
-        `Doctor created and permissions assigned: ${doctor.email} - ${permissionResult.assignedPermissions.length} permissions`,
+      await this.permissionAssignmentService.assignPermissionsToNewUser(
+        doctor.id,
+        StaffRole.DOCTOR,
       );
     } catch (error) {
       this.logger.error(
         `Failed to assign permissions to new doctor ${doctor.email}:`,
         error.stack,
       );
-
-      this.logger.warn(
-        `Doctor ${doctor.email} created without permissions. Manual assignment required.`,
-      );
     }
 
-    return this.mapToStaffAccountDto(doctor);
+    return doctor;
   }
 
   async update(
     id: string,
     updateDoctorDto: UpdateStaffDto,
-  ): Promise<StaffAccountDto> {
+  ): Promise<StaffAccount> {
     const existingDoctor = await this.staffRepository.findById(id);
 
     if (!existingDoctor) {
@@ -132,10 +123,10 @@ export class DoctorAccountsService {
     }
 
     const doctor = await this.staffRepository.update(id, doctorData);
-    return this.mapToStaffAccountDto(doctor);
+    return doctor;
   }
 
-  async remove(id: string): Promise<StaffAccountDto> {
+  async remove(id: string): Promise<StaffAccount> {
     const existingDoctor = await this.staffRepository.findById(id);
 
     if (!existingDoctor) {
@@ -150,8 +141,7 @@ export class DoctorAccountsService {
       });
     }
 
-    const doctor = await this.staffRepository.softDelete(id);
-    return this.mapToStaffAccountDto(doctor);
+    return await this.staffRepository.softDelete(id);
   }
 
   async getStats(): Promise<StaffStatsDto> {
@@ -203,10 +193,6 @@ export class DoctorAccountsService {
           role as StaffRole,
         );
 
-      this.logger.log(
-        `Manual permission assignment completed for doctor ${doctor.email}: ${result.assignedPermissions.length} permissions`,
-      );
-
       return {
         success: true,
         message: `Permissions assigned successfully. ${result.assignedPermissions.length} permissions granted.`,
@@ -222,19 +208,5 @@ export class DoctorAccountsService {
         message: `Failed to assign permissions: ${error.message}`,
       };
     }
-  }
-
-  private mapToStaffAccountDto(staff: any): StaffAccountDto {
-    return {
-      id: staff.id,
-      fullName: staff.fullName,
-      email: staff.email,
-      role: staff.role,
-      phone: staff.phone,
-      isMale: staff.isMale,
-      dateOfBirth: staff.dateOfBirth,
-      createdAt: staff.createdAt,
-      updatedAt: staff.updatedAt,
-    };
   }
 }

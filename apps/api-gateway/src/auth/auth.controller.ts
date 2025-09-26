@@ -1,9 +1,9 @@
 import { Body, Controller, Inject, Post, Get } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { IStaffAccount } from '@app/contracts/interfaces';
 import type {
   LoginResponseDto,
   RefreshTokenResponseDto,
-  StaffAccountDto,
   JwtPayloadDto,
   ChangePasswordResponseDto,
   PostResponseDto,
@@ -11,12 +11,10 @@ import type {
 import {
   LoginDto,
   RefreshTokenDto,
-  CreateStaffDto,
   ChangePasswordDto,
   VerifyPasswordDto,
   Public,
   CurrentUser,
-  RequireUserManagement,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
@@ -49,23 +47,9 @@ export class AuthController {
     );
   }
 
-  @RequireUserManagement()
-  @Post('register')
-  async register(
-    @Body() createStaffDto: CreateStaffDto,
-  ): Promise<StaffAccountDto> {
-    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
-      this.accountsClient,
-      'auth.register',
-      createStaffDto,
-    );
-  }
-
   @Get('profile')
-  async getProfile(
-    @CurrentUser() user: JwtPayloadDto,
-  ): Promise<StaffAccountDto> {
-    return this.microserviceService.sendWithTimeout<StaffAccountDto>(
+  async getProfile(@CurrentUser() user: JwtPayloadDto): Promise<IStaffAccount> {
+    return this.microserviceService.sendWithTimeout<IStaffAccount>(
       this.accountsClient,
       'auth.profile',
       { userId: user.sub },

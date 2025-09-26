@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StaffAccount, Prisma } from '../../prisma/generated/client';
-import { CreateStaffDto, UpdateStaffDto, StaffQueryDto } from '@app/contracts';
+import {
+  CreateAccountDto,
+  UpdateStaffDto,
+  StaffQueryDto,
+} from '@app/contracts/dtos/staff';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -12,7 +16,7 @@ export class StaffRepository {
     query: StaffQueryDto,
   ): Promise<{ data: StaffAccount[]; total: number }> {
     const {
-      skip = 0,
+      page = 1,
       limit = 10,
       role,
       search,
@@ -63,7 +67,7 @@ export class StaffRepository {
     const [data, total] = await Promise.all([
       this.prisma.staffAccount.findMany({
         where,
-        skip,
+        skip: (page - 1) * limit,
         take: limit,
         orderBy,
       }),
@@ -91,7 +95,7 @@ export class StaffRepository {
     });
   }
 
-  async create(data: CreateStaffDto): Promise<StaffAccount> {
+  async create(data: CreateAccountDto): Promise<StaffAccount> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     return this.prisma.staffAccount.create({

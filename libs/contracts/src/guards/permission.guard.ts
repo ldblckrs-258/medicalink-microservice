@@ -1,16 +1,16 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Injectable,
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { JwtPayloadDto } from '../dtos/auth.dto';
+import { JwtPayloadDto } from '../dtos/auth';
 import {
-  PERMISSIONS_KEY,
   PermissionRequirement,
+  PERMISSIONS_KEY,
 } from '../decorators/permissions.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 

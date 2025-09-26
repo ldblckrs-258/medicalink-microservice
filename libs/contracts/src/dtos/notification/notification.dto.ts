@@ -1,4 +1,3 @@
-// Notification Service DTOs
 export interface NotificationDto {
   templateKey: string;
   channel: 'EMAIL' | 'SMS' | 'PUSH' | 'WS';

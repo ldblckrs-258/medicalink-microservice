@@ -12,10 +12,10 @@ import { Transform } from 'class-transformer';
 
 export class StaffQueryDto {
   @IsOptional()
-  @IsNumber({}, { message: 'Skip must be a number' })
-  @Min(0, { message: 'Skip must be greater than or equal to 0' })
+  @IsNumber({}, { message: 'Page must be a number' })
+  @Min(0, { message: 'Page must be greater than or equal to 1' })
   @Transform(({ value }) => parseInt(String(value), 10))
-  skip?: number = 0;
+  page?: number = 1;
 
   @IsOptional()
   @IsNumber({}, { message: 'Limit must be a number' })
@@ -72,26 +72,4 @@ export class StaffQueryDto {
     message: 'Sort order must be asc or desc',
   })
   sortOrder?: 'asc' | 'desc' = 'desc';
-}
-
-export interface StaffPaginatedResponseDto {
-  data: any[];
-  meta: {
-    skip: number;
-    limit: number;
-    total: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
-
-export interface StaffStatsDto {
-  total: number;
-  byRole: {
-    SUPER_ADMIN: number;
-    ADMIN: number;
-    DOCTOR: number;
-  };
-  recentlyCreated: number; // count of staffs created in current week
-  deleted: number; // count of soft deleted staffs
 }

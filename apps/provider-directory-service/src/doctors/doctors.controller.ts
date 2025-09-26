@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DoctorsService } from './doctors.service';
-import { GetPublicListDto } from 'libs/contracts/src/dtos/provider.dto';
+import { GetPublicListDto } from 'libs/contracts/src/dtos/provider';
 import { Public } from 'libs/contracts/src/decorators/public.decorator';
 
 @Controller()

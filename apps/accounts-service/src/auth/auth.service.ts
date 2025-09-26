@@ -2,25 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
-  UnauthorizedError,
-  NotFoundError,
   ErrorCode,
-  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
 } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
 import { AuthVersionService } from '../auth-version/auth-version.service';
-import { PermissionAssignmentService } from '../permission/permission-assignment.service';
-import { StaffAccount, StaffRole } from '../../prisma/generated/client';
+import { StaffAccount } from '../../prisma/generated/client';
 import {
-  CreateStaffDto,
-  LoginResponseDto,
-  RefreshTokenResponseDto,
-  JwtPayloadDto,
-  StaffAccountDto,
   ChangePasswordDto,
   ChangePasswordResponseDto,
-  PostResponseDto,
-} from '@app/contracts';
+  JwtPayloadDto,
+  LoginResponseDto,
+  RefreshTokenResponseDto,
+} from '@app/contracts/dtos/auth';
+import { PostResponseDto } from '@app/contracts/dtos/common';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -28,7 +24,6 @@ export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly authVersionService: AuthVersionService,
-    private readonly permissionAssignmentService: PermissionAssignmentService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -54,7 +49,6 @@ export class AuthService {
   }
 
   async login(staff: StaffAccount): Promise<Omit<LoginResponseDto, 'user'>> {
-    // Get or create auth version for cache invalidation
     const authVersion = await this.authVersionService.getUserAuthVersion(
       staff.id,
     );
@@ -62,7 +56,7 @@ export class AuthService {
     const payload: JwtPayloadDto = {
       email: staff.email,
       sub: staff.id,
-      tenant: 'global', // Default tenant, can be customized per organization
+      tenant: 'global',
       ver: authVersion,
     };
 
@@ -100,7 +94,7 @@ export class AuthService {
       });
     }
 
-    let payload;
+    let payload: { sub: string };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET', {
@@ -119,7 +113,7 @@ export class AuthService {
       });
     }
 
-    const staff = await this.authRepository.findById(payload.sub as string);
+    const staff = await this.authRepository.findById(payload.sub);
 
     if (!staff) {
       throw new NotFoundError('User not found', {
@@ -134,49 +128,9 @@ export class AuthService {
     };
   }
 
-  async createStaff(createStaffDto: CreateStaffDto): Promise<StaffAccount> {
-    const isEmailUnique = await this.authRepository.validateEmailUnique(
-      createStaffDto.email,
-    );
-
-    if (!isEmailUnique) {
-      throw new ConflictError(`Email is already registered`, {
-        code: ErrorCode.USER_EMAIL_TAKEN,
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(createStaffDto.password, 10);
-
-    const staffData = {
-      fullName: createStaffDto.fullName,
-      email: createStaffDto.email,
-      passwordHash: hashedPassword,
-      role: createStaffDto.role || StaffRole.DOCTOR,
-      phone: createStaffDto.phone,
-      isMale: createStaffDto.isMale,
-      dateOfBirth: createStaffDto.dateOfBirth,
-    };
-
-    const staff = await this.authRepository.create(staffData);
-
-    // 🆕 Auto-assign permissions based on role
-    try {
-      await this.permissionAssignmentService.assignPermissionsToNewUser(
-        staff.id,
-        staff.role,
-      );
-    } catch (error) {
-      // Log error but don't fail the staff creation
-      console.error(
-        `Failed to assign permissions to staff ${staff.email}:`,
-        error,
-      );
-    }
-
-    return staff;
-  }
-
-  async getStaffProfile(staffId: string): Promise<StaffAccountDto | null> {
+  async getStaffProfile(
+    staffId: string,
+  ): Promise<Partial<StaffAccount> | null> {
     const staff = await this.authRepository.findStaffWithProfile(staffId);
 
     if (!staff) {
@@ -196,19 +150,6 @@ export class AuthService {
       createdAt: staff.createdAt,
       updatedAt: staff.updatedAt,
     };
-  }
-
-  // Additional methods using repository
-  async getAllStaff() {
-    return await this.authRepository.findActiveStaff();
-  }
-
-  async getStaffByRole(role: StaffRole) {
-    return await this.authRepository.findStaffByRole(role);
-  }
-
-  async searchStaff(query: string) {
-    return await this.authRepository.searchStaff(query);
   }
 
   async changePassword(staffId: string, newPassword: string) {

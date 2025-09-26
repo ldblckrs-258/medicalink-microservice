@@ -1,59 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@app/repositories';
-import {
-  CreateStaffAccountDto,
-  UpdateStaffAccountDto,
-  StaffAccountFilterOptions,
-} from '@app/contracts';
-import { PrismaService } from '../../prisma/prisma.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
-export class AuthRepository extends BaseRepository<
-  StaffAccount,
-  CreateStaffAccountDto,
-  UpdateStaffAccountDto,
-  StaffAccountFilterOptions
-> {
-  constructor(private readonly prismaService: PrismaService) {
-    super(prismaService.staffAccount);
+export class AuthRepository extends BaseRepository<StaffAccount> {
+  constructor(private readonly prisma: PrismaService) {
+    super(prisma.staffAccount);
   }
-
-  // Custom methods specific to Staff authentication
   async findByEmail(email: string): Promise<StaffAccount | null> {
     return await this.model.findUnique({
       where: { email },
-    });
-  }
-
-  async findActiveStaff(): Promise<StaffAccount[]> {
-    return await this.model.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findStaffByRole(role: StaffRole): Promise<StaffAccount[]> {
-    return await this.model.findMany({
-      where: { role, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async searchStaff(query: string): Promise<StaffAccount[]> {
-    return await this.model.findMany({
-      where: {
-        AND: [
-          { deletedAt: null },
-          {
-            OR: [
-              { fullName: { contains: query, mode: 'insensitive' } },
-              { email: { contains: query, mode: 'insensitive' } },
-            ],
-          },
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -83,7 +40,6 @@ export class AuthRepository extends BaseRepository<
         dateOfBirth: true,
         createdAt: true,
         updatedAt: true,
-        // Exclude passwordHash for security
       },
     });
   }

@@ -2,13 +2,13 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { StaffsService } from './staffs.service';
 import {
-  CreateStaffDto,
+  CreateAccountDto,
   UpdateStaffDto,
   StaffQueryDto,
-  StaffAccountDto,
-  StaffPaginatedResponseDto,
   StaffStatsDto,
+  PaginatedResponse,
 } from '@app/contracts';
+import { StaffAccount } from '../../prisma/generated/client';
 
 @Controller()
 export class StaffsController {
@@ -17,31 +17,31 @@ export class StaffsController {
   @MessagePattern('staffs.findAll')
   async findAll(
     @Payload() query: StaffQueryDto,
-  ): Promise<StaffPaginatedResponseDto> {
+  ): Promise<PaginatedResponse<StaffAccount>> {
     return this.staffsService.findAll(query);
   }
 
   @MessagePattern('staffs.findOne')
-  async findOne(@Payload() id: string): Promise<StaffAccountDto> {
+  async findOne(@Payload() id: string): Promise<StaffAccount> {
     return this.staffsService.findOne(id);
   }
 
   @MessagePattern('staffs.create')
   async create(
-    @Payload() createStaffDto: CreateStaffDto,
-  ): Promise<StaffAccountDto> {
-    return this.staffsService.create(createStaffDto);
+    @Payload() createAccountDto: CreateAccountDto,
+  ): Promise<StaffAccount> {
+    return this.staffsService.create(createAccountDto);
   }
 
   @MessagePattern('staffs.update')
   async update(
     @Payload() payload: { id: string; data: UpdateStaffDto },
-  ): Promise<StaffAccountDto> {
+  ): Promise<StaffAccount> {
     return this.staffsService.update(payload.id, payload.data);
   }
 
   @MessagePattern('staffs.remove')
-  async remove(@Payload() id: string): Promise<StaffAccountDto> {
+  async remove(@Payload() id: string): Promise<StaffAccount> {
     return this.staffsService.remove(id);
   }
 
