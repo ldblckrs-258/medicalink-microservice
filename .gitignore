@@ -85,4 +85,3 @@ Dockerfile
 docker-compose.prod.yml
 /deployment
 /nginx
-/scripts

@@ -73,12 +73,7 @@ medicalink-microservice/
    ```
    Edit `.env` with your database URLs and configuration.
 
-4. **Run setup script (Windows)**
-   ```bash
-   pnpm run setup
-   ```
-
-   Or manually:
+4. **Run setup script**
    ```bash
    # Start infrastructure
    docker-compose up -d postgres redis
@@ -88,16 +83,27 @@ medicalink-microservice/
    
    # Push database schemas
    pnpm run prisma:push
+   
+   # Create default SUPER ADMIN user
+   pnpm script -- --service=accounts-service --filename=create-super-admin
+    
+   # Clear old permission (if needed)
+   pnpm script -- --service=accounts-service --filename=clear-permissions
+    
+   # Seed permissions data
+   pnpm script -- --service=accounts-service --filename=permission-seeds
    ```
 
 ### Development
 
 **Start all services**
+
 ```bash
 pnpm run dev
 ```
 
 **Start individual services**
+
 ```bash
 pnpm run start:accounts      # Accounts Service
 pnpm run start:provider      # Provider Directory Service  
@@ -108,6 +114,7 @@ pnpm run start:gateway       # API Gateway
 ```
 
 **Database management**
+
 ```bash
 # View database in Prisma Studio
 cd apps/accounts-service && npx prisma studio
@@ -138,6 +145,7 @@ This approach reduces costs while maintaining logical separation between service
 ## 📡 API Endpoints
 
 ### API Gateway (Port 3000)
+
 - `POST /auth/login` - Staff login
 - `GET /doctors` - List doctors
 - `POST /appointments` - Book appointment
@@ -145,6 +153,7 @@ This approach reduces costs while maintaining logical separation between service
 - And more...
 
 ### Service Ports (Internal)
+
 - Accounts Service: 3001
 - Provider Directory: 3002
 - Booking Service: 3003
@@ -154,6 +163,7 @@ This approach reduces costs while maintaining logical separation between service
 ## 🐳 Docker Support
 
 **Development with Docker**
+
 ```bash
 docker-compose up -d          # Start infrastructure only
 docker-compose down           # Stop all services
@@ -191,11 +201,12 @@ See the `docs/` directory for detailed documentation:
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License].
 
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue in the repository
 - Contact the development team
 - Check the documentation in `docs/`

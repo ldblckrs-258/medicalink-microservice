@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/*.d.ts',
+      '**/*.js',
     ],
   },
   eslint.configs.recommended,
