@@ -21,7 +21,7 @@ export class DomainError extends Error {
 }
 
 export class ValidationError extends DomainError {
-  constructor(details: string[], code = 'VALIDATION_FAILED') {
+  constructor(details: string[] | any, code = 'VALIDATION_FAILED') {
     super('Validation failed', { code, details });
   }
 }

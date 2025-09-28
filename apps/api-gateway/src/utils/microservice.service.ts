@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom, timeout } from 'rxjs';
+import { defaultIfEmpty, firstValueFrom, timeout } from 'rxjs';
 
 export interface MicroserviceCallOptions {
   timeoutMs?: number;
@@ -24,10 +24,11 @@ export class MicroserviceService {
     const serviceName = this.extractServiceName(pattern);
 
     try {
-      const result = await firstValueFrom(
-        client.send<T>(pattern, data).pipe(timeout(timeoutMs)),
+      return await firstValueFrom(
+        client
+          .send<T>(pattern, data)
+          .pipe(timeout(timeoutMs), defaultIfEmpty(null as T)),
       );
-      return result;
     } catch (error) {
       this.logger.warn(`Communicate error: ${serviceName}: ${error.message}`);
       throw error;

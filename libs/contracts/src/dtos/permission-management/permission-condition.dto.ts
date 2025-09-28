@@ -1,11 +1,11 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 
 export class PermissionConditionDto {
   @IsString()
   field: string;
 
-  @IsEnum(['equals', 'not_equals', 'in', 'not_in', 'contains'])
-  operator: 'equals' | 'not_equals' | 'in' | 'not_in' | 'contains';
+  @IsEnum(['eq', 'ne', 'in', 'contains'])
+  operator: 'eq' | 'ne' | 'in' | 'contains';
 
   @IsString()
   value: any;

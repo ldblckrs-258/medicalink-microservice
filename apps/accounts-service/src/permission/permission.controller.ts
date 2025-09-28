@@ -1,106 +1,181 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern } from '@nestjs/microservices';
-import { PermissionRepository } from './permission.repository';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { PermissionService } from './permission.service';
+import type { UpdateGroupPayload } from './interfaces';
+import {
+  AddUserToGroupDto,
+  AssignGroupPermissionDto,
+  AssignUserPermissionDto,
+  CreatePermissionGroupDto,
+  PostResponseDto,
+  RemoveUserFromGroupDto,
+  RevokeGroupPermissionDto,
+  RevokeUserPermissionDto,
+} from '@app/contracts';
 
 @Controller()
 export class PermissionController {
-  constructor(private readonly permissionRepository: PermissionRepository) {}
+  constructor(private readonly permissionService: PermissionService) {}
+
+  // Permission Management
+  @MessagePattern('permissions.getAll')
+  async getAllPermissions() {
+    return this.permissionService.getAllPermissions();
+  }
 
   @MessagePattern('permissions.getUserSnapshot')
-  async getUserPermissionSnapshot(data: { userId: string; tenantId?: string }) {
-    const { userId, tenantId = 'global' } = data;
-    return this.permissionRepository.getUserPermissionSnapshot(
-      userId,
-      tenantId,
+  async getUserPermissionSnapshot(
+    @Payload() payload: { userId: string; tenantId?: string },
+  ) {
+    return this.permissionService.getUserPermissionSnapshot(
+      payload.userId,
+      payload.tenantId || 'global',
+    );
+  }
+
+  @MessagePattern('permissions.getUserPermissions')
+  async getUserPermissions(
+    @Payload() payload: { userId: string; tenantId?: string },
+  ) {
+    return this.permissionService.getUserPermissionDetails(
+      payload.userId,
+      payload.tenantId || 'global',
     );
   }
 
   @MessagePattern('permissions.hasPermission')
-  async hasPermission(data: {
-    userId: string;
-    resource: string;
-    action: string;
-    tenantId?: string;
-    context?: Record<string, any>;
-  }) {
-    const { userId, resource, action, tenantId = 'global', context } = data;
-    return this.permissionRepository.hasPermission(
-      userId,
-      resource,
-      action,
-      tenantId,
-      context,
+  async hasPermission(
+    @Payload()
+    payload: {
+      userId: string;
+      resource: string;
+      action: string;
+      tenantId?: string;
+      context?: Record<string, any>;
+    },
+  ) {
+    return this.permissionService.hasPermission(
+      payload.userId,
+      payload.resource,
+      payload.action,
+      payload.tenantId || 'global',
+      payload.context,
     );
   }
 
-  @MessagePattern('permissions.getAllPermissions')
-  async getAllPermissions() {
-    return this.permissionRepository.getAllPermissions();
-  }
-
+  // User Permission Management
   @MessagePattern('permissions.assignUserPermission')
-  async assignUserPermission(data: {
-    userId: string;
-    permissionId: string;
-    tenantId?: string;
-    effect?: 'ALLOW' | 'DENY';
-    conditions?: any[];
-  }) {
-    const {
-      userId,
-      permissionId,
-      tenantId = 'global',
-      effect = 'ALLOW',
-      conditions,
-    } = data;
-    return this.permissionRepository.assignUserPermission(
-      userId,
-      permissionId,
-      tenantId,
-      effect,
-      conditions,
-    );
+  async assignUserPermission(
+    @Payload() dto: AssignUserPermissionDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.assignUserPermission(dto);
   }
 
   @MessagePattern('permissions.revokeUserPermission')
-  async revokeUserPermission(data: {
-    userId: string;
-    permissionId: string;
-    tenantId?: string;
-  }) {
-    const { userId, permissionId, tenantId = 'global' } = data;
-    return this.permissionRepository.revokeUserPermission(
-      userId,
-      permissionId,
-      tenantId,
+  async revokeUserPermission(
+    @Payload() dto: RevokeUserPermissionDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.revokeUserPermission(dto);
+  }
+
+  // Group Management
+  @MessagePattern('permissions.getAllGroups')
+  async getAllGroups(@Payload() payload: { tenantId?: string }) {
+    return this.permissionService.getAllGroups(payload.tenantId);
+  }
+
+  @MessagePattern('permissions.createGroup')
+  async createGroup(@Payload() dto: CreatePermissionGroupDto) {
+    return this.permissionService.createGroup(dto);
+  }
+
+  @MessagePattern('permissions.updateGroup')
+  async updateGroup(@Payload() payload: UpdateGroupPayload) {
+    return this.permissionService.updateGroup(
+      payload.id,
+      payload.name,
+      payload.description,
+      payload.isActive,
+      payload.tenantId || 'global',
     );
   }
 
-  @MessagePattern('permissions.assignUserToGroup')
-  async assignUserToGroup(data: {
-    userId: string;
-    groupId: string;
-    tenantId?: string;
-  }) {
-    const { userId, groupId, tenantId = 'global' } = data;
-    return this.permissionRepository.assignUserToGroup(
-      userId,
-      groupId,
-      tenantId,
+  @MessagePattern('permissions.deleteGroup')
+  async deleteGroup(
+    @Payload() payload: { groupId: string },
+  ): Promise<PostResponseDto> {
+    return this.permissionService.deleteGroup(payload.groupId);
+  }
+
+  // User Group Management
+  @MessagePattern('permissions.getUserGroups')
+  async getUserGroups(
+    @Payload() payload: { userId: string; tenantId?: string },
+  ) {
+    return this.permissionService.getUserGroups(
+      payload.userId,
+      payload.tenantId,
     );
+  }
+
+  @MessagePattern('permissions.addUserToGroup')
+  async addUserToGroup(
+    @Payload() dto: AddUserToGroupDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.addUserToGroup(dto);
   }
 
   @MessagePattern('permissions.removeUserFromGroup')
-  async removeUserFromGroup(data: {
-    userId: string;
-    groupId: string;
-    tenantId?: string;
-  }) {
-    const { userId, groupId, tenantId = 'global' } = data;
-    return this.permissionRepository.removeUserFromGroup(
-      userId,
-      groupId,
-      tenantId,
+  async removeUserFromGroup(
+    @Payload() dto: RemoveUserFromGroupDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.removeUserFromGroup(dto);
+  }
+
+  // Group Permission Management
+  @MessagePattern('permissions.getGroupPermissions')
+  async getGroupPermissions(
+    @Payload() payload: { groupId: string; tenantId?: string },
+  ) {
+    return this.permissionService.getGroupPermissions(
+      payload.groupId,
+      payload.tenantId,
+    );
+  }
+
+  @MessagePattern('permissions.assignGroupPermission')
+  async assignGroupPermission(
+    @Payload() dto: AssignGroupPermissionDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.assignGroupPermission(dto);
+  }
+
+  @MessagePattern('permissions.revokeGroupPermission')
+  async revokeGroupPermission(
+    @Payload() dto: RevokeGroupPermissionDto,
+  ): Promise<PostResponseDto> {
+    return this.permissionService.revokeGroupPermission(dto);
+  }
+
+  // Permission Management Stats
+  @MessagePattern('permissions.getStats')
+  async getPermissionStats() {
+    return this.permissionService.getPermissionStats();
+  }
+
+  // Cache Management
+  @MessagePattern('permissions.invalidateUserCache')
+  invalidateUserPermissionCache(@Payload() payload: { userId: string }) {
+    return this.permissionService.invalidateUserPermissionCache(payload.userId);
+  }
+
+  @MessagePattern('permissions.refreshUserSnapshot')
+  async refreshUserPermissionSnapshot(
+    @Payload() payload: { userId: string; tenantId?: string },
+  ) {
+    return this.permissionService.refreshUserPermissionSnapshot(
+      payload.userId,
+      payload.tenantId || 'global',
     );
   }
 }

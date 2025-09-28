@@ -75,7 +75,7 @@ export class PermissionAssignmentService {
       result.success = false;
       result.errors = [error.message];
       this.logger.error(
-        `❌ Error assigning permissions to user ${userId}:`,
+        `Error assigning permissions to user ${userId}:`,
         error.stack,
       );
       throw error;

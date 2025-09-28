@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthVersionService } from '../auth-version/auth-version.service';
+import { AuthRepository } from '../auth/auth.repository';
+import {
+  DomainError,
+  ForbiddenError,
+  fromUnknown,
+  NotFoundError,
+  ValidationError,
+} from '@app/domain-errors';
 
 export interface UserPermissionSnapshot {
   userId: string;
@@ -30,16 +38,84 @@ export class PermissionRepository {
     write: ['create', 'update'],
   };
 
+  // Default groups that cannot be deleted
+  private readonly DEFAULT_GROUP_NAMES = ['super_admin', 'admin', 'doctor'];
+
   constructor(
     private prisma: PrismaService,
     private authVersionService: AuthVersionService,
+    private authRepository: AuthRepository,
   ) {}
+
+  /**
+   * Check if a user exists and throw NotFoundError if it doesn't
+   */
+  async validateUserExists(userId: string): Promise<void> {
+    try {
+      const user = await this.authRepository.findStaffWithProfile(userId);
+      if (!user) {
+        throw new NotFoundError(`User with ID '${userId}' not found`);
+      }
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to validate user existence');
+    }
+  }
+
+  /**
+   * Check if a group exists and throw NotFoundError if it doesn't
+   */
+  private async validateGroupExists(groupId: string): Promise<void> {
+    try {
+      const group = await this.prisma.group.findUnique({
+        where: { id: groupId },
+        select: { id: true },
+      });
+
+      if (!group) {
+        throw new NotFoundError(`Group with ID '${groupId}' not found`);
+      }
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to validate group existence');
+    }
+  }
+
+  /**
+   * Check if a group is a default system group that cannot be deleted
+   */
+  private async isDefaultGroup(groupId: string): Promise<boolean> {
+    try {
+      const group = await this.prisma.group.findUnique({
+        where: { id: groupId },
+        select: { name: true },
+      });
+
+      if (!group) {
+        throw new NotFoundError(`Group with ID '${groupId}' not found`);
+      }
+
+      return this.DEFAULT_GROUP_NAMES.includes(group.name);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to check if group is default');
+    }
+  }
 
   async getUserPermissionSnapshot(
     userId: string,
     tenantId: string = 'global',
-  ): Promise<UserPermissionSnapshot | null> {
+  ): Promise<UserPermissionSnapshot> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
       // Get auth version using the service
       const version = await this.authVersionService.getUserAuthVersion(userId);
 
@@ -133,8 +209,7 @@ export class PermissionRepository {
         permissions: Array.from(allPermissions),
       };
     } catch (error) {
-      console.error('Error getting user permission snapshot:', error);
-      return null;
+      throw fromUnknown(error, 'Failed to get user permission snapshot');
     }
   }
 
@@ -143,6 +218,12 @@ export class PermissionRepository {
     tenantId: string = 'global',
   ): Promise<UserPermissionDetails[]> {
     try {
+      // First, validate that the user exists
+      const user = await this.authRepository.findStaffWithProfile(userId);
+      if (!user) {
+        throw new NotFoundError(`User with ID '${userId}' not found`);
+      }
+
       const permissions: UserPermissionDetails[] = [];
 
       // Get direct user permissions
@@ -201,8 +282,7 @@ export class PermissionRepository {
 
       return permissions;
     } catch (error) {
-      console.error('Error getting user permission details:', error);
-      return [];
+      throw fromUnknown(error, 'Failed to get user permission details');
     }
   }
 
@@ -214,6 +294,9 @@ export class PermissionRepository {
     context?: Record<string, any>,
   ): Promise<boolean> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
       const permissionDetails = await this.getUserPermissionDetails(
         userId,
         tenantId,
@@ -257,8 +340,18 @@ export class PermissionRepository {
 
       return false;
     } catch (error) {
-      console.error('Error checking permission:', error);
-      return false;
+      throw new DomainError(
+        `Permission evaluation failed for user '${userId}' on resource '${resource}' action '${action}'`,
+        {
+          code: 'PERMISSION_EVALUATION_FAILED',
+          details: {
+            userId,
+            resource,
+            action,
+            reason: error instanceof Error ? error.message : undefined,
+          },
+        },
+      );
     }
   }
 
@@ -274,37 +367,62 @@ export class PermissionRepository {
       return false;
     }
 
-    // All conditions must be satisfied
-    return conditions.every((condition) => {
-      const contextValue = context[condition.field];
+    try {
+      // All conditions must be satisfied
+      return conditions.every((condition) => {
+        // Validate condition structure
+        if (
+          !condition.field ||
+          !condition.operator ||
+          condition.value === undefined
+        ) {
+          throw new ValidationError(condition, 'INVALID_PERMISSION_CONDITION');
+        }
 
-      switch (condition.operator) {
-        case 'eq':
-          return contextValue === condition.value;
-        case 'ne':
-          return contextValue !== condition.value;
-        case 'in':
-          return (
-            Array.isArray(condition.value) &&
-            condition.value.includes(contextValue)
-          );
-        case 'contains':
-          return (
-            typeof contextValue === 'string' &&
-            contextValue.includes(String(condition.value))
-          );
-        default:
-          return false;
+        const contextValue = context[condition.field];
+
+        switch (condition.operator) {
+          case 'eq':
+            return contextValue === condition.value;
+          case 'ne':
+            return contextValue !== condition.value;
+          case 'in':
+            return (
+              Array.isArray(condition.value) &&
+              condition.value.includes(contextValue)
+            );
+          case 'contains':
+            return (
+              typeof contextValue === 'string' &&
+              contextValue.includes(String(condition.value))
+            );
+          default:
+            throw new ValidationError(
+              condition,
+              'INVALID_PERMISSION_CONDITION',
+            );
+        }
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
       }
-    });
+      throw fromUnknown(error, 'Failed to check permission conditions');
+    }
   }
 
   async getAllPermissions(): Promise<
-    Array<{ resource: string; action: string; description?: string }>
+    Array<{
+      id: string;
+      resource: string;
+      action: string;
+      description?: string;
+    }>
   > {
     try {
       const permissions = await this.prisma.permission.findMany({
         select: {
+          id: true,
           resource: true,
           action: true,
           description: true,
@@ -313,13 +431,13 @@ export class PermissionRepository {
       });
 
       return permissions.map((p) => ({
+        id: p.id,
         resource: p.resource,
         action: p.action,
         description: p.description ?? undefined,
       }));
     } catch (error) {
-      console.error('Error getting all permissions:', error);
-      return [];
+      throw fromUnknown(error, 'Failed to get all permissions');
     }
   }
 
@@ -329,8 +447,27 @@ export class PermissionRepository {
     tenantId: string = 'global',
     effect: 'ALLOW' | 'DENY' = 'ALLOW',
     conditions?: PermissionCondition[],
-  ): Promise<boolean> {
+  ): Promise<void> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
+      // Validate conditions if provided
+      if (conditions) {
+        conditions.forEach((condition) => {
+          if (
+            !condition.field ||
+            !condition.operator ||
+            condition.value === undefined
+          ) {
+            throw new ValidationError(
+              condition,
+              'INVALID_PERMISSION_CONDITION',
+            );
+          }
+        });
+      }
+
       await this.prisma.userPermission.upsert({
         where: {
           userId_permissionId_tenantId: {
@@ -354,11 +491,11 @@ export class PermissionRepository {
 
       // Increment auth version to invalidate cache
       await this.incrementUserAuthVersion(userId);
-
-      return true;
     } catch (error) {
-      console.error('Error assigning user permission:', error);
-      return false;
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to assign user permission');
     }
   }
 
@@ -366,8 +503,11 @@ export class PermissionRepository {
     userId: string,
     permissionId: string,
     tenantId: string = 'global',
-  ): Promise<boolean> {
+  ): Promise<void> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
       await this.prisma.userPermission.delete({
         where: {
           userId_permissionId_tenantId: {
@@ -380,11 +520,8 @@ export class PermissionRepository {
 
       // Increment auth version to invalidate cache
       await this.incrementUserAuthVersion(userId);
-
-      return true;
     } catch (error) {
-      console.error('Error revoking user permission:', error);
-      return false;
+      throw fromUnknown(error, 'Failed to revoke user permission');
     }
   }
 
@@ -392,8 +529,14 @@ export class PermissionRepository {
     userId: string,
     groupId: string,
     tenantId: string = 'global',
-  ): Promise<boolean> {
+  ): Promise<void> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
+      // Validate that the group exists
+      await this.validateGroupExists(groupId);
+
       await this.prisma.userGroup.upsert({
         where: {
           userId_groupId_tenantId: {
@@ -412,11 +555,11 @@ export class PermissionRepository {
 
       // Increment auth version to invalidate cache
       await this.incrementUserAuthVersion(userId);
-
-      return true;
     } catch (error) {
-      console.error('Error assigning user to group:', error);
-      return false;
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to assign user to group');
     }
   }
 
@@ -424,8 +567,14 @@ export class PermissionRepository {
     userId: string,
     groupId: string,
     tenantId: string = 'global',
-  ): Promise<boolean> {
+  ): Promise<void> {
     try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
+      // Validate that the group exists
+      await this.validateGroupExists(groupId);
+
       await this.prisma.userGroup.delete({
         where: {
           userId_groupId_tenantId: {
@@ -438,15 +587,474 @@ export class PermissionRepository {
 
       // Increment auth version to invalidate cache
       await this.incrementUserAuthVersion(userId);
-
-      return true;
     } catch (error) {
-      console.error('Error removing user from group:', error);
-      return false;
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to remove user from group');
     }
   }
 
-  private async incrementUserAuthVersion(userId: string): Promise<void> {
+  // Group Management Methods
+  async getAllGroups(tenantId?: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description?: string;
+      tenantId?: string;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  > {
+    try {
+      const groups = await this.prisma.group.findMany({
+        where: tenantId ? { tenantId } : {},
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          tenantId: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: [{ name: 'asc' }],
+      });
+
+      return groups.map((group) => ({
+        ...group,
+        description: group.description ?? undefined,
+        tenantId: group.tenantId ?? undefined,
+      }));
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get all groups');
+    }
+  }
+
+  async createGroup(
+    name: string,
+    description?: string,
+    tenantId?: string,
+  ): Promise<{
+    id: string;
+    name: string;
+    description?: string;
+    tenantId?: string;
+  }> {
+    try {
+      const group = await this.prisma.group.create({
+        data: {
+          name,
+          description,
+          tenantId,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          tenantId: true,
+        },
+      });
+
+      return {
+        ...group,
+        description: group.description ?? undefined,
+        tenantId: group.tenantId ?? undefined,
+      };
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to create group');
+    }
+  }
+
+  async updateGroup(
+    groupId: string,
+    name?: string,
+    description?: string,
+    isActive?: boolean,
+    tenantId: string = 'global',
+  ): Promise<void> {
+    const _tenantId = tenantId;
+    try {
+      // Validate that the group exists
+      await this.validateGroupExists(groupId);
+
+      // Check if this is a default group and prevent name changes
+      const isDefault = await this.isDefaultGroup(groupId);
+      if (isDefault && name !== undefined) {
+        const group = await this.prisma.group.findUnique({
+          where: { id: groupId },
+          select: { name: true },
+        });
+        throw new ForbiddenError(
+          `Cannot rename default system group '${group?.name || 'unknown'}'`,
+        );
+      }
+
+      await this.prisma.group.update({
+        where: { id: groupId },
+        data: {
+          ...(name !== undefined && { name }),
+          ...(description !== undefined && { description }),
+          ...(isActive !== undefined && { isActive }),
+        },
+      });
+    } catch (error) {
+      if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to update group');
+    }
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    try {
+      // Check if this is a default group that cannot be deleted
+      const isDefault = await this.isDefaultGroup(groupId);
+      if (isDefault) {
+        const group = await this.prisma.group.findUnique({
+          where: { id: groupId },
+          select: { name: true },
+        });
+        throw new ForbiddenError(
+          `Cannot delete default system group '${group?.name || 'unknown'}'`,
+        );
+      }
+
+      await this.prisma.group.delete({
+        where: { id: groupId },
+      });
+    } catch (error) {
+      if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to delete group');
+    }
+  }
+
+  async getUserGroups(
+    userId: string,
+    tenantId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      groupId: string;
+      groupName: string;
+      groupDescription?: string;
+      tenantId?: string;
+      createdAt: Date;
+    }>
+  > {
+    try {
+      // First, validate that the user exists
+      await this.validateUserExists(userId);
+
+      const userGroups = await this.prisma.userGroup.findMany({
+        where: {
+          userId,
+          ...(tenantId && { tenantId }),
+        },
+        include: {
+          group: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              tenantId: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }],
+      });
+
+      return userGroups.map((ug) => ({
+        id: ug.id,
+        groupId: ug.groupId,
+        groupName: ug.group.name,
+        groupDescription: ug.group.description ?? undefined,
+        tenantId: ug.tenantId ?? undefined,
+        createdAt: ug.createdAt,
+      }));
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get user groups');
+    }
+  }
+
+  async assignGroupPermission(
+    groupId: string,
+    permissionId: string,
+    _tenantId: string = 'global',
+    effect: 'ALLOW' | 'DENY' = 'ALLOW',
+    conditions?: PermissionCondition[],
+  ): Promise<void> {
+    try {
+      // Validate that the group exists
+      await this.validateGroupExists(groupId);
+
+      // Validate conditions if provided
+      if (conditions) {
+        conditions.forEach((condition) => {
+          if (
+            !condition.field ||
+            !condition.operator ||
+            condition.value === undefined
+          ) {
+            throw new ValidationError(
+              condition,
+              'INVALID_PERMISSION_CONDITION',
+            );
+          }
+        });
+      }
+
+      await this.prisma.groupPermission.upsert({
+        where: {
+          groupId_permissionId: {
+            groupId,
+            permissionId,
+          },
+        },
+        update: {
+          effect,
+          conditions: conditions as any,
+        },
+        create: {
+          groupId,
+          permissionId,
+          effect,
+          conditions: conditions as any,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to assign group permission');
+    }
+  }
+
+  async revokeGroupPermission(
+    groupId: string,
+    permissionId: string,
+    _tenantId: string = 'global',
+  ): Promise<void> {
+    try {
+      // Validate that the group exists
+      await this.validateGroupExists(groupId);
+
+      await this.prisma.groupPermission.delete({
+        where: {
+          groupId_permissionId: {
+            groupId,
+            permissionId,
+          },
+        },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to revoke group permission');
+    }
+  }
+
+  async getGroupPermissions(
+    groupId: string,
+    tenantId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      permissionId: string;
+      resource: string;
+      action: string;
+      description?: string;
+      effect: 'ALLOW' | 'DENY';
+      conditions?: PermissionCondition[];
+      createdAt: Date;
+    }>
+  > {
+    try {
+      // First, check if the group exists
+      const group = await this.prisma.group.findUnique({
+        where: { id: groupId },
+        select: { id: true },
+      });
+
+      if (!group) {
+        throw new NotFoundError(`Group with ID '${groupId}' not found`);
+      }
+
+      const groupPermissions = await this.prisma.groupPermission.findMany({
+        where: {
+          groupId,
+          ...(tenantId && { tenantId }),
+        },
+        include: {
+          permission: {
+            select: {
+              id: true,
+              resource: true,
+              action: true,
+              description: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }],
+      });
+
+      return groupPermissions.map((gp) => ({
+        id: gp.id,
+        permissionId: gp.permissionId,
+        resource: gp.permission.resource,
+        action: gp.permission.action,
+        description: gp.permission.description ?? undefined,
+        effect: gp.effect,
+        conditions: gp.conditions
+          ? (gp.conditions as unknown as PermissionCondition[])
+          : undefined,
+        createdAt: gp.createdAt,
+      }));
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw fromUnknown(error, 'Failed to get group permissions');
+    }
+  }
+
+  async incrementUserAuthVersion(userId: string): Promise<void> {
     await this.authVersionService.incrementUserAuthVersion(userId);
+  }
+
+  // Statistics Methods
+  async getTotalUserPermissions(): Promise<number> {
+    try {
+      const count = await this.prisma.userPermission.count();
+      return count;
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get total user permissions count');
+    }
+  }
+
+  async getTotalGroupPermissions(): Promise<number> {
+    try {
+      const count = await this.prisma.groupPermission.count();
+      return count;
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get total group permissions count');
+    }
+  }
+
+  async getTotalUserGroupMemberships(): Promise<number> {
+    try {
+      const count = await this.prisma.userGroup.count();
+      return count;
+    } catch (error) {
+      throw fromUnknown(
+        error,
+        'Failed to get total user group memberships count',
+      );
+    }
+  }
+
+  async getMostUsedPermissions(): Promise<
+    Array<{
+      permissionId: string;
+      resource: string;
+      action: string;
+      usageCount: number;
+    }>
+  > {
+    try {
+      const result = await this.prisma.userPermission.groupBy({
+        by: ['permissionId'],
+        _count: {
+          permissionId: true,
+        },
+        orderBy: {
+          _count: {
+            permissionId: 'desc',
+          },
+        },
+        take: 10,
+      });
+
+      // Get permission details for each permissionId
+      const permissionIds = result.map((item) => item.permissionId);
+      const permissions = await this.prisma.permission.findMany({
+        where: {
+          id: {
+            in: permissionIds,
+          },
+        },
+        select: {
+          id: true,
+          resource: true,
+          action: true,
+        },
+      });
+
+      // Map the results
+      return result.map((item) => {
+        const permission = permissions.find((p) => p.id === item.permissionId);
+        return {
+          permissionId: item.permissionId,
+          resource: permission?.resource || 'unknown',
+          action: permission?.action || 'unknown',
+          usageCount: item._count.permissionId,
+        };
+      });
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get most used permissions');
+    }
+  }
+
+  async getLargestGroups(): Promise<
+    Array<{
+      groupId: string;
+      groupName: string;
+      memberCount: number;
+    }>
+  > {
+    try {
+      const result = await this.prisma.userGroup.groupBy({
+        by: ['groupId'],
+        _count: {
+          groupId: true,
+        },
+        orderBy: {
+          _count: {
+            groupId: 'desc',
+          },
+        },
+        take: 10,
+      });
+
+      // Get group details for each groupId
+      const groupIds = result.map((item) => item.groupId);
+      const groups = await this.prisma.group.findMany({
+        where: {
+          id: {
+            in: groupIds,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      // Map the results
+      return result.map((item) => {
+        const group = groups.find((g) => g.id === item.groupId);
+        return {
+          groupId: item.groupId,
+          groupName: group?.name || 'unknown',
+          memberCount: item._count.groupId,
+        };
+      });
+    } catch (error) {
+      throw fromUnknown(error, 'Failed to get largest groups');
+    }
   }
 }
