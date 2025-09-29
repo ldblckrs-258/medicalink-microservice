@@ -39,6 +39,12 @@
       ],
       "@app/error-adapters": [
         "libs/error-adapters/src"
+      ],
+      "@app/rabbitmq": [
+        "libs/rabbitmq/src"
+      ],
+      "@app/rabbitmq/*": [
+        "libs/rabbitmq/src/*"
       ]
     }
   }

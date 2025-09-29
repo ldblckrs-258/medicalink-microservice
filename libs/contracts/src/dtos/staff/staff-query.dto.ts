@@ -13,7 +13,7 @@ import { Transform } from 'class-transformer';
 export class StaffQueryDto {
   @IsOptional()
   @IsNumber({}, { message: 'Page must be a number' })
-  @Min(0, { message: 'Page must be greater than or equal to 1' })
+  @Min(1, { message: 'Page must be greater than or equal to 1' })
   @Transform(({ value }) => parseInt(String(value), 10))
   page?: number = 1;
 

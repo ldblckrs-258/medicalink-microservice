@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, BadRequestException } from '@nestjs/common';
+import { ValidationPipe, BadRequestException, Logger } from '@nestjs/common';
 import { ApiGatewayModule } from './api-gateway.module';
 import { ResolvePromisesInterceptor } from './interceptors/serializer.interceptor';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
@@ -48,6 +48,6 @@ async function bootstrap() {
 
   const port = process.env.API_GATEWAY_PORT || 3000;
   await app.listen(port);
-  console.log(`API Gateway is running on port ${port}`);
+  Logger.verbose(`API Gateway is running on port ${port}`);
 }
 void bootstrap();

@@ -22,49 +22,32 @@ export type RpcErrorPayload = {
 export function toRpcException(e: unknown): RpcException {
   if (e instanceof RpcException) return e;
 
+  let p: RpcErrorPayload;
+
   if (e instanceof ValidationError) {
-    return new RpcException(
-      payload(400, 'Bad Request', e.message, e.code, e.details),
-    );
-  }
-  if (e instanceof UnauthorizedError) {
-    return new RpcException(payload(401, 'Unauthorized', e.message, e.code));
-  }
-  if (e instanceof ForbiddenError) {
-    return new RpcException(payload(403, 'Forbidden', e.message, e.code));
-  }
-  if (e instanceof NotFoundError) {
-    return new RpcException(payload(404, 'Not Found', e.message, e.code));
-  }
-  if (e instanceof ConflictError) {
-    return new RpcException(
-      payload(409, 'Conflict', e.message, e.code, e.details),
-    );
-  }
-  if (e instanceof InfraUnavailableError) {
-    return new RpcException(
-      payload(503, 'Service Unavailable', e.message, e.code, e.details),
-    );
-  }
-  if (e instanceof DomainError) {
-    return new RpcException(
-      payload(400, 'Bad Request', e.message, e.code, e.details),
-    );
+    p = payload(400, 'Bad Request', e.message, e.code, e.details);
+  } else if (e instanceof UnauthorizedError) {
+    p = payload(401, 'Unauthorized', e.message, e.code);
+  } else if (e instanceof ForbiddenError) {
+    p = payload(403, 'Forbidden', e.message, e.code);
+  } else if (e instanceof NotFoundError) {
+    p = payload(404, 'Not Found', e.message, e.code);
+  } else if (e instanceof ConflictError) {
+    p = payload(409, 'Conflict', e.message, e.code, e.details);
+  } else if (e instanceof InfraUnavailableError) {
+    p = payload(503, 'Service Unavailable', e.message, e.code, e.details);
+  } else if (e instanceof DomainError) {
+    p = payload(400, 'Bad Request', e.message, e.code, e.details);
+  } else if (isPrismaError(e)) {
+    p = payload(400, 'Bad Request', extractPrismaMessage(e), 'PRISMA_ERROR');
+  } else {
+    const msg = e instanceof Error ? e.message : 'Internal server error';
+    const code = (e as any)?.code ?? 'UNEXPECTED';
+    const details = (e as any)?.details;
+    p = payload(500, 'Internal Server Error', msg, code, details);
   }
 
-  // Handle Prisma errors specifically
-  if (isPrismaError(e)) {
-    return new RpcException(
-      payload(400, 'Bad Request', extractPrismaMessage(e), 'PRISMA_ERROR'),
-    );
-  }
-
-  const msg = e instanceof Error ? e.message : 'Internal server error';
-  const code = (e as any)?.code ?? 'UNEXPECTED';
-  const details = (e as any)?.details;
-  return new RpcException(
-    payload(500, 'Internal Server Error', msg, code, details),
-  );
+  return new RpcException(p);
 }
 
 function payload(

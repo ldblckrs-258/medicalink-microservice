@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DoctorsModule } from './doctors/doctors.module';
 import { SpecialtiesModule } from './specialties/specialties.module';
 import { WorkLocationsModule } from './work-locations/work-locations.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { WorkLocationsModule } from './work-locations/work-locations.module';
     WorkLocationsModule,
     DoctorsModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [PrismaService],
 })
 export class ProviderDirectoryServiceModule {}

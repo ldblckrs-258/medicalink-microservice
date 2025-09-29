@@ -1,10 +1,10 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RedisModule } from '@app/redis';
+import { RabbitMQModule } from '@app/rabbitmq';
 import { JwtAuthGuard, PermissionGuard } from '@app/contracts';
 import { ApiGatewayController } from './api-gateway.controller';
 import { ApiGatewayService } from './api-gateway.service';
@@ -23,6 +23,9 @@ import { PermissionMiddleware } from './middleware/permission.middleware';
 import { MicroserviceErrorInterceptor } from './interceptors/microservice-error.interceptor';
 import { PermissionsController } from './permissions/permissions.controller';
 import { MorganMiddleware } from './middleware';
+import { jwtModuleAsyncOptions } from './auth/jwt.config';
+import { throttlerOptions } from './config/throttler.config';
+import { MicroserviceClientsModule } from './clients/microservice-clients.module';
 
 @Module({
   imports: [
@@ -30,95 +33,11 @@ import { MorganMiddleware } from './middleware';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET', {
-          infer: true,
-        }),
-        signOptions: {
-          expiresIn: +configService.getOrThrow<number>('JWT_EXPIRES_IN', {
-            infer: true,
-          }),
-        },
-      }),
-      inject: [ConfigService],
-    }),
+    JwtModule.registerAsync(jwtModuleAsyncOptions),
     RedisModule,
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000, // 1 second
-        limit: 10, // 10 requests per second
-      },
-      {
-        name: 'medium',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
-    ClientsModule.registerAsync([
-      {
-        name: 'ACCOUNTS_SERVICE',
-        imports: [ConfigModule],
-        useFactory: (configService: ConfigService) => {
-          return {
-            transport: Transport.REDIS,
-            options: {
-              host: configService.get<string>('REDIS_HOST', { infer: true }),
-              port:
-                +configService.get<number>('REDIS_PORT', { infer: true }) ||
-                6379,
-              username: configService.get<string>('REDIS_USERNAME', {
-                infer: true,
-              }),
-              password: configService.get<string>('REDIS_PASSWORD', {
-                infer: true,
-              }),
-              db: parseInt(
-                configService.get<string>('REDIS_DB', { infer: true }) || '0',
-              ),
-              retryAttempts: 5,
-              retryDelay: 3000,
-              maxRetriesPerRequest: 3,
-              connectTimeout: 10000,
-              lazyConnect: true,
-            },
-          };
-        },
-        inject: [ConfigService],
-      },
-      {
-        name: 'PROVIDER_DIRECTORY_SERVICE',
-        imports: [ConfigModule],
-        useFactory: (configService: ConfigService) => {
-          return {
-            transport: Transport.REDIS,
-            options: {
-              host: configService.get<string>('REDIS_HOST', { infer: true }),
-              port:
-                +configService.get<number>('REDIS_PORT', { infer: true }) ||
-                6379,
-              username: configService.get<string>('REDIS_USERNAME', {
-                infer: true,
-              }),
-              password: configService.get<string>('REDIS_PASSWORD', {
-                infer: true,
-              }),
-              db: parseInt(
-                configService.get<string>('REDIS_DB', { infer: true }) || '0',
-              ),
-              retryAttempts: 5,
-              retryDelay: 3000,
-              maxRetriesPerRequest: 3,
-              connectTimeout: 10000,
-              lazyConnect: true,
-            },
-          };
-        },
-        inject: [ConfigService],
-      },
-    ]),
+    RabbitMQModule,
+    ThrottlerModule.forRoot(throttlerOptions),
+    MicroserviceClientsModule,
   ],
   controllers: [
     ApiGatewayController,
@@ -159,8 +78,8 @@ export class ApiGatewayModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(MorganMiddleware)
-      .forRoutes('*')
+      .forRoutes('(.*)')
       .apply(PermissionMiddleware)
-      .forRoutes('*');
+      .forRoutes('(.*)');
   }
 }

@@ -5,6 +5,7 @@ import { BlogsService } from './blogs/blogs.service';
 import { BlogsController } from './blogs/blogs.controller';
 import { QuestionsService } from './questions/questions.service';
 import { QuestionsController } from './questions/questions.controller';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { QuestionsController } from './questions/questions.controller';
       isGlobal: true,
     }),
   ],
-  controllers: [BlogsController, QuestionsController],
+  controllers: [BlogsController, QuestionsController, HealthController],
   providers: [PrismaService, BlogsService, QuestionsService],
 })
 export class ContentServiceModule {}

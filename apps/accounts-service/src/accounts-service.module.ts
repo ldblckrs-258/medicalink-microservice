@@ -7,6 +7,7 @@ import { StaffsModule } from './staffs/staffs.module';
 import { DoctorAccountsModule } from './doctor-accounts/doctor-accounts.module';
 import { PermissionModule } from './permission/permission.module';
 import { AuthVersionModule } from './auth-version/auth-version.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -21,5 +22,6 @@ import { AuthVersionModule } from './auth-version/auth-version.module';
     PermissionModule,
     AuthVersionModule,
   ],
+  controllers: [HealthController],
 })
 export class AccountsServiceModule {}

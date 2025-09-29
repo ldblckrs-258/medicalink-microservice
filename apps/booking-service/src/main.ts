@@ -1,24 +1,27 @@
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { BookingServiceModule } from './booking-service.module';
+import { RabbitMQConfig, QUEUE_NAMES } from '@app/rabbitmq';
+import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
+import { RpcDomainErrorFilter } from '@app/error-adapters';
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    BookingServiceModule,
-    {
-      transport: Transport.REDIS,
-      options: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-      },
-    },
+  const app = await NestFactory.create(BookingServiceModule);
+  app.useGlobalFilters(new RpcDomainErrorFilter());
+
+  const configService = app.get(ConfigService);
+  app.connectMicroservice<MicroserviceOptions>(
+    RabbitMQConfig.createServerConfig(configService, QUEUE_NAMES.BOOKING_QUEUE),
+    { inheritAppConfig: true },
   );
 
-  await app.listen();
-  console.log('Booking Service is listening...');
+  await app.startAllMicroservices();
+  await app.init();
+  Logger.verbose('Booking Service is listening on RabbitMQ...');
 }
 
 bootstrap().catch((error) => {
-  console.error('Failed to start Booking Service:', error);
+  Logger.error('Failed to start Booking Service:', error);
   process.exit(1);
 });

@@ -1,37 +1,33 @@
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { ProviderDirectoryServiceModule } from './provider-directory-service.module';
 import * as dotenv from 'dotenv';
 import { RpcDomainErrorFilter } from '@app/error-adapters';
-import { ExceptionFilter } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { RabbitMQConfig, QUEUE_NAMES } from '@app/rabbitmq';
+import { ConfigService } from '@nestjs/config';
 
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    ProviderDirectoryServiceModule,
-    {
-      transport: Transport.REDIS,
-      options: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-        username: process.env.REDIS_USERNAME,
-        db: parseInt(process.env.REDIS_DB || '0'),
-        tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
-        retryStrategy: (times) => Math.min(times * 200, 2000),
-        maxRetriesPerRequest: 3,
-        connectTimeout: 10000,
-        lazyConnect: true,
-      },
-    },
+  const app = await NestFactory.create(ProviderDirectoryServiceModule);
+  app.useGlobalFilters(new RpcDomainErrorFilter());
+
+  const configService = app.get(ConfigService);
+  app.connectMicroservice<MicroserviceOptions>(
+    RabbitMQConfig.createServerConfig(
+      configService,
+      QUEUE_NAMES.PROVIDER_QUEUE,
+    ),
+    { inheritAppConfig: true },
   );
 
-  app.useGlobalFilters(new RpcDomainErrorFilter() as ExceptionFilter);
-  await app.listen();
+  await app.startAllMicroservices();
+  await app.init();
+  Logger.verbose('Provider Directory Service is listening on RabbitMQ...');
 }
 
 bootstrap().catch((error) => {
-  console.error('Failed to start Provider Directory Service:', error);
+  Logger.error('Failed to start Provider Directory Service:', error);
   process.exit(1);
 });
