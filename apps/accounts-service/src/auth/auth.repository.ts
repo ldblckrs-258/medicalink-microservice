@@ -10,7 +10,19 @@ export class AuthRepository extends BaseRepository<StaffAccount> {
   }
   async findByEmail(email: string): Promise<StaffAccount | null> {
     return await this.model.findUnique({
-      where: { email },
+      where: {
+        email,
+        deletedAt: null,
+      },
+    });
+  }
+
+  async findById(id: string): Promise<StaffAccount | null> {
+    return await this.model.findUnique({
+      where: {
+        id,
+        deletedAt: null,
+      },
     });
   }
 
