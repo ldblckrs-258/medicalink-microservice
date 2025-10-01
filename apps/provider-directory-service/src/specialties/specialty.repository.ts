@@ -12,35 +12,27 @@ import { slugify } from '../utils/slugify';
 export class SpecialtyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findManyWithMetadata(
-    query: SpecialtyQueryDto,
-  ): Promise<{ data: any[]; total: number }> {
+  async findAll(query?: SpecialtyQueryDto) {
     const {
       page = 1,
       limit = 10,
-      search,
       sortBy = 'name',
-      sortOrder = 'DESC',
+      sortOrder = 'desc',
       isActive,
-    } = query;
-
-    const skip = (page - 1) * limit;
+      includeMetadata: _includeMetadata,
+    } = query ?? {};
 
     const where: Prisma.SpecialtyWhereInput = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
 
     if (isActive !== undefined) {
       where.isActive = isActive;
     }
 
-    const orderBy: Prisma.SpecialtyOrderByWithRelationInput = {};
-    orderBy[sortBy] = sortOrder.toLowerCase() as Prisma.SortOrder;
+    const orderBy: Prisma.SpecialtyOrderByWithRelationInput = {
+      [sortBy]: sortOrder === 'asc' ? 'asc' : 'desc',
+    };
+
+    const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
       this.prisma.specialty.findMany({
@@ -48,24 +40,11 @@ export class SpecialtyRepository {
         skip,
         take: limit,
         orderBy,
-        include: {
-          _count: {
-            select: {
-              infoSections: true,
-            },
-          },
-        },
       }),
       this.prisma.specialty.count({ where }),
     ]);
 
-    // Map data to include infoSectionsCount
-    const mappedData = data.map((specialty) => ({
-      ...specialty,
-      infoSectionsCount: specialty._count.infoSections,
-    }));
-
-    return { data: mappedData, total };
+    return { data, total };
   }
 
   async findManyPublic(

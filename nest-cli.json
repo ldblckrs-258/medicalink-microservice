@@ -64,6 +64,15 @@
         "tsConfigPath": "apps/notification-service/tsconfig.app.json"
       }
     },
+    "orchestrator-service": {
+      "type": "application",
+      "root": "apps/orchestrator-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/orchestrator-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/orchestrator-service/tsconfig.app.json"
+      }
+    },
     "contracts": {
       "type": "library",
       "root": "libs/contracts",

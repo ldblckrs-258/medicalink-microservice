@@ -11,6 +11,17 @@ export class DoctorsService {
     return this.doctorRepo.create(createDoctorDto);
   }
 
+  /**
+   * Create an empty doctor profile linked to a staff account
+   * Used by orchestrator service during doctor account creation
+   */
+  async createEmpty(staffAccountId: string) {
+    return this.doctorRepo.create({
+      staffAccountId,
+      isActive: false, // Inactive until profile is completed
+    });
+  }
+
   async getPublicList(
     filters?: GetPublicListDto,
   ): Promise<PaginatedResponse<any>> {
@@ -80,5 +91,45 @@ export class DoctorsService {
 
   async toggleActive(id: string, active?: boolean) {
     return this.doctorRepo.toggleActive(id, active);
+  }
+
+  /**
+   * Get doctor profiles by staff account IDs
+   * Used by orchestrator service for read composition
+   */
+  async getByAccountIds(payload: {
+    staffAccountIds: string[];
+    specialtyIds?: string[];
+    workLocationIds?: string[];
+  }) {
+    const where: any = {
+      staffAccountId: { in: payload.staffAccountIds },
+      isActive: true, // Only return active doctors
+    };
+
+    // Filter by specialties if provided
+    if (payload.specialtyIds && payload.specialtyIds.length > 0) {
+      where.doctorSpecialties = {
+        some: {
+          specialtyId: { in: payload.specialtyIds },
+        },
+      };
+    }
+
+    // Filter by work locations if provided
+    if (payload.workLocationIds && payload.workLocationIds.length > 0) {
+      where.doctorWorkLocations = {
+        some: {
+          locationId: { in: payload.workLocationIds },
+        },
+      };
+    }
+
+    const include = {
+      doctorSpecialties: { include: { specialty: true } },
+      doctorWorkLocations: { include: { location: true } },
+    };
+
+    return this.doctorRepo.findAll(where, include);
   }
 }

@@ -13,6 +13,11 @@ export class DoctorsController {
     return this.doctorsService.create(createDoctorDto);
   }
 
+  @MessagePattern('doctor-profile.createEmpty')
+  createEmpty(@Payload() payload: { staffAccountId: string }) {
+    return this.doctorsService.createEmpty(payload.staffAccountId);
+  }
+
   @MessagePattern('doctor-profile.findOne')
   findOne(@Payload() id: string) {
     return this.doctorsService.findOne(String(id));
@@ -43,5 +48,17 @@ export class DoctorsController {
   @MessagePattern('doctor-profile.getPublicList')
   findAll(@Payload() filters?: GetPublicListDto) {
     return this.doctorsService.getPublicList(filters);
+  }
+
+  @MessagePattern('doctor-profile.getByAccountIds')
+  getByAccountIds(
+    @Payload()
+    payload: {
+      staffAccountIds: string[];
+      specialtyIds?: string[];
+      workLocationIds?: string[];
+    },
+  ) {
+    return this.doctorsService.getByAccountIds(payload);
   }
 }

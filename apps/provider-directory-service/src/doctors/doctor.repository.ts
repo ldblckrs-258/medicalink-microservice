@@ -25,26 +25,29 @@ export class DoctorRepository {
     include: any = {},
     query?: GetPublicListDto,
   ): Promise<{ data: any[]; total: number }> {
-    // const { page = 1, limit = 10, sortOrder = 'DESC' } = query ?? {};
-    // const orderBy = {
-    //   createdAt: sortOrder === 'ASC' ? 'asc' : 'desc',
-    // } as const;
-    await new Promise((resolve) => setTimeout(resolve, 1));
-    console.log(where, include, query);
+    const { page = 1, limit = 10, sortOrder = 'desc' } = query ?? {};
+    const orderBy = {
+      createdAt: sortOrder === 'asc' ? ('asc' as const) : ('desc' as const),
+    };
 
-    // const [data, total] = await Promise.all([
-    //   this.prisma.doctor.findMany({
-    //     where,
-    //     include,
-    //     skip: (page - 1) * limit,
-    //     take: limit,
-    //     orderBy,
-    //   }),
-    //   this.prisma.doctor.count({ where }),
-    // ]);
+    // Always filter by isActive = true for public list
+    const publicWhere = {
+      ...where,
+      isActive: true,
+    };
 
-    // return { data, total };
-    return { data: [], total: -1 };
+    const [data, total] = await Promise.all([
+      this.prisma.doctor.findMany({
+        where: publicWhere,
+        include,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy,
+      }),
+      this.prisma.doctor.count({ where: publicWhere }),
+    ]);
+
+    return { data, total };
   }
 
   async findOne(id: string, include: any = {}) {

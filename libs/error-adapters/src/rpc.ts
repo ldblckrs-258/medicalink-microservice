@@ -16,7 +16,6 @@ export type RpcErrorPayload = {
   error: string;
   code?: string | number;
   details?: unknown;
-  // optional: correlationId?: string;
 };
 
 export function toRpcException(e: unknown): RpcException {
@@ -24,7 +23,48 @@ export function toRpcException(e: unknown): RpcException {
 
   let p: RpcErrorPayload;
 
-  if (e instanceof ValidationError) {
+  // Handle SagaOrchestrationError specifically
+  if (isSagaOrchestrationError(e)) {
+    const sagaError = e as any;
+    const originalError = sagaError.details;
+
+    // Extract status code from original error if available
+    const statusCode =
+      originalError?.statusCode ||
+      (originalError?.error?.statusCode ? originalError.error.statusCode : 500);
+
+    // Extract root cause message from original error
+    const rootMessage =
+      originalError?.message ||
+      originalError?.error?.message ||
+      sagaError.message ||
+      'Saga orchestration failed';
+
+    // Extract code: prefer original error code over saga code
+    const errorCode =
+      originalError?.code ||
+      originalError?.error?.code ||
+      sagaError.code ||
+      'SAGA_ORCHESTRATION_FAILED';
+
+    p = {
+      statusCode,
+      error: getErrorName(statusCode),
+      message: rootMessage, // Root cause message at top level
+      code: errorCode, // Original error code
+      details: {
+        // Saga metadata
+        sagaError: sagaError.message, // Saga context message
+        sagaId: sagaError.sagaId,
+        step: sagaError.step,
+        executedSteps: sagaError.executedSteps,
+        compensatedSteps: sagaError.compensatedSteps,
+        durationMs: sagaError.durationMs,
+        // Original error info (if exists)
+        ...(originalError && { originalError }),
+      },
+    };
+  } else if (e instanceof ValidationError) {
     p = payload(400, 'Bad Request', e.message, e.code, e.details);
   } else if (e instanceof UnauthorizedError) {
     p = payload(401, 'Unauthorized', e.message, e.code);
@@ -129,4 +169,30 @@ function extractPrismaMessage(e: unknown): string {
   }
 
   return 'Database error';
+}
+
+/**
+ * Check if error is SagaOrchestrationError
+ */
+function isSagaOrchestrationError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  return (
+    (e as any).sagaId !== undefined && (e as any).executedSteps !== undefined
+  );
+}
+
+/**
+ * Get human-readable error name from status code
+ */
+function getErrorName(statusCode: number): string {
+  const errorNames: Record<number, string> = {
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Not Found',
+    409: 'Conflict',
+    500: 'Internal Server Error',
+    503: 'Service Unavailable',
+  };
+  return errorNames[statusCode] || 'Internal Server Error';
 }

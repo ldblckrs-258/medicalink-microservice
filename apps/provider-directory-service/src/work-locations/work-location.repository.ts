@@ -20,7 +20,7 @@ export class WorkLocationRepository {
       search,
       isActive,
       sortBy = 'name',
-      sortOrder = 'DESC',
+      sortOrder = 'desc',
       includeMetadata = false,
     } = query;
 

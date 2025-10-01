@@ -1,4 +1,5 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaginationDto } from '../common';
 
 export class WorkLocationPublicQueryDto extends PaginationDto {
@@ -8,8 +9,9 @@ export class WorkLocationPublicQueryDto extends PaginationDto {
 
   @IsOptional()
   @IsString({ message: 'Sort order must be a string' })
-  @IsIn(['ASC', 'DESC'], {
-    message: 'Sort order must be either ASC or DESC',
+  @IsIn(['asc', 'desc'], {
+    message: 'Sort order must be either asc or desc',
   })
-  sortOrder?: 'ASC' | 'DESC' = 'ASC';
+  @Transform(({ value }) => value?.toString().toLowerCase())
+  sortOrder?: 'asc' | 'desc' = 'asc';
 }

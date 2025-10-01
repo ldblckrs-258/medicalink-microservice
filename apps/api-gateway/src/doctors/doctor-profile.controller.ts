@@ -26,16 +26,23 @@ export class DoctorProfileController {
   constructor(
     @Inject('PROVIDER_DIRECTORY_SERVICE')
     private readonly providerDirectoryClient: ClientProxy,
+    @Inject('ORCHESTRATOR_SERVICE')
+    private readonly orchestratorClient: ClientProxy,
     private readonly microserviceService: MicroserviceService,
   ) {}
 
   @Public()
   @Get('/public')
   findAll(@Query() query: GetPublicListDto) {
+    // Use orchestrator for composite data (account + profile)
     return this.microserviceService.sendWithTimeout(
-      this.providerDirectoryClient,
-      'doctor-profile.getPublicList',
-      query,
+      this.orchestratorClient,
+      'orchestrator.doctor.searchComposite',
+      {
+        ...query,
+        isActive: true, // Always filter by active doctors for public endpoint
+      },
+      { timeoutMs: 15000 },
     );
   }
 

@@ -31,6 +31,7 @@ export class PaginationDto {
   sortBy?: string;
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'], { message: 'Sort order must be ASC or DESC' })
-  sortOrder?: 'ASC' | 'DESC' = 'DESC';
+  @IsEnum(['asc', 'desc'], { message: 'Sort order must be asc or desc' })
+  @Transform(({ value }) => value?.toString().toLowerCase())
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

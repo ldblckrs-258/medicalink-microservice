@@ -167,6 +167,7 @@ export const QUEUE_NAMES = {
   BOOKING_QUEUE: 'booking_queue',
   CONTENT_QUEUE: 'content_queue',
   NOTIFICATION_QUEUE: 'notification_queue',
+  ORCHESTRATOR_QUEUE: 'orchestrator_queue',
 
   // Event queues
   USER_EVENTS_QUEUE: 'user_events_queue',

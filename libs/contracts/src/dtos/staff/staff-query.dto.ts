@@ -71,5 +71,6 @@ export class StaffQueryDto {
   @IsEnum(['asc', 'desc'], {
     message: 'Sort order must be asc or desc',
   })
+  @Transform(({ value }) => value?.toString().toLowerCase())
   sortOrder?: 'asc' | 'desc' = 'desc';
 }
