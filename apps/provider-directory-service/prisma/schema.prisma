@@ -33,7 +33,7 @@ model SpecialtyInfoSection {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  specialty Specialty @relation(fields: [specialtyId], references: [id])
+  specialty Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
 
   @@index([specialtyId], map: "idx_specialty_info_sections_specialty")
   @@map("specialty_info_sections")
@@ -89,8 +89,8 @@ model DoctorSpecialty {
   specialtyId String   @map("specialty_id") @db.VarChar(27)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  doctor    Doctor    @relation(fields: [doctorId], references: [id])
-  specialty Specialty @relation(fields: [specialtyId], references: [id])
+  doctor    Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  specialty Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, specialtyId])
   @@index([specialtyId], map: "idx_doctor_specialties_specialty")
@@ -104,8 +104,8 @@ model DoctorWorkLocation {
   locationId String   @map("location_id") @db.VarChar(27)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  doctor   Doctor       @relation(fields: [doctorId], references: [id])
-  location WorkLocation @relation(fields: [locationId], references: [id])
+  doctor   Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  location WorkLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, locationId])
   @@map("doctor_work_locations")
@@ -124,8 +124,8 @@ model Schedule {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  doctor   Doctor       @relation(fields: [doctorId], references: [id])
-  location WorkLocation @relation(fields: [locationId], references: [id])
+  doctor   Doctor       @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  location WorkLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
 
   @@unique([doctorId, locationId, serviceDate, timeStart, timeEnd])
   @@index([serviceDate], map: "idx_schedules_service_date")

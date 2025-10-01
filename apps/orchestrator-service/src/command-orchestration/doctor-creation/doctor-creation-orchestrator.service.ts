@@ -48,10 +48,12 @@ export class DoctorCreationOrchestratorService {
         name: 'createAccount',
         execute: async (input) => {
           this.logger.debug('Step 1: Creating staff account with DOCTOR role');
+          const { correlationId, userId, idempotencyKey, ...accountData } =
+            input;
           const account = await this.clientHelper.send<IStaffAccount>(
             this.accountsClient,
             SERVICE_PATTERNS.ACCOUNTS.DOCTOR_CREATE,
-            input,
+            accountData,
             { timeoutMs: 12000 },
           );
           this.logger.debug(`Account created: ${account.id}`);

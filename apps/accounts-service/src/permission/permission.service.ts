@@ -10,12 +10,10 @@ import {
   AssignGroupPermissionDto,
   AssignUserPermissionDto,
   CreatePermissionGroupDto,
-  PostResponseDto,
   RemoveUserFromGroupDto,
   RevokeGroupPermissionDto,
   RevokeUserPermissionDto,
 } from '@app/contracts';
-import { NotFoundError } from '@app/domain-errors';
 
 @Injectable()
 export class PermissionService {
@@ -67,9 +65,7 @@ export class PermissionService {
   }
 
   // User Permission Management
-  async assignUserPermission(
-    dto: AssignUserPermissionDto,
-  ): Promise<PostResponseDto> {
+  async assignUserPermission(dto: AssignUserPermissionDto): Promise<void> {
     await this.permissionRepository.assignUserPermission(
       dto.userId,
       dto.permissionId,
@@ -77,18 +73,14 @@ export class PermissionService {
       dto.effect || 'ALLOW',
       dto.conditions,
     );
-    return { success: true, message: 'Permission assigned successfully' };
   }
 
-  async revokeUserPermission(
-    dto: RevokeUserPermissionDto,
-  ): Promise<PostResponseDto> {
+  async revokeUserPermission(dto: RevokeUserPermissionDto): Promise<void> {
     await this.permissionRepository.revokeUserPermission(
       dto.userId,
       dto.permissionId,
       dto.tenantId || 'global',
     );
-    return { success: true, message: 'Permission revoked successfully' };
   }
 
   // Group Management
@@ -135,9 +127,8 @@ export class PermissionService {
     );
   }
 
-  async deleteGroup(groupId: string): Promise<PostResponseDto> {
+  async deleteGroup(groupId: string): Promise<void> {
     await this.permissionRepository.deleteGroup(groupId);
-    return { success: true, message: 'Group deleted successfully' };
   }
 
   // User Group Management
@@ -157,24 +148,20 @@ export class PermissionService {
     return this.permissionRepository.getUserGroups(userId, tenantId);
   }
 
-  async addUserToGroup(dto: AddUserToGroupDto): Promise<PostResponseDto> {
+  async addUserToGroup(dto: AddUserToGroupDto): Promise<void> {
     await this.permissionRepository.assignUserToGroup(
       dto.userId,
       dto.groupId,
       dto.tenantId || 'global',
     );
-    return { success: true, message: 'User added to group successfully' };
   }
 
-  async removeUserFromGroup(
-    dto: RemoveUserFromGroupDto,
-  ): Promise<PostResponseDto> {
+  async removeUserFromGroup(dto: RemoveUserFromGroupDto): Promise<void> {
     await this.permissionRepository.removeUserFromGroup(
       dto.userId,
       dto.groupId,
       dto.tenantId || 'global',
     );
-    return { success: true, message: 'User removed from group successfully' };
   }
 
   // Group Permission Management
@@ -200,9 +187,7 @@ export class PermissionService {
     return this.permissionRepository.getGroupPermissions(groupId, tenantId);
   }
 
-  async assignGroupPermission(
-    dto: AssignGroupPermissionDto,
-  ): Promise<PostResponseDto> {
+  async assignGroupPermission(dto: AssignGroupPermissionDto): Promise<void> {
     await this.permissionRepository.assignGroupPermission(
       dto.groupId,
       dto.permissionId,
@@ -210,18 +195,14 @@ export class PermissionService {
       dto.effect || 'ALLOW',
       dto.conditions,
     );
-    return { success: true, message: 'Group permission assigned successfully' };
   }
 
-  async revokeGroupPermission(
-    dto: RevokeGroupPermissionDto,
-  ): Promise<PostResponseDto> {
+  async revokeGroupPermission(dto: RevokeGroupPermissionDto): Promise<void> {
     await this.permissionRepository.revokeGroupPermission(
       dto.groupId,
       dto.permissionId,
       dto.tenantId || 'global',
     );
-    return { success: true, message: 'Group permission revoked successfully' };
   }
 
   // Permission Management Stats
@@ -256,31 +237,12 @@ export class PermissionService {
   }
 
   // Cache Management
-  async invalidateUserPermissionCache(
-    userId: string,
-  ): Promise<{ success: boolean; message: string }> {
-    try {
-      // First, validate that the user exists
-      await this.permissionRepository.validateUserExists(userId);
+  async invalidateUserPermissionCache(userId: string): Promise<void> {
+    // First, validate that the user exists
+    await this.permissionRepository.validateUserExists(userId);
 
-      // Increment auth version to invalidate cache
-      await this.permissionRepository.incrementUserAuthVersion(userId);
-      return {
-        success: true,
-        message: 'User permission cache invalidated successfully',
-      };
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return {
-          success: false,
-          message: `User with ID '${userId}' not found`,
-        };
-      }
-      return {
-        success: false,
-        message: 'Failed to invalidate user permission cache',
-      };
-    }
+    // Increment auth version to invalidate cache
+    await this.permissionRepository.incrementUserAuthVersion(userId);
   }
 
   async refreshUserPermissionSnapshot(

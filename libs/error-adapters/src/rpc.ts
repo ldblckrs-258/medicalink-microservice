@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { RpcException } from '@nestjs/microservices';
+import { HttpException } from '@nestjs/common';
 import {
   DomainError,
   ValidationError,
@@ -66,6 +67,20 @@ export function toRpcException(e: unknown): RpcException {
     };
   } else if (e instanceof ValidationError) {
     p = payload(400, 'Bad Request', e.message, e.code, e.details);
+  } else if (e instanceof HttpException) {
+    // Handle all NestJS HTTP exceptions (including ValidationPipe errors)
+    const status = e.getStatus();
+    const response = e.getResponse();
+    const message =
+      typeof response === 'string'
+        ? response
+        : (response as any)?.message || e.message;
+    const details = typeof response === 'object' ? response : undefined;
+    const code =
+      status === 400
+        ? 'VALIDATION_FAILED'
+        : (response as any)?.code || 'HTTP_EXCEPTION';
+    p = payload(status, getErrorName(status), message, code, details);
   } else if (e instanceof UnauthorizedError) {
     p = payload(401, 'Unauthorized', e.message, e.code);
   } else if (e instanceof ForbiddenError) {

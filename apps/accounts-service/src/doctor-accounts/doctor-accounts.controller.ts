@@ -7,8 +7,8 @@ import {
   StaffQueryDto,
   StaffStatsDto,
 } from '@app/contracts/dtos/staff';
-import { PaginatedResponse } from '@app/contracts/dtos/common';
-import { StaffAccount } from '../../prisma/generated/client';
+import { PaginatedResponse, PostResponseDto } from '@app/contracts/dtos/common';
+import { StaffResponse } from '../staffs/interfaces';
 
 @Controller()
 export class DoctorAccountsController {
@@ -17,31 +17,31 @@ export class DoctorAccountsController {
   @MessagePattern('doctor-accounts.findAll')
   async findAll(
     @Payload() query: StaffQueryDto,
-  ): Promise<PaginatedResponse<Partial<StaffAccount>>> {
+  ): Promise<PaginatedResponse<StaffResponse>> {
     return await this.doctorAccountsService.findAll(query);
   }
 
   @MessagePattern('doctor-accounts.findOne')
-  async findOne(@Payload() id: string): Promise<Partial<StaffAccount>> {
+  async findOne(@Payload() id: string): Promise<StaffResponse> {
     return await this.doctorAccountsService.findOne(id);
   }
 
   @MessagePattern('doctor-accounts.create')
   async create(
     @Payload() createDoctorDto: CreateAccountDto,
-  ): Promise<Partial<StaffAccount>> {
+  ): Promise<StaffResponse> {
     return await this.doctorAccountsService.create(createDoctorDto);
   }
 
   @MessagePattern('doctor-accounts.update')
   async update(
     @Payload() payload: { id: string; data: UpdateStaffDto },
-  ): Promise<Partial<StaffAccount>> {
+  ): Promise<StaffResponse> {
     return await this.doctorAccountsService.update(payload.id, payload.data);
   }
 
   @MessagePattern('doctor-accounts.remove')
-  async remove(@Payload() id: string): Promise<Partial<StaffAccount>> {
+  async remove(@Payload() id: string): Promise<PostResponseDto> {
     return await this.doctorAccountsService.remove(id);
   }
 

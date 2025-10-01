@@ -1,15 +1,21 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DoctorsService } from './doctors.service';
-import { GetPublicListDto } from 'libs/contracts/src/dtos/provider';
-import { Public } from 'libs/contracts/src/decorators/public.decorator';
+import {
+  CreateDoctorProfileDto,
+  UpdateDoctorProfileDto,
+  DoctorProfileQueryDto,
+  GetDoctorsByAccountIdsDto,
+  ToggleDoctorActiveDto,
+  Public,
+} from '@app/contracts';
 
 @Controller()
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
   @MessagePattern('doctor-profile.create')
-  create(@Payload() createDoctorDto: any) {
+  create(@Payload() createDoctorDto: CreateDoctorProfileDto) {
     return this.doctorsService.create(createDoctorDto);
   }
 
@@ -24,41 +30,36 @@ export class DoctorsController {
   }
 
   @MessagePattern('doctor-profile.update')
-  async update(@Payload() updateDoctorDto: any) {
+  async update(@Payload() updateDoctorDto: UpdateDoctorProfileDto) {
     const { id, ...data } = updateDoctorDto;
     return this.doctorsService.update(String(id), data);
   }
 
   @MessagePattern('doctor-profile.remove')
-  async remove(@Payload() payload: any) {
+  async remove(@Payload() payload: { id: string }) {
     const { id } = payload;
     return this.doctorsService.remove(String(id));
   }
 
   @MessagePattern('doctor-profile.toggleActive')
-  async toggleActive(@Payload() payload: any) {
+  async toggleActive(@Payload() payload: ToggleDoctorActiveDto) {
     const { id, isActive } = payload;
-    const active: boolean | undefined =
-      typeof isActive === 'boolean' ? isActive : undefined;
-
-    return this.doctorsService.toggleActive(String(id), active);
+    return this.doctorsService.toggleActive(String(id), isActive);
   }
 
   @Public()
   @MessagePattern('doctor-profile.getPublicList')
-  findAll(@Payload() filters?: GetPublicListDto) {
+  findAll(@Payload() filters?: DoctorProfileQueryDto) {
     return this.doctorsService.getPublicList(filters);
   }
 
+  @MessagePattern('doctor-profile.getByAccountId')
+  async getByAccountId(@Payload() payload: { staffAccountId: string }) {
+    return this.doctorsService.getByAccountId(payload.staffAccountId);
+  }
+
   @MessagePattern('doctor-profile.getByAccountIds')
-  getByAccountIds(
-    @Payload()
-    payload: {
-      staffAccountIds: string[];
-      specialtyIds?: string[];
-      workLocationIds?: string[];
-    },
-  ) {
+  getByAccountIds(@Payload() payload: GetDoctorsByAccountIdsDto) {
     return this.doctorsService.getByAccountIds(payload);
   }
 }

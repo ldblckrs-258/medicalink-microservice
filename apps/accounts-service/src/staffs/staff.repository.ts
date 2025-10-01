@@ -135,10 +135,25 @@ export class StaffRepository {
   }
 
   async softDelete(id: string): Promise<StaffAccount> {
+    // Fetch current email to generate a tombstone value that guarantees uniqueness
+    const existing = await this.prisma.staffAccount.findUnique({
+      where: { id },
+      select: { email: true },
+    });
+
+    if (!existing) {
+      throw new Error('Staff account not found');
+    }
+
+    // Generate a tombstone email that won't conflict with the original
+    const timestamp = Date.now();
+    const tombstoneEmail = `deleted-${id}-${timestamp}-${existing.email}`;
+
     return this.prisma.staffAccount.update({
       where: { id },
       data: {
         deletedAt: new Date(),
+        email: tombstoneEmail,
       },
     });
   }

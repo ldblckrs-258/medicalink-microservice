@@ -47,54 +47,6 @@ export class SpecialtyRepository {
     return { data, total };
   }
 
-  async findManyPublic(
-    query: SpecialtyQueryDto,
-  ): Promise<{ data: any[]; total: number }> {
-    const { page = 1, limit = 10, search } = query;
-
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.SpecialtyWhereInput = {
-      isActive: true,
-    };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    try {
-      // Simplified query without select to avoid field issues
-      const [allData, total] = await Promise.all([
-        this.prisma.specialty.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: {
-            name: 'asc',
-          },
-        }),
-        this.prisma.specialty.count({ where }),
-      ]);
-
-      // Map to only include public fields
-      const data = allData.map((specialty) => ({
-        id: specialty.id,
-        name: specialty.name,
-        slug: specialty.slug,
-        description: specialty.description,
-      }));
-
-      return { data, total };
-    } catch (error) {
-      console.error('Prisma query error in findManyPublic:', error);
-      console.error('Query params:', { page, limit, search, where, skip });
-      throw error;
-    }
-  }
-
   async findById(id: string): Promise<Specialty | null> {
     return this.prisma.specialty.findUnique({
       where: { id },

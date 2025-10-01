@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
 import { StaffRepository } from './staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
-import { StaffAccount, StaffRole } from '../../prisma/generated/client';
+import { StaffRole } from '../../prisma/generated/client';
+import { StaffResponse } from './interfaces';
 import {
   CreateAccountDto,
   UpdateStaffDto,
@@ -22,7 +23,7 @@ export class StaffsService {
 
   async findAll(
     query: StaffQueryDto,
-  ): Promise<PaginatedResponse<StaffAccount>> {
+  ): Promise<PaginatedResponse<StaffResponse>> {
     const staffQuery = {
       ...query,
       role: query.role || StaffRole.ADMIN,
@@ -30,8 +31,14 @@ export class StaffsService {
     const { data, total } = await this.staffRepository.findMany(staffQuery);
     const { page = 1, limit = 10 } = query;
 
+    const staffResponses: StaffResponse[] = data.map((staff) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...rest } = staff;
+      return rest;
+    });
+
     return {
-      data,
+      data: staffResponses,
       meta: {
         page,
         limit,
@@ -43,7 +50,7 @@ export class StaffsService {
     };
   }
 
-  async findOne(id: string): Promise<StaffAccount> {
+  async findOne(id: string): Promise<StaffResponse> {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
@@ -51,11 +58,12 @@ export class StaffsService {
         code: ErrorCode.USER_NOT_FOUND,
       });
     }
-
-    return staff;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = staff;
+    return result;
   }
 
-  async create(createAccountDto: CreateAccountDto): Promise<StaffAccount> {
+  async create(createAccountDto: CreateAccountDto): Promise<StaffResponse> {
     // Check if email already exists
     const existingStaff = await this.staffRepository.findByEmail(
       createAccountDto.email,
@@ -82,13 +90,15 @@ export class StaffsService {
       );
     }
 
-    return staff;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = staff;
+    return result;
   }
 
   async update(
     id: string,
     updateStaffDto: UpdateStaffDto,
-  ): Promise<StaffAccount> {
+  ): Promise<StaffResponse> {
     // Check if staff exists
     const existingStaff = await this.staffRepository.findById(id);
 
@@ -112,10 +122,12 @@ export class StaffsService {
     }
 
     const staff = await this.staffRepository.update(id, updateStaffDto);
-    return staff;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = staff;
+    return result;
   }
 
-  async remove(id: string): Promise<StaffAccount> {
+  async remove(id: string): Promise<void> {
     // Check if staff exists
     const existingStaff = await this.staffRepository.findById(id);
 
@@ -125,8 +137,7 @@ export class StaffsService {
       });
     }
 
-    const staff = await this.staffRepository.softDelete(id);
-    return staff;
+    await this.staffRepository.softDelete(id);
   }
 
   async getStats(): Promise<StaffStatsDto> {

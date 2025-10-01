@@ -10,10 +10,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import type { JwtPayloadDto } from '@app/contracts';
-import { GetPublicListDto } from '@app/contracts';
 import {
-  CurrentUser,
+  CreateDoctorProfileDto,
+  UpdateDoctorProfileDto,
+  DoctorProfileQueryDto,
+  ToggleDoctorActiveBodyDto,
   Public,
   RequireDeletePermission,
   RequireReadPermission,
@@ -33,7 +34,7 @@ export class DoctorProfileController {
 
   @Public()
   @Get('/public')
-  findAll(@Query() query: GetPublicListDto) {
+  findAll(@Query() query: DoctorProfileQueryDto) {
     // Use orchestrator for composite data (account + profile)
     return this.microserviceService.sendWithTimeout(
       this.orchestratorClient,
@@ -58,7 +59,7 @@ export class DoctorProfileController {
 
   @RequireWritePermission('doctors')
   @Post()
-  create(@Body() createDto: any) {
+  create(@Body() createDto: CreateDoctorProfileDto) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.create',
@@ -71,13 +72,12 @@ export class DoctorProfileController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateDto: any,
-    @CurrentUser() caller?: JwtPayloadDto,
+    @Body() updateDto: Omit<UpdateDoctorProfileDto, 'id'>,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.update',
-      { id, caller, ...updateDto },
+      { id, ...updateDto },
       { timeoutMs: 12000 },
     );
   }
@@ -86,24 +86,23 @@ export class DoctorProfileController {
   @Post(':id/toggle-active')
   toggleActive(
     @Param('id') id: string,
-    @Body() body: { isActive?: boolean },
-    @CurrentUser() caller?: JwtPayloadDto,
+    @Body() body: ToggleDoctorActiveBodyDto,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.toggleActive',
-      { id, isActive: body?.isActive, caller },
+      { id, isActive: body?.isActive },
       { timeoutMs: 8000 },
     );
   }
 
   @RequireDeletePermission('doctors')
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() caller?: JwtPayloadDto) {
+  remove(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.remove',
-      { id, caller },
+      { id },
     );
   }
 }

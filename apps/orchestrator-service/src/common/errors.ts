@@ -35,30 +35,3 @@ export class SagaOrchestrationError extends DomainError {
     this.durationMs = options.durationMs;
   }
 }
-
-/**
- * Error thrown when read composition fails
- */
-export class CompositionError extends DomainError {
-  public readonly sources: {
-    service: string;
-    fetched: boolean;
-    error?: string;
-  }[];
-
-  constructor(
-    message: string,
-    options: {
-      code?: string;
-      sources: { service: string; fetched: boolean; error?: string }[];
-      details?: unknown;
-    },
-  ) {
-    super(message, {
-      code: options.code || 'COMPOSITION_FAILED',
-      details: options.details,
-    });
-
-    this.sources = options.sources;
-  }
-}

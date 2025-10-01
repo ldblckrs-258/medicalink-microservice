@@ -39,8 +39,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       '@prisma/client':
-        specifier: ^6.16.0
-        version: 6.16.0(prisma@6.16.0(typescript@5.9.2))(typescript@5.9.2)
+        specifier: ^6.16.3
+        version: 6.16.3(prisma@6.16.3(typescript@5.9.2))(typescript@5.9.2)
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0
@@ -68,9 +68,6 @@ importers:
       class-validator:
         specifier: ^0.14.2
         version: 0.14.2
-      cuid:
-        specifier: ^3.0.0
-        version: 3.0.0
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
@@ -80,9 +77,6 @@ importers:
       morgan:
         specifier: ^1.10.1
         version: 1.10.1
-      prisma:
-        specifier: ^6.16.0
-        version: 6.16.0(typescript@5.9.2)
       redis:
         specifier: ^5.8.2
         version: 5.8.2
@@ -117,9 +111,6 @@ importers:
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.3
-      '@types/ioredis':
-        specifier: ^5.0.0
-        version: 5.0.0
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
@@ -156,6 +147,9 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.6.2
+      prisma:
+        specifier: ^6.16.3
+        version: 6.16.3(typescript@5.9.2)
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
@@ -988,8 +982,8 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@prisma/client@6.16.0':
-    resolution: {integrity: sha512-FYkFJtgwpwJRMxtmrB26y7gtpR372kyChw6lWng5TMmvn5V+uisy0OyllO5EJD1s8lX78V8X3XjhiXOoMLnu3w==}
+  '@prisma/client@6.16.3':
+    resolution: {integrity: sha512-JfNfAtXG+/lIopsvoZlZiH2k5yNx87mcTS4t9/S5oufM1nKdXYxOvpDC1XoTCFBa5cQh7uXnbMPsmZrwZY80xw==}
     engines: {node: '>=18.18'}
     peerDependencies:
       prisma: '*'
@@ -1000,23 +994,23 @@ packages:
       typescript:
         optional: true
 
-  '@prisma/config@6.16.0':
-    resolution: {integrity: sha512-Q9TgfnllVehvQziY9lJwRJLGmziX0OimZUEQ/MhCUBoJMSScj2VivCjw/Of2vlO1FfyaHXxrvjZAr7ASl7DVcw==}
+  '@prisma/config@6.16.3':
+    resolution: {integrity: sha512-VlsLnG4oOuKGGMToEeVaRhoTBZu5H3q51jTQXb/diRags3WV0+BQK5MolJTtP6G7COlzoXmWeS11rNBtvg+qFQ==}
 
-  '@prisma/debug@6.16.0':
-    resolution: {integrity: sha512-bxzro5vbVqAPkWyDs2A6GpQtRZunD8tyrLmSAchx9u0b+gWCDY6eV+oh5A0YtYT9245dIxQBswckayHuJG4u3w==}
+  '@prisma/debug@6.16.3':
+    resolution: {integrity: sha512-89DdqWtdKd7qoc9/qJCKLTazj3W3zPEiz0hc7HfZdpjzm21c7orOUB5oHWJsG+4KbV4cWU5pefq3CuDVYF9vgA==}
 
-  '@prisma/engines-version@6.16.0-7.1c57fdcd7e44b29b9313256c76699e91c3ac3c43':
-    resolution: {integrity: sha512-ThvlDaKIVrnrv97ujNFDYiQbeMQpLa0O86HFA2mNoip4mtFqM7U5GSz2ie1i2xByZtvPztJlNRgPsXGeM/kqAA==}
+  '@prisma/engines-version@6.16.1-1.bb420e667c1820a8c05a38023385f6cc7ef8e83a':
+    resolution: {integrity: sha512-fftRmosBex48Ph1v2ll1FrPpirwtPZpNkE5CDCY1Lw2SD2ctyrLlVlHiuxDAAlALwWBOkPbAll4+EaqdGuMhJw==}
 
-  '@prisma/engines@6.16.0':
-    resolution: {integrity: sha512-RHJGCH/zi017W4CWYWqg0Sv1pquGGFVo8T3auJ9sodDNaiRzbeNldydjaQzszVS8nscdtcvLuJzy7e65C3puqQ==}
+  '@prisma/engines@6.16.3':
+    resolution: {integrity: sha512-b+Rl4nzQDcoqe6RIpSHv8f5lLnwdDGvXhHjGDiokObguAAv/O1KaX1Oc69mBW/GFWKQpCkOraobLjU6s1h8HGg==}
 
-  '@prisma/fetch-engine@6.16.0':
-    resolution: {integrity: sha512-Mx5rml0XRIDizhB9eZxSP8c0nMoXYVITTiJJwxlWn9rNCel8mG8NAqIw+vJlN3gPR+kt3IBkP1SQVsplPPpYrA==}
+  '@prisma/fetch-engine@6.16.3':
+    resolution: {integrity: sha512-bUoRIkVaI+CCaVGrSfcKev0/Mk4ateubqWqGZvQ9uCqFv2ENwWIR3OeNuGin96nZn5+SkebcD7RGgKr/+mJelw==}
 
-  '@prisma/get-platform@6.16.0':
-    resolution: {integrity: sha512-eaJOOvAoGslSUTjiQrtE9E0hoBdfL43j8SymOGD6LbdrKRNtIoiy6qiBaEr2fNYD+R/Qns7QOwPhl7SVHJayKA==}
+  '@prisma/get-platform@6.16.3':
+    resolution: {integrity: sha512-X1LxiFXinJ4iQehrodGp0f66Dv6cDL0GbRlcCoLtSu6f4Wi+hgo7eND/afIs5029GQLgNWKZ46vn8hjyXTsHLA==}
 
   '@redis/bloom@5.8.2':
     resolution: {integrity: sha512-855DR0ChetZLarblio5eM0yLwxA9Dqq50t8StXKp5bAtLT0G+rZ+eRzzqxl37sPqQKjUudSYypz55o6nNhbz0A==}
@@ -1124,10 +1118,6 @@ packages:
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
-
-  '@types/ioredis@5.0.0':
-    resolution: {integrity: sha512-zJbJ3FVE17CNl5KXzdeSPtdltc4tMT3TzC6fxQS0sQngkbFZ6h+0uTafsRqu+eSLIugf6Yb0Ea0SUuRr42Nk9g==}
-    deprecated: This is a stub types definition. ioredis provides its own type definitions, so you do not need this installed.
 
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
@@ -1894,10 +1884,6 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
-
-  cuid@3.0.0:
-    resolution: {integrity: sha512-WZYYkHdIDnaxdeP8Misq3Lah5vFjJwGuItJuV+tvMafosMzw0nF297T7mrm8IOWiPJkV6gc7sa8pzx27+w25Zg==}
-    deprecated: Cuid and other k-sortable and non-cryptographic ids (Ulid, ObjectId, KSUID, all UUIDs) are all insecure. Use @paralleldrive/cuid2 instead.
 
   dargs@8.1.0:
     resolution: {integrity: sha512-wAV9QHOsNbwnWdNW2FYvE1P56wtgSbM+3SZcdGiWQILwVjACCXDCI3Ai8QlCjMDB8YK5zySiXZYBiwGmNY3lnw==}
@@ -3276,8 +3262,8 @@ packages:
     resolution: {integrity: sha512-D1tKtYvByrBkFLe2wHJl2bwMJIiT8rW+XA+TiataH79/FszLQMrpGEvzUVkzPau7OCO0Qnrhpe87PqtOAIB8Yw==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  prisma@6.16.0:
-    resolution: {integrity: sha512-TTh+H1Kw8N68KN9cDzdAyMroqMOvdCO/Z+kS2wKEVYR1nuR21qH5Q/Db/bZHsAgw7l/TPHtM/veG5VABcdwPDw==}
+  prisma@6.16.3:
+    resolution: {integrity: sha512-4tJq3KB9WRshH5+QmzOLV54YMkNlKOtLKaSdvraI5kC/axF47HuOw6zDM8xrxJ6s9o2WodY654On4XKkrobQdQ==}
     engines: {node: '>=18.18'}
     hasBin: true
     peerDependencies:
@@ -4963,12 +4949,12 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
-  '@prisma/client@6.16.0(prisma@6.16.0(typescript@5.9.2))(typescript@5.9.2)':
+  '@prisma/client@6.16.3(prisma@6.16.3(typescript@5.9.2))(typescript@5.9.2)':
     optionalDependencies:
-      prisma: 6.16.0(typescript@5.9.2)
+      prisma: 6.16.3(typescript@5.9.2)
       typescript: 5.9.2
 
-  '@prisma/config@6.16.0':
+  '@prisma/config@6.16.3':
     dependencies:
       c12: 3.1.0
       deepmerge-ts: 7.1.5
@@ -4977,26 +4963,26 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@prisma/debug@6.16.0': {}
+  '@prisma/debug@6.16.3': {}
 
-  '@prisma/engines-version@6.16.0-7.1c57fdcd7e44b29b9313256c76699e91c3ac3c43': {}
+  '@prisma/engines-version@6.16.1-1.bb420e667c1820a8c05a38023385f6cc7ef8e83a': {}
 
-  '@prisma/engines@6.16.0':
+  '@prisma/engines@6.16.3':
     dependencies:
-      '@prisma/debug': 6.16.0
-      '@prisma/engines-version': 6.16.0-7.1c57fdcd7e44b29b9313256c76699e91c3ac3c43
-      '@prisma/fetch-engine': 6.16.0
-      '@prisma/get-platform': 6.16.0
+      '@prisma/debug': 6.16.3
+      '@prisma/engines-version': 6.16.1-1.bb420e667c1820a8c05a38023385f6cc7ef8e83a
+      '@prisma/fetch-engine': 6.16.3
+      '@prisma/get-platform': 6.16.3
 
-  '@prisma/fetch-engine@6.16.0':
+  '@prisma/fetch-engine@6.16.3':
     dependencies:
-      '@prisma/debug': 6.16.0
-      '@prisma/engines-version': 6.16.0-7.1c57fdcd7e44b29b9313256c76699e91c3ac3c43
-      '@prisma/get-platform': 6.16.0
+      '@prisma/debug': 6.16.3
+      '@prisma/engines-version': 6.16.1-1.bb420e667c1820a8c05a38023385f6cc7ef8e83a
+      '@prisma/get-platform': 6.16.3
 
-  '@prisma/get-platform@6.16.0':
+  '@prisma/get-platform@6.16.3':
     dependencies:
-      '@prisma/debug': 6.16.0
+      '@prisma/debug': 6.16.3
 
   '@redis/bloom@5.8.2(@redis/client@5.8.2)':
     dependencies:
@@ -5119,12 +5105,6 @@ snapshots:
       '@types/serve-static': 1.15.8
 
   '@types/http-errors@2.0.5': {}
-
-  '@types/ioredis@5.0.0':
-    dependencies:
-      ioredis: 5.7.0
-    transitivePeerDependencies:
-      - supports-color
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -5953,8 +5933,6 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
-
-  cuid@3.0.0: {}
 
   dargs@8.1.0: {}
 
@@ -7485,10 +7463,10 @@ snapshots:
       ansi-styles: 5.2.0
       react-is: 18.3.1
 
-  prisma@6.16.0(typescript@5.9.2):
+  prisma@6.16.3(typescript@5.9.2):
     dependencies:
-      '@prisma/config': 6.16.0
-      '@prisma/engines': 6.16.0
+      '@prisma/config': 6.16.3
+      '@prisma/engines': 6.16.3
     optionalDependencies:
       typescript: 5.9.2
     transitivePeerDependencies:
