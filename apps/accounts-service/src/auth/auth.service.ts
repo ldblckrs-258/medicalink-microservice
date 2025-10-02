@@ -17,7 +17,6 @@ import {
   RefreshTokenResponseDto,
 } from '@app/contracts/dtos/auth';
 import * as bcrypt from 'bcrypt';
-import { StaffResponse } from '../staffs/interfaces';
 
 @Injectable()
 export class AuthService {

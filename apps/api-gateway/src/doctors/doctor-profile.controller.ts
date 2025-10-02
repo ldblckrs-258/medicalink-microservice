@@ -34,17 +34,31 @@ export class DoctorProfileController {
 
   @Public()
   @Get('/public')
-  findAll(@Query() query: DoctorProfileQueryDto) {
-    // Use orchestrator for composite data (account + profile)
-    return this.microserviceService.sendWithTimeout(
+  async findAll(@Query() query: DoctorProfileQueryDto) {
+    const result: any = await this.microserviceService.sendWithTimeout(
       this.orchestratorClient,
       'orchestrator.doctor.searchComposite',
       {
-        ...query,
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+        specialtyIds: query.specialtyIds,
+        workLocationIds: query.workLocationIds,
         isActive: true, // Always filter by active doctors for public endpoint
+        skipCache: false,
       },
       { timeoutMs: 15000 },
     );
+
+    return {
+      data: result.data,
+      meta: result.pagination,
+      // Optional: include cache info for debugging
+      ...(result.cache && { _cache: result.cache }),
+      ...(result.timestamp && { _timestamp: result.timestamp }),
+    };
   }
 
   @RequireReadPermission('doctors')
@@ -83,7 +97,7 @@ export class DoctorProfileController {
   }
 
   @RequireWritePermission('doctors')
-  @Post(':id/toggle-active')
+  @Patch(':id/toggle-active')
   toggleActive(
     @Param('id') id: string,
     @Body() body: ToggleDoctorActiveBodyDto,

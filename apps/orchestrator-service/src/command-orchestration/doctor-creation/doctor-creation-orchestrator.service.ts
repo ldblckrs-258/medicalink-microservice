@@ -48,6 +48,8 @@ export class DoctorCreationOrchestratorService {
         name: 'createAccount',
         execute: async (input) => {
           this.logger.debug('Step 1: Creating staff account with DOCTOR role');
+
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { correlationId, userId, idempotencyKey, ...accountData } =
             input;
           const account = await this.clientHelper.send<IStaffAccount>(

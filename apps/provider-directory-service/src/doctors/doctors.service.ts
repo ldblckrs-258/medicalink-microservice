@@ -38,34 +38,29 @@ export class DoctorsService {
       isActive: true, // Always filter by active doctors for public list
     };
 
-    if (filters?.specialtyId) {
+    if (filters?.specialtyIds && filters.specialtyIds.length > 0) {
       where.doctorSpecialties = {
         some: {
-          specialty: {
-            id: filters.specialtyId,
+          specialtyId: {
+            in: filters.specialtyIds,
           },
         },
       };
     }
 
-    if (filters?.workLocationId) {
+    if (filters?.workLocationIds && filters.workLocationIds.length > 0) {
       where.doctorWorkLocations = {
         some: {
-          location: {
-            id: filters.workLocationId,
+          locationId: {
+            in: filters.workLocationIds,
           },
         },
       };
     }
-
-    const include = {
-      doctorSpecialties: { include: { specialty: true } },
-      doctorWorkLocations: { include: { location: true } },
-    };
 
     const { data, total } = await this.doctorRepo.findManyPublic(
       where,
-      include,
+      {},
       filters,
     );
 
@@ -86,8 +81,6 @@ export class DoctorsService {
 
   async findOne(id: string): Promise<DoctorProfileResponseDto> {
     const doctor = await this.doctorRepo.findOne(id, {
-      doctorSpecialties: { include: { specialty: true } },
-      doctorWorkLocations: { include: { location: true } },
       schedules: { where: { serviceDate: { gte: new Date() } } },
     });
 
@@ -172,12 +165,7 @@ export class DoctorsService {
       };
     }
 
-    const include = {
-      doctorSpecialties: { include: { specialty: true } },
-      doctorWorkLocations: { include: { location: true } },
-    };
-
-    return this.doctorRepo.findAll(where, include);
+    return this.doctorRepo.findAll(where);
   }
 
   /**
@@ -187,15 +175,9 @@ export class DoctorsService {
   async getByAccountId(
     staffAccountId: string,
   ): Promise<DoctorProfileResponseDto> {
-    const doctor = await this.doctorRepo.findOneByStaffAccountId(
-      {
-        staffAccountId,
-      },
-      {
-        doctorSpecialties: { include: { specialty: true } },
-        doctorWorkLocations: { include: { location: true } },
-      },
-    );
+    const doctor = await this.doctorRepo.findOneByStaffAccountId({
+      staffAccountId,
+    });
 
     if (!doctor) {
       throw new NotFoundError(
