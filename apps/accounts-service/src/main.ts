@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 import { AccountsServiceModule } from './accounts-service.module';
 import * as dotenv from 'dotenv';
 import { RpcDomainErrorFilter } from '@app/error-adapters';
@@ -12,6 +13,13 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AccountsServiceModule);
   app.useGlobalFilters(new RpcDomainErrorFilter());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip properties that do not have any decorators
+      transform: true, // Transform payloads to be objects typed according to their DTO classes
+      forbidNonWhitelisted: true, // Throw errors if non-whitelisted values are provided
+    }),
+  );
 
   const configService = app.get(ConfigService);
   app.connectMicroservice<MicroserviceOptions>(

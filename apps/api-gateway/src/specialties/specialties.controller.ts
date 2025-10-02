@@ -41,7 +41,7 @@ export class SpecialtiesController {
       page: 1,
       limit: 100,
       sortBy: 'name',
-      sortOrder: 'ASC' as const,
+      sortOrder: 'asc' as const,
     };
 
     return this.microserviceService.sendWithTimeout(

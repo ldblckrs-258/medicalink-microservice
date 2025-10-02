@@ -12,10 +12,11 @@ export class SpecialtyQueryDto extends PaginationDto {
 
   @IsOptional()
   @IsString({ message: 'Sort order must be a string' })
-  @IsIn(['ASC', 'DESC'], {
-    message: 'Sort order must be either ASC or DESC',
+  @IsIn(['asc', 'desc'], {
+    message: 'Sort order must be either asc or desc',
   })
-  sortOrder?: 'ASC' | 'DESC' = 'ASC';
+  @Transform(({ value }) => value?.toString().toLowerCase())
+  sortOrder?: 'asc' | 'desc' = 'asc';
 
   @IsOptional()
   @IsBoolean({ message: 'Active filter must be a boolean' })

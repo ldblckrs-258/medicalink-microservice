@@ -16,7 +16,6 @@ import {
   LoginResponseDto,
   RefreshTokenResponseDto,
 } from '@app/contracts/dtos/auth';
-import { PostResponseDto } from '@app/contracts/dtos/common';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -207,10 +206,7 @@ export class AuthService {
     };
   }
 
-  async verifyPassword(
-    email: string,
-    password: string,
-  ): Promise<PostResponseDto> {
+  async verifyPassword(email: string, password: string): Promise<boolean> {
     const staff = await this.authRepository.findByEmail(email);
 
     if (!staff) {
@@ -227,9 +223,6 @@ export class AuthService {
       });
     }
 
-    return {
-      success: true,
-      message: 'Password verified successfully',
-    };
+    return true;
   }
 }

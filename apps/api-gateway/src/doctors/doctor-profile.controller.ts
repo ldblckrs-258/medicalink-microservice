@@ -10,10 +10,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import type { JwtPayloadDto } from '@app/contracts';
-import { GetPublicListDto } from '@app/contracts';
 import {
-  CurrentUser,
+  CreateDoctorProfileDto,
+  UpdateDoctorProfileDto,
+  DoctorProfileQueryDto,
+  ToggleDoctorActiveBodyDto,
   Public,
   RequireDeletePermission,
   RequireReadPermission,
@@ -26,17 +27,38 @@ export class DoctorProfileController {
   constructor(
     @Inject('PROVIDER_DIRECTORY_SERVICE')
     private readonly providerDirectoryClient: ClientProxy,
+    @Inject('ORCHESTRATOR_SERVICE')
+    private readonly orchestratorClient: ClientProxy,
     private readonly microserviceService: MicroserviceService,
   ) {}
 
   @Public()
   @Get('/public')
-  findAll(@Query() query: GetPublicListDto) {
-    return this.microserviceService.sendWithTimeout(
-      this.providerDirectoryClient,
-      'doctor-profile.getPublicList',
-      query,
+  async findAll(@Query() query: DoctorProfileQueryDto) {
+    const result: any = await this.microserviceService.sendWithTimeout(
+      this.orchestratorClient,
+      'orchestrator.doctor.searchComposite',
+      {
+        page: query.page,
+        limit: query.limit,
+        search: query.search,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+        specialtyIds: query.specialtyIds,
+        workLocationIds: query.workLocationIds,
+        isActive: true, // Always filter by active doctors for public endpoint
+        skipCache: false,
+      },
+      { timeoutMs: 15000 },
     );
+
+    return {
+      data: result.data,
+      meta: result.pagination,
+      // Optional: include cache info for debugging
+      ...(result.cache && { _cache: result.cache }),
+      ...(result.timestamp && { _timestamp: result.timestamp }),
+    };
   }
 
   @RequireReadPermission('doctors')
@@ -51,7 +73,7 @@ export class DoctorProfileController {
 
   @RequireWritePermission('doctors')
   @Post()
-  create(@Body() createDto: any) {
+  create(@Body() createDto: CreateDoctorProfileDto) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.create',
@@ -64,39 +86,37 @@ export class DoctorProfileController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateDto: any,
-    @CurrentUser() caller?: JwtPayloadDto,
+    @Body() updateDto: Omit<UpdateDoctorProfileDto, 'id'>,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.update',
-      { id, caller, ...updateDto },
+      { id, ...updateDto },
       { timeoutMs: 12000 },
     );
   }
 
   @RequireWritePermission('doctors')
-  @Post(':id/toggle-active')
+  @Patch(':id/toggle-active')
   toggleActive(
     @Param('id') id: string,
-    @Body() body: { isActive?: boolean },
-    @CurrentUser() caller?: JwtPayloadDto,
+    @Body() body: ToggleDoctorActiveBodyDto,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.toggleActive',
-      { id, isActive: body?.isActive, caller },
+      { id, isActive: body?.isActive },
       { timeoutMs: 8000 },
     );
   }
 
   @RequireDeletePermission('doctors')
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() caller?: JwtPayloadDto) {
+  remove(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
       'doctor-profile.remove',
-      { id, caller },
+      { id },
     );
   }
 }

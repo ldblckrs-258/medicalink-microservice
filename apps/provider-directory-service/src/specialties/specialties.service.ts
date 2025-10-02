@@ -26,8 +26,12 @@ export class SpecialtiesService {
   async findAllPublic(
     query: SpecialtyQueryDto,
   ): Promise<SpecialtyPublicPaginatedResponseDto> {
-    const { data, total } =
-      await this.specialtyRepository.findManyPublic(query);
+    const publicQuery = {
+      ...query,
+      isActive: true,
+      includeMetadata: false,
+    };
+    const { data, total } = await this.specialtyRepository.findAll(publicQuery);
     const { page = 1, limit = 10 } = query;
 
     return {
@@ -48,8 +52,7 @@ export class SpecialtiesService {
   async findAllAdmin(
     query: SpecialtyQueryDto,
   ): Promise<SpecialtyPaginatedResponseDto> {
-    const { data, total } =
-      await this.specialtyRepository.findManyWithMetadata(query);
+    const { data, total } = await this.specialtyRepository.findAll(query);
     const { page = 1, limit = 10 } = query;
 
     return {

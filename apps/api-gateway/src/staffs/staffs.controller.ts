@@ -23,7 +23,7 @@ import {
   CurrentUser,
   PaginatedResponse,
 } from '@app/contracts';
-import type { JwtPayloadDto } from '@app/contracts';
+import type { JwtPayloadDto, PostResponseDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
 @Controller('staffs')
@@ -103,8 +103,8 @@ export class StaffsController {
 
   @RequireDeletePermission('staff')
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<IStaffAccount> {
-    return this.microserviceService.sendWithTimeout<IStaffAccount>(
+  async remove(@Param('id') id: string): Promise<PostResponseDto> {
+    return this.microserviceService.sendWithTimeout<PostResponseDto>(
       this.accountsClient,
       'staffs.remove',
       id,

@@ -3,6 +3,7 @@ import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
 import { StaffRepository } from '../staffs/staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
+import { StaffResponse } from '../staffs/interfaces';
 import {
   CreateAccountDto,
   UpdateStaffDto,
@@ -22,14 +23,20 @@ export class DoctorAccountsService {
 
   async findAll(
     query: StaffQueryDto,
-  ): Promise<PaginatedResponse<StaffAccount>> {
+  ): Promise<PaginatedResponse<StaffResponse>> {
     // Force filter to only show doctors
     const doctorQuery = { ...query, role: 'DOCTOR' as StaffRole };
     const { data, total } = await this.staffRepository.findMany(doctorQuery);
+
+    const staffResponses: StaffResponse[] = data.map((staff) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...rest } = staff;
+      return rest;
+    });
     const { page = 1, limit = 10 } = query;
 
     return {
-      data,
+      data: staffResponses,
       meta: {
         page,
         limit,
@@ -41,7 +48,7 @@ export class DoctorAccountsService {
     };
   }
 
-  async findOne(id: string): Promise<StaffAccount> {
+  async findOne(id: string): Promise<StaffResponse> {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
@@ -55,11 +62,12 @@ export class DoctorAccountsService {
         code: ErrorCode.USER_NOT_FOUND,
       });
     }
-
-    return staff;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = staff;
+    return result;
   }
 
-  async create(createDoctorDto: CreateAccountDto): Promise<StaffAccount> {
+  async create(createDoctorDto: CreateAccountDto): Promise<StaffResponse> {
     const doctorData = { ...createDoctorDto, role: StaffRole.DOCTOR };
 
     const existingStaff = await this.staffRepository.findByEmail(
@@ -72,7 +80,19 @@ export class DoctorAccountsService {
       });
     }
 
-    const doctor = await this.staffRepository.create(doctorData);
+    Logger.log(
+      'Creating doctor account with data: ' + JSON.stringify(doctorData),
+    );
+    let doctor: StaffAccount;
+    try {
+      doctor = await this.staffRepository.create(doctorData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to create doctor account ${doctorData.email}:`,
+        error.stack,
+      );
+      throw error;
+    }
 
     try {
       await this.permissionAssignmentService.assignPermissionsToNewUser(
@@ -86,13 +106,15 @@ export class DoctorAccountsService {
       );
     }
 
-    return doctor;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = doctor;
+    return result;
   }
 
   async update(
     id: string,
     updateDoctorDto: UpdateStaffDto,
-  ): Promise<StaffAccount> {
+  ): Promise<StaffResponse> {
     const existingDoctor = await this.staffRepository.findById(id);
 
     if (!existingDoctor) {
@@ -123,10 +145,12 @@ export class DoctorAccountsService {
     }
 
     const doctor = await this.staffRepository.update(id, doctorData);
-    return doctor;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = doctor;
+    return result;
   }
 
-  async remove(id: string): Promise<StaffAccount> {
+  async remove(id: string): Promise<StaffResponse> {
     const existingDoctor = await this.staffRepository.findById(id);
 
     if (!existingDoctor) {
@@ -141,7 +165,10 @@ export class DoctorAccountsService {
       });
     }
 
-    return await this.staffRepository.softDelete(id);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } =
+      await this.staffRepository.softDelete(id);
+    return result;
   }
 
   async getStats(): Promise<StaffStatsDto> {

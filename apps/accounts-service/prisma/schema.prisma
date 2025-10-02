@@ -38,7 +38,9 @@ model StaffAccount {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Permission system relations
-  authVersion AuthVersion?
+  authVersion    AuthVersion?
+  userPermissions UserPermission[]
+  userGroups      UserGroup[]
 
   @@map("staff_accounts")
   @@schema("accounts")
@@ -72,7 +74,8 @@ model UserPermission {
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user       StaffAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, permissionId, tenantId])
   @@index([userId], map: "idx_user_permissions_user")
@@ -106,7 +109,8 @@ model UserGroup {
   tenantId  String?  @map("tenant_id") @db.VarChar(27)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user StaffAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId, tenantId])
   @@index([userId], map: "idx_user_groups_user")
