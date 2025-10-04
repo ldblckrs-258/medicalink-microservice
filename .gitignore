@@ -80,9 +80,3 @@ apps/provider-directory-service/prisma/generated/
 
 # ESLint cache
 .eslintcache
-
-# Temporary ignore file for testing
-Dockerfile
-docker-compose.prod.yml
-/deployment
-/nginx

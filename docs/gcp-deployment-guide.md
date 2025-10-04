@@ -207,10 +207,10 @@ SMTP_PASS=your-app-password
 EOF
 
 # Build và start services
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Check logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 ### 4.4. Script Tự Động Deploy
