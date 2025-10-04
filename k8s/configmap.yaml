@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medicalink-config
+  namespace: medicalink
+data:
+  NODE_ENV: "production"
+  SERVICE_NAME: "medicalink"
+  API_VERSION: "v1"
+  APP_NAME: "MedicaLink Microservices"
+  
+  # JWT Configuration
+  JWT_EXPIRES_IN: "900"
+  JWT_REFRESH_EXPIRES_IN: "604800"
+  
+  # API Gateway Configuration
+  API_GATEWAY_PORT: "3000"
+  
+  # Orchestrator Configuration
+  ORCHESTRATOR_CACHE_TTL_SHORT: "120"
+  ORCHESTRATOR_CACHE_TTL_MEDIUM: "300"
+  ORCHESTRATOR_SAGA_TIMEOUT: "30000"
+  ORCHESTRATOR_SERVICE_TIMEOUT: "10000"

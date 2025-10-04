@@ -1,0 +1,114 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts-service
+  namespace: medicalink
+  labels:
+    app: accounts-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: accounts-service
+  template:
+    metadata:
+      labels:
+        app: accounts-service
+        version: v1
+    spec:
+      serviceAccountName: medicalink-sa
+      containers:
+      - name: accounts-service
+        image: us-central1-docker.pkg.dev/PROJECT_ID/medicalink-repo/medicalink-base:latest
+        imagePullPolicy: Always
+        command: ["node", "dist/apps/accounts-service/main.js"]
+        ports:
+        - name: http
+          containerPort: 3001
+          protocol: TCP
+        env:
+        - name: ACCOUNTS_SERVICE_PORT
+          value: "3001"
+        envFrom:
+        - configMapRef:
+            name: medicalink-config
+        - secretRef:
+            name: medicalink-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - -e
+            - "process.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - node
+            - -e
+            - "process.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      # Cloud SQL Proxy sidecar
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
+        args:
+          - "--structured-logs"
+          - "--port=5432"
+          - "PROJECT_ID:REGION:INSTANCE_NAME"
+        securityContext:
+          runAsNonRoot: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounts-service
+  namespace: medicalink
+  labels:
+    app: accounts-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  selector:
+    app: accounts-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: accounts-service-hpa
+  namespace: medicalink
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: accounts-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
