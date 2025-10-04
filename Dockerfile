@@ -27,8 +27,14 @@ RUN cd apps/booking-service && npx prisma generate && cd ../..
 RUN cd apps/content-service && npx prisma generate && cd ../..
 RUN cd apps/notification-service && npx prisma generate && cd ../..
 
-# Build the application
-RUN pnpm run build
+# Build all applications
+RUN npx nest build api-gateway
+RUN npx nest build accounts-service
+RUN npx nest build provider-directory-service
+RUN npx nest build booking-service
+RUN npx nest build content-service
+RUN npx nest build notification-service
+RUN npx nest build orchestrator-service
 
 # Stage 2: Production stage
 FROM node:20-alpine AS production
