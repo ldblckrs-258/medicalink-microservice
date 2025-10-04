@@ -234,9 +234,12 @@ docker exec medicalink-notification sh -c "cd apps/notification-service && npx p
 ### 5.2. Seed Initial Data
 
 ```bash
-# Run seed scripts inside containers
-docker exec medicalink-accounts sh -c "cd /app && node scripts/run-script.js --service=accounts-service --filename=create-super-admin"
-docker exec medicalink-accounts sh -c "cd /app && node scripts/run-script.js --service=accounts-service --filename=permission-seeds"
+# Create temporary DATABASE_URL for localhost connection
+export DATABASE_URL_LOCAL="postgresql://medicalink:MedicalinkDB2024!@localhost:5432/medicalink"
+
+# Run seed scripts from host
+cd ~/medicalink-microservice && DATABASE_URL=$DATABASE_URL_LOCAL pnpm run script -- --service=accounts-service --filename=create-super-admin
+cd ~/medicalink-microservice && DATABASE_URL=$DATABASE_URL_LOCAL pnpm run script -- --service=accounts-service --filename=permission-seeds
 
 echo "✅ Database setup complete!"
 ```

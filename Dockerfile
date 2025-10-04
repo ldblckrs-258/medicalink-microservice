@@ -68,10 +68,6 @@ RUN cd apps/notification-service && npx prisma generate && cd ../..
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy scripts for database seeding
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/apps/accounts-service/scripts ./apps/accounts-service/scripts
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S medicalink -u 1001
