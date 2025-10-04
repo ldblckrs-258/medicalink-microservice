@@ -165,6 +165,43 @@ docker-compose -f development/docker-compose.yml down            # Stop
 docker-compose -f development/docker-compose.yml logs -f         # View logs
 ```
 
+## ☁️ Cloud Deployment
+
+### Deploy to Google Cloud Platform
+
+MedicaLink đã được chuẩn bị sẵn để deploy lên GCP với 3 phương án:
+
+1. **Cloud Run** (Serverless, khuyến nghị cho MVP) - ~$50-150/tháng
+2. **Compute Engine** (VM, đơn giản) - ~$80/tháng  
+3. **Google Kubernetes Engine** (GKE, production-grade) - ~$250/tháng
+
+**Quick Start:**
+```bash
+# 1. Setup GCP environment
+export PROJECT_ID=medicalink-prod
+./deployment/setup-gcp-environment.sh
+
+# 2. Build & push images
+./deployment/build-and-push.sh
+
+# 3. Deploy to Cloud Run
+source .env.production
+./deployment/deploy-cloud-run.sh
+```
+
+**Tài liệu chi tiết:**
+- 📖 [Hướng dẫn Deploy GCP đầy đủ](docs/gcp-deployment-guide.md) - Guide 200+ pages
+- 📋 [Deployment Checklist](deployment/DEPLOYMENT-CHECKLIST.md) - Checklist từ A-Z
+- 🚀 [Quick Reference](deployment/README.md) - Commands thường dùng
+- 📊 [Deployment Summary](docs/GCP-DEPLOYMENT-SUMMARY.md) - Tổng quan phương án
+
+**Scripts có sẵn:**
+- `deployment/setup-gcp-environment.sh` - Setup toàn bộ GCP resources
+- `deployment/build-and-push.sh` - Build & push Docker images
+- `deployment/deploy-cloud-run.sh` - Deploy to Cloud Run
+- `deployment/deploy-gcp.sh` - Deploy to Compute Engine
+- `k8s/*.yaml` - Kubernetes manifests cho GKE
+
 ## 🔧 Configuration
 
 Key environment variables (see `.env.example`):
