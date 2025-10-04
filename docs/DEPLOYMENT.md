@@ -115,9 +115,9 @@ REDIS_USERNAME=default
 REDIS_DB=0
 
 # RabbitMQ Configuration
-RABBITMQ_URL=amqp://admin:RabbitMQ2024!@rabbitmq:5672
+RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
 RABBITMQ_USER=admin
-RABBITMQ_PASS=RabbitMQ2024!
+RABBITMQ_PASS=admin123
 
 # JWT Configuration (Generate new secrets!)
 JWT_ACCESS_SECRET=CHANGE_ME_USE_openssl_rand_base64_32
@@ -234,8 +234,11 @@ docker exec medicalink-notification sh -c "cd apps/notification-service && npx p
 ### 5.2. Seed Initial Data
 
 ```bash
-# Run seed scripts
-cd ~/medicalink-microservice && pnpm run script -- --service=accounts-service --filename=create-super-admin && pnpm run script -- --service=accounts-service --filename=permission-seeds && echo "✅ Database setup complete!"
+# Run seed scripts inside containers
+docker exec medicalink-accounts sh -c "cd /app && node scripts/run-script.js --service=accounts-service --filename=create-super-admin"
+docker exec medicalink-accounts sh -c "cd /app && node scripts/run-script.js --service=accounts-service --filename=permission-seeds"
+
+echo "✅ Database setup complete!"
 ```
 
 ---
