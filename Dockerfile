@@ -45,10 +45,22 @@ COPY package.json pnpm-lock.yaml ./
 # Install only production dependencies (ignore scripts to avoid husky error)
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
+# Copy Prisma schema files first (needed for runtime)
+COPY --from=builder /app/apps/accounts-service/prisma ./apps/accounts-service/prisma
+COPY --from=builder /app/apps/provider-directory-service/prisma ./apps/provider-directory-service/prisma
+COPY --from=builder /app/apps/booking-service/prisma ./apps/booking-service/prisma
+COPY --from=builder /app/apps/content-service/prisma ./apps/content-service/prisma
+COPY --from=builder /app/apps/notification-service/prisma ./apps/notification-service/prisma
+
+# Generate Prisma clients in production stage
+RUN cd apps/accounts-service && npx prisma generate && cd ../..
+RUN cd apps/provider-directory-service && npx prisma generate && cd ../..
+RUN cd apps/booking-service && npx prisma generate && cd ../..
+RUN cd apps/content-service && npx prisma generate && cd ../..
+RUN cd apps/notification-service && npx prisma generate && cd ../..
+
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/apps/*/prisma ./apps/*/prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
