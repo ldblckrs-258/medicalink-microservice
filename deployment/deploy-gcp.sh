@@ -7,8 +7,8 @@ set -euo pipefail
 
 # Configuration
 PROJECT_ID="${PROJECT_ID:-}"
-REGION="${REGION:-us-central1}"
-ZONE="${ZONE:-us-central1-a}"
+REGION="${REGION:-asia-southeast1}"
+ZONE="${ZONE:-asia-southeast1-a}"
 INSTANCE_NAME="${INSTANCE_NAME:-medicalink-instance}"
 MACHINE_TYPE="${MACHINE_TYPE:-e2-medium}"
 DISK_SIZE="${DISK_SIZE:-20GB}"
