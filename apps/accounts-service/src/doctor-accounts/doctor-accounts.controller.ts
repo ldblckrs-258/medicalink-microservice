@@ -7,7 +7,7 @@ import {
   StaffQueryDto,
   StaffStatsDto,
 } from '@app/contracts/dtos/staff';
-import { PaginatedResponse, PostResponseDto } from '@app/contracts/dtos/common';
+import { PaginatedResponse } from '@app/contracts/dtos/common';
 import { StaffResponse } from '../staffs/interfaces';
 
 @Controller()
@@ -41,7 +41,7 @@ export class DoctorAccountsController {
   }
 
   @MessagePattern('doctor-accounts.remove')
-  async remove(@Payload() id: string): Promise<PostResponseDto> {
+  async remove(@Payload() id: string): Promise<StaffResponse> {
     return await this.doctorAccountsService.remove(id);
   }
 
