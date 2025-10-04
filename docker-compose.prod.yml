@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-gateway
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - API_GATEWAY_PORT=3000
@@ -34,6 +36,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-accounts
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - ACCOUNTS_SERVICE_PORT=3001
@@ -56,6 +60,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-provider
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - PROVIDER_SERVICE_PORT=3002
@@ -78,6 +84,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-booking
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - BOOKING_SERVICE_PORT=3003
@@ -100,6 +108,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-content
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - CONTENT_SERVICE_PORT=3004
@@ -122,6 +132,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-notification
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - NOTIFICATION_SERVICE_PORT=3005
@@ -144,6 +156,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: medicalink-orchestrator
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - ORCHESTRATOR_SERVICE_PORT=3006
