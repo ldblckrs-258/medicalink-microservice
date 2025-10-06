@@ -12,16 +12,12 @@ enum QuestionStatus {
   PENDING
   ANSWERED
   CLOSED
-
-  @@schema("content")
 }
 
 enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-
-  @@schema("content")
 }
 
 model BlogCategory {
@@ -34,7 +30,6 @@ model BlogCategory {
   blogs Blog[]
 
   @@map("blog_categories")
-  @@schema("content")
 }
 
 model Blog {
@@ -52,7 +47,6 @@ model Blog {
   category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("blogs")
-  @@schema("content")
 }
 
 model Question {
@@ -68,7 +62,6 @@ model Question {
   answers Answer[]
 
   @@map("questions")
-  @@schema("content")
 }
 
 model Answer {
@@ -85,7 +78,6 @@ model Answer {
   @@index([questionId], map: "idx_answers_question")
   @@index([doctorId, createdAt], map: "idx_answers_doctor_created")
   @@map("answers")
-  @@schema("content")
 }
 
 model Review {
@@ -102,5 +94,4 @@ model Review {
   @@index([doctorId], map: "idx_reviews_doctor")
   @@index([rating], map: "idx_reviews_rating")
   @@map("reviews")
-  @@schema("content")
 }

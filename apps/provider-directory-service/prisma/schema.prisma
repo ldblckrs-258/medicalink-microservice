@@ -21,7 +21,6 @@ model Specialty {
   infoSections      SpecialtyInfoSection[]
 
   @@map("specialties")
-  @@schema("provider")
 }
 
 model SpecialtyInfoSection {
@@ -36,7 +35,6 @@ model SpecialtyInfoSection {
 
   @@index([specialtyId], map: "idx_specialty_info_sections_specialty")
   @@map("specialty_info_sections")
-  @@schema("provider")
 }
 
 model WorkLocation {
@@ -54,7 +52,6 @@ model WorkLocation {
 
   @@index([name], map: "idx_work_locations_name")
   @@map("work_locations")
-  @@schema("provider")
 }
 
 model Doctor {
@@ -79,7 +76,6 @@ model Doctor {
   schedules           Schedule[]
 
   @@map("doctors")
-  @@schema("provider")
 }
 
 model DoctorSpecialty {
@@ -94,7 +90,6 @@ model DoctorSpecialty {
   @@unique([doctorId, specialtyId])
   @@index([specialtyId], map: "idx_doctor_specialties_specialty")
   @@map("doctor_specialties")
-  @@schema("provider")
 }
 
 model DoctorWorkLocation {
@@ -108,7 +103,6 @@ model DoctorWorkLocation {
 
   @@unique([doctorId, locationId])
   @@map("doctor_work_locations")
-  @@schema("provider")
 }
 
 model Schedule {
@@ -131,5 +125,4 @@ model Schedule {
   @@index([doctorId, serviceDate], map: "idx_schedules_doctor_date")
   @@index([locationId, serviceDate], map: "idx_schedules_location_date")
   @@map("schedules")
-  @@schema("provider")
 }

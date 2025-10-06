@@ -12,7 +12,7 @@ async function createSuperAdmin() {
 
   // Check environment variables before creating app
   const requiredEnvVars = [
-    'DATABASE_URL',
+    'ACCOUNTS_DATABASE_URL',
     'SUPER_ADMIN_EMAIL',
     'SUPER_ADMIN_PASSWORD',
   ];

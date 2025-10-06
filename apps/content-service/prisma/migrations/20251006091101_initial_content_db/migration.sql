@@ -1,14 +1,11 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "content";
+-- CreateEnum
+CREATE TYPE "QuestionStatus" AS ENUM ('PENDING', 'ANSWERED', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "content"."QuestionStatus" AS ENUM ('PENDING', 'ANSWERED', 'CLOSED');
-
--- CreateEnum
-CREATE TYPE "content"."PostStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+CREATE TYPE "PostStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateTable
-CREATE TABLE "content"."blog_categories" (
+CREATE TABLE "blog_categories" (
     "id" TEXT NOT NULL,
     "name" VARCHAR(120) NOT NULL,
     "slug" VARCHAR(140) NOT NULL,
@@ -19,14 +16,14 @@ CREATE TABLE "content"."blog_categories" (
 );
 
 -- CreateTable
-CREATE TABLE "content"."blogs" (
+CREATE TABLE "blogs" (
     "id" TEXT NOT NULL,
     "title" VARCHAR(200) NOT NULL,
     "slug" VARCHAR(220) NOT NULL,
     "content" TEXT NOT NULL,
     "category_id" VARCHAR(27) NOT NULL,
     "author_id" VARCHAR(27) NOT NULL,
-    "status" "content"."PostStatus" NOT NULL DEFAULT 'DRAFT',
+    "status" "PostStatus" NOT NULL DEFAULT 'DRAFT',
     "published_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -35,13 +32,13 @@ CREATE TABLE "content"."blogs" (
 );
 
 -- CreateTable
-CREATE TABLE "content"."questions" (
+CREATE TABLE "questions" (
     "id" TEXT NOT NULL,
     "author_name" VARCHAR(120) NOT NULL DEFAULT 'Anonymous',
     "author_email" VARCHAR(120),
     "title" VARCHAR(200) NOT NULL,
     "body" TEXT NOT NULL,
-    "status" "content"."QuestionStatus" NOT NULL DEFAULT 'PENDING',
+    "status" "QuestionStatus" NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -49,7 +46,7 @@ CREATE TABLE "content"."questions" (
 );
 
 -- CreateTable
-CREATE TABLE "content"."answers" (
+CREATE TABLE "answers" (
     "id" TEXT NOT NULL,
     "question_id" VARCHAR(27) NOT NULL,
     "doctor_id" VARCHAR(27) NOT NULL,
@@ -62,7 +59,7 @@ CREATE TABLE "content"."answers" (
 );
 
 -- CreateTable
-CREATE TABLE "content"."reviews" (
+CREATE TABLE "reviews" (
     "id" TEXT NOT NULL,
     "doctor_id" VARCHAR(27) NOT NULL,
     "author_name" VARCHAR(120) NOT NULL DEFAULT 'Anonymous',
@@ -77,28 +74,28 @@ CREATE TABLE "content"."reviews" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "blog_categories_name_key" ON "content"."blog_categories"("name");
+CREATE UNIQUE INDEX "blog_categories_name_key" ON "blog_categories"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "blog_categories_slug_key" ON "content"."blog_categories"("slug");
+CREATE UNIQUE INDEX "blog_categories_slug_key" ON "blog_categories"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "blogs_slug_key" ON "content"."blogs"("slug");
+CREATE UNIQUE INDEX "blogs_slug_key" ON "blogs"("slug");
 
 -- CreateIndex
-CREATE INDEX "idx_answers_question" ON "content"."answers"("question_id");
+CREATE INDEX "idx_answers_question" ON "answers"("question_id");
 
 -- CreateIndex
-CREATE INDEX "idx_answers_doctor_created" ON "content"."answers"("doctor_id", "created_at");
+CREATE INDEX "idx_answers_doctor_created" ON "answers"("doctor_id", "created_at");
 
 -- CreateIndex
-CREATE INDEX "idx_reviews_doctor" ON "content"."reviews"("doctor_id");
+CREATE INDEX "idx_reviews_doctor" ON "reviews"("doctor_id");
 
 -- CreateIndex
-CREATE INDEX "idx_reviews_rating" ON "content"."reviews"("rating");
+CREATE INDEX "idx_reviews_rating" ON "reviews"("rating");
 
 -- AddForeignKey
-ALTER TABLE "content"."blogs" ADD CONSTRAINT "blogs_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "content"."blog_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "blogs" ADD CONSTRAINT "blogs_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "blog_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "content"."answers" ADD CONSTRAINT "answers_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "content"."questions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "answers" ADD CONSTRAINT "answers_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "questions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
