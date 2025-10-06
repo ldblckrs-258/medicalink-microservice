@@ -15,7 +15,6 @@ deployment/
 ├── docker-compose.content.yml      # Content Service
 ├── docker-compose.notification.yml # Notification Service
 ├── docker-compose.orchestrator.yml # Orchestrator Service
-├── deploy.ps1                      # PowerShell deployment script
 ├── deploy.sh                       # Bash deployment script
 └── README.md                       # File này
 ```
@@ -23,36 +22,6 @@ deployment/
 ## 🚀 Cách Sử Dụng
 
 ### Sử Dụng Script (Khuyến nghị)
-
-**Windows PowerShell:**
-```powershell
-# Start tất cả services
-.\deployment\deploy.ps1 start all
-
-# Start chỉ infrastructure
-.\deployment\deploy.ps1 start infrastructure
-
-# Start một service cụ thể
-.\deployment\deploy.ps1 start accounts
-
-# Stop tất cả
-.\deployment\deploy.ps1 stop all
-
-# Restart một service
-.\deployment\deploy.ps1 restart gateway
-
-# Xem logs
-.\deployment\deploy.ps1 logs all
-
-# Build lại images
-.\deployment\deploy.ps1 build all
-
-# Update service (build + restart)
-.\deployment\deploy.ps1 update accounts
-
-# Kiểm tra status
-.\deployment\deploy.ps1 status all
-```
 
 **Linux/macOS:**
 ```bash
