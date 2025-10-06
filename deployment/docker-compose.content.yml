@@ -1,0 +1,28 @@
+# Content Service
+services:
+  # Content Service
+  content-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medicalink-content
+    env_file:
+      - ../.env.production
+    environment:
+      - NODE_ENV=production
+      - CONTENT_SERVICE_PORT=3004
+    networks:
+      - medicalink-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/apps/content-service/main.js"]
+    restart: unless-stopped
+
+networks:
+  medicalink-network:
+    external: true

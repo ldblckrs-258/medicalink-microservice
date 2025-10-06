@@ -5,8 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["provider"]
+  url      = env("PROVIDER_DATABASE_URL")
 }
 
 model Specialty {

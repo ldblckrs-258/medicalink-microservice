@@ -5,8 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["notification"]
+  url      = env("NOTIFICATION_DATABASE_URL")
 }
 
 enum NotificationChannel {

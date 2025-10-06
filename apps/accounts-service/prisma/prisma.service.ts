@@ -10,6 +10,12 @@ import { PrismaClient } from './generated/client';
 export class PrismaService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(PrismaService.name);
 
+  constructor() {
+    super({
+      datasourceUrl: process.env.ACCOUNTS_DATABASE_URL,
+    });
+  }
+
   async onModuleInit() {
     await this.$connect();
     this.logger.log('Prisma Client Connected');

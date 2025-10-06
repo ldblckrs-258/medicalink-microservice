@@ -1,0 +1,28 @@
+# Booking Service
+services:
+  # Booking Service
+  booking-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medicalink-booking
+    env_file:
+      - ../.env.production
+    environment:
+      - NODE_ENV=production
+      - BOOKING_SERVICE_PORT=3003
+    networks:
+      - medicalink-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/apps/booking-service/main.js"]
+    restart: unless-stopped
+
+networks:
+  medicalink-network:
+    external: true
