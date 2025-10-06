@@ -5,8 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["booking"]
+  url      = env("BOOKING_DATABASE_URL")
 }
 
 enum AppointmentStatus {
@@ -17,8 +16,6 @@ enum AppointmentStatus {
   CANCELLED_BY_STAFF
   NO_SHOW
   COMPLETED
-
-  @@schema("booking")
 }
 
 model Patient {
@@ -41,7 +38,6 @@ model Patient {
   @@index([fullName], map: "idx_patients_full_name")
   @@index([phone], map: "idx_patients_phone")
   @@map("patients")
-  @@schema("booking")
 }
 
 model Appointment {
@@ -72,7 +68,6 @@ model Appointment {
   @@index([status, serviceDate], map: "idx_appointments_status_date")
   @@index([serviceDate, timeStart], map: "idx_appointments_date_time")
   @@map("appointments")
-  @@schema("booking")
 }
 
 model AppointmentEvent {
@@ -85,8 +80,7 @@ model AppointmentEvent {
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@index([appointmentId, occurredAt], map: "idx_appointment_events_appt_time")
-  @@map("appointment_events")
-  @@schema("booking")
+  @@map("appointment_events") 
 }
 
 model ScheduleHold {
@@ -103,5 +97,4 @@ model ScheduleHold {
   @@index([patientId], map: "idx_schedule_holds_patient")
   @@index([expiresAt], map: "idx_schedule_holds_expires")
   @@map("schedule_holds")
-  @@schema("booking")
 }

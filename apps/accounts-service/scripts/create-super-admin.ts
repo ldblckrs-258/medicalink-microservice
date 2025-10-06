@@ -12,7 +12,7 @@ async function createSuperAdmin() {
 
   // Check environment variables before creating app
   const requiredEnvVars = [
-    'DATABASE_URL',
+    'ACCOUNTS_DATABASE_URL',
     'SUPER_ADMIN_EMAIL',
     'SUPER_ADMIN_PASSWORD',
   ];
@@ -27,7 +27,9 @@ async function createSuperAdmin() {
   }
 
   // Initialize Prisma Client directly (no NestJS context)
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasourceUrl: process.env.ACCOUNTS_DATABASE_URL,
+  });
 
   try {
     // Get credentials from environment variables

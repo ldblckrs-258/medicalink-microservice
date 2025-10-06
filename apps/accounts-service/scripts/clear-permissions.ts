@@ -6,7 +6,7 @@ import { Logger } from '@nestjs/common';
 config({ path: resolve(__dirname, '../../../.env') });
 
 const prisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL,
+  datasourceUrl: process.env.ACCOUNTS_DATABASE_URL,
   log: ['error', 'warn'],
   errorFormat: 'pretty',
 });

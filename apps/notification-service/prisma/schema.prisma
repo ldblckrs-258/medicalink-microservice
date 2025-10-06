@@ -5,8 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["notification"]
+  url      = env("NOTIFICATION_DATABASE_URL")
 }
 
 enum NotificationChannel {
@@ -14,23 +13,17 @@ enum NotificationChannel {
   SMS
   PUSH
   WS
-
-  @@schema("notification")
 }
 
 enum DeliveryStatus {
   QUEUED
   SENT
   FAILED
-
-  @@schema("notification")
 }
 
 enum RecipientType {
   PATIENT
   STAFF
-
-  @@schema("notification")
 }
 
 model NotificationTemplate {
@@ -44,7 +37,6 @@ model NotificationTemplate {
   updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("notification_templates")
-  @@schema("notification")
 }
 
 model NotificationPreference {
@@ -58,7 +50,6 @@ model NotificationPreference {
 
   @@unique([userId, recipientAs, channel])
   @@map("notification_preferences")
-  @@schema("notification")
 }
 
 model NotificationDelivery {
@@ -77,5 +68,4 @@ model NotificationDelivery {
   @@index([status, createdAt], map: "idx_notification_deliveries_status_created")
   @@index([templateKey], map: "idx_notification_deliveries_template")
   @@map("notification_deliveries")
-  @@schema("notification")
 }

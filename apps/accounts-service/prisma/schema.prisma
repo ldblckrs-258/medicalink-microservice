@@ -5,23 +5,18 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["accounts"]
+  url      = env("ACCOUNTS_DATABASE_URL")
 }
 
 enum StaffRole {
   SUPER_ADMIN
   ADMIN
   DOCTOR
-
-  @@schema("accounts")
 }
 
 enum PermissionEffect {
   ALLOW
   DENY
-
-  @@schema("accounts")
 }
 
 model StaffAccount {
@@ -43,7 +38,6 @@ model StaffAccount {
   userGroups      UserGroup[]
 
   @@map("staff_accounts")
-  @@schema("accounts")
 }
 
 // Permission System Models
@@ -61,7 +55,6 @@ model Permission {
   @@unique([resource, action])
   @@index([resource], map: "idx_permissions_resource")
   @@map("permissions")
-  @@schema("accounts")
 }
 
 model UserPermission {
@@ -81,7 +74,6 @@ model UserPermission {
   @@index([userId], map: "idx_user_permissions_user")
   @@index([tenantId], map: "idx_user_permissions_tenant")
   @@map("user_permissions")
-  @@schema("accounts")
 }
 
 model Group {
@@ -99,7 +91,6 @@ model Group {
   @@unique([name, tenantId])
   @@index([tenantId], map: "idx_groups_tenant")
   @@map("groups")
-  @@schema("accounts")
 }
 
 model UserGroup {
@@ -116,7 +107,6 @@ model UserGroup {
   @@index([userId], map: "idx_user_groups_user")
   @@index([groupId], map: "idx_user_groups_group")
   @@map("user_groups")
-  @@schema("accounts")
 }
 
 model GroupPermission {
@@ -135,7 +125,6 @@ model GroupPermission {
   @@index([groupId], map: "idx_group_permissions_group")
   @@index([permissionId], map: "idx_group_permissions_permission")
   @@map("group_permissions")
-  @@schema("accounts")
 }
 
 model AuthVersion {
@@ -148,5 +137,4 @@ model AuthVersion {
 
   @@index([userId], map: "idx_auth_versions_user")
   @@map("auth_versions")
-  @@schema("accounts")
 }

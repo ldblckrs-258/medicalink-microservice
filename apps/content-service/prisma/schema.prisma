@@ -5,24 +5,19 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["content"]
+  url      = env("CONTENT_DATABASE_URL")
 }
 
 enum QuestionStatus {
   PENDING
   ANSWERED
   CLOSED
-
-  @@schema("content")
 }
 
 enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-
-  @@schema("content")
 }
 
 model BlogCategory {
@@ -35,7 +30,6 @@ model BlogCategory {
   blogs Blog[]
 
   @@map("blog_categories")
-  @@schema("content")
 }
 
 model Blog {
@@ -53,22 +47,21 @@ model Blog {
   category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("blogs")
-  @@schema("content")
 }
 
 model Question {
-  id        String         @id @default(cuid())
-  patientId String         @map("patient_id") @db.VarChar(27)
-  title     String         @db.VarChar(200)
-  body      String         @db.Text
-  status    QuestionStatus @default(PENDING)
-  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String         @id @default(cuid())
+  authorName  String         @default("Anonymous") @map("author_name") @db.VarChar(120)
+  authorEmail String?        @map("author_email") @db.VarChar(120)
+  title       String         @db.VarChar(200)
+  body        String         @db.Text
+  status      QuestionStatus @default(PENDING)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   answers Answer[]
 
   @@map("questions")
-  @@schema("content")
 }
 
 model Answer {
@@ -85,22 +78,20 @@ model Answer {
   @@index([questionId], map: "idx_answers_question")
   @@index([doctorId, createdAt], map: "idx_answers_doctor_created")
   @@map("answers")
-  @@schema("content")
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  doctorId  String   @map("doctor_id") @db.VarChar(27)
-  patientId String   @map("patient_id") @db.VarChar(27)
-  rating    Int      @db.SmallInt
-  title     String?  @db.VarChar(160)
-  body      String?  @db.Text
-  isPublic  Boolean  @default(true) @map("is_public")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  doctorId    String   @map("doctor_id") @db.VarChar(27)
+  authorName  String   @default("Anonymous") @map("author_name") @db.VarChar(120)
+  authorEmail String?  @map("author_email") @db.VarChar(120)
+  rating      Int      @db.SmallInt
+  title       String?  @db.VarChar(160)
+  body        String?  @db.Text
+  isPublic    Boolean  @default(true) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([doctorId], map: "idx_reviews_doctor")
-  @@index([patientId], map: "idx_reviews_patient")
   @@index([rating], map: "idx_reviews_rating")
   @@map("reviews")
-  @@schema("content")
 }

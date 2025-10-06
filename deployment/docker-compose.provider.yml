@@ -1,0 +1,24 @@
+# Provider Directory Service
+services:
+  # Provider Directory Service
+  provider-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: medicalink-provider
+    env_file:
+      - ../.env.production
+    environment:
+      - NODE_ENV=production
+      - PROVIDER_SERVICE_PORT=3002
+    networks:
+      - medicalink-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/apps/provider-directory-service/main.js"]
+    restart: unless-stopped
