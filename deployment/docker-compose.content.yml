@@ -3,7 +3,7 @@ services:
   # Content Service
   content-service:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-content
     env_file:

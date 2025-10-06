@@ -3,7 +3,7 @@ services:
   # Provider Directory Service
   provider-service:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-provider
     env_file:

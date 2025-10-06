@@ -3,7 +3,7 @@ services:
   # Notification Service
   notification-service:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-notification
     env_file:

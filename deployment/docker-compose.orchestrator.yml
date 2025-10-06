@@ -3,7 +3,7 @@ services:
   # Orchestrator Service
   orchestrator-service:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-orchestrator
     env_file:

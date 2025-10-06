@@ -3,7 +3,7 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-gateway
     env_file:

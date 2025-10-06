@@ -3,7 +3,7 @@ services:
   # Booking Service
   booking-service:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: medicalink-booking
     env_file:
