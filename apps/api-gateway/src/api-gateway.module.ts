@@ -1,8 +1,9 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { Redis } from 'ioredis';
 import { RedisModule } from '@app/redis';
 import { RabbitMQModule } from '@app/rabbitmq';
 import { JwtAuthGuard, PermissionGuard } from '@app/contracts';
@@ -24,7 +25,8 @@ import { MicroserviceErrorInterceptor } from './interceptors/microservice-error.
 import { PermissionsController } from './permissions/permissions.controller';
 import { MorganMiddleware } from './middleware';
 import { jwtModuleAsyncOptions } from './auth/jwt.config';
-import { throttlerOptions } from './config/throttler.config';
+import { createThrottlerOptions } from './config/throttler.config';
+import { ThrottlerRedisStorage } from './config/throttler-redis.storage';
 import { MicroserviceClientsModule } from './clients/microservice-clients.module';
 
 @Module({
@@ -36,7 +38,14 @@ import { MicroserviceClientsModule } from './clients/microservice-clients.module
     JwtModule.registerAsync(jwtModuleAsyncOptions),
     RedisModule,
     RabbitMQModule,
-    ThrottlerModule.forRoot(throttlerOptions),
+    ThrottlerModule.forRootAsync({
+      imports: [RedisModule, ConfigModule],
+      inject: ['IOREDIS', ConfigService],
+      useFactory: (redis: Redis, configService: ConfigService) => {
+        const redisStorage = new ThrottlerRedisStorage(redis);
+        return createThrottlerOptions(redisStorage, configService);
+      },
+    }),
     MicroserviceClientsModule,
   ],
   controllers: [
