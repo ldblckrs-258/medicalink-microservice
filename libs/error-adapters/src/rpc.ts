@@ -129,6 +129,24 @@ function extractPrismaMessage(e: unknown): string {
   const message = error.message || 'Database error';
 
   if (typeof message === 'string') {
+    // Normalize and try to extract well-known Prisma error messages
+    const normalized = message.replace(/\r/g, '');
+
+    const fkMatch = normalized.match(
+      /Foreign key constraint violated on the constraint:\s*`([^`]+)`/i,
+    );
+    if (fkMatch) {
+      return `Foreign key constraint violated: ${fkMatch[1]}`;
+    }
+
+    // Unique constraint failed (common Prisma engine message)
+    const uniqueMatch = normalized.match(
+      /Unique constraint failed on the fields?:\s*`?([^`]+)`?/i,
+    );
+    if (uniqueMatch) {
+      return `Unique constraint failed on the field(s): ${uniqueMatch[1]}`;
+    }
+
     const argumentMatch = message.match(/Argument `(\w+)`: (.+?)(?:\n|$)/);
     if (argumentMatch) {
       return `Invalid ${argumentMatch[1]}: ${argumentMatch[2]}`;

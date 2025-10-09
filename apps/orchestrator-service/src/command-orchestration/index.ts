@@ -1,1 +1,1 @@
-export * from './doctor-creation';
+export * from './doctor';

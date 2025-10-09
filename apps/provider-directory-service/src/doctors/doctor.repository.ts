@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createId } from '@paralleldrive/cuid2';
 import {
   CreateDoctorProfileDto,
   DoctorProfileQueryDto,
   DoctorProfileResponseDto,
 } from '@app/contracts';
+import { BadRequestError } from '@app/domain-errors';
 
 @Injectable()
 export class DoctorRepository {
@@ -31,7 +31,6 @@ export class DoctorRepository {
   ): Promise<DoctorProfileResponseDto> {
     const result = await this.prisma.doctor.create({
       data: {
-        id: createId(),
         ...data,
       },
     });
@@ -122,18 +121,6 @@ export class DoctorRepository {
 
   /**
    * Update doctor profile with optimized relationship management
-   *
-   * Algorithm for updating many-to-many relationships:
-   * 1. deleteMany: Remove relationships NOT IN new list (O(1) query)
-   * 2. createMany with skipDuplicates: Insert all new IDs (O(1) query)
-   *    - Relies on unique constraint (doctorId, specialtyId/locationId)
-   *    - Automatically skips existing relationships
-   *    - No need to diff current vs new IDs
-   *
-   * Benefits:
-   * - Only 2 queries per relationship type (vs N queries for diff approach)
-   * - Transaction ensures atomicity
-   * - Leverages database constraints for duplicate detection
    */
   async update(
     id: string,
@@ -144,65 +131,72 @@ export class DoctorRepository {
   ): Promise<DoctorProfileResponseDto> {
     const { specialtyIds, locationIds, ...doctorData } = data;
 
-    // Update doctor basic data and relationships in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      if (Array.isArray(specialtyIds)) {
-        await tx.doctorSpecialty.deleteMany({
-          where: {
-            doctorId: id,
-            specialtyId: { notIn: specialtyIds },
+    try {
+      // Update doctor basic data and relationships in a transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        if (Array.isArray(specialtyIds)) {
+          await tx.doctorSpecialty.deleteMany({
+            where: {
+              doctorId: id,
+              specialtyId: { notIn: specialtyIds },
+            },
+          });
+
+          if (specialtyIds.length > 0) {
+            await tx.doctorSpecialty.createMany({
+              data: specialtyIds.map((specialtyId) => ({
+                doctorId: id,
+                specialtyId,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        // Update work location relationships if provided
+        if (Array.isArray(locationIds)) {
+          await tx.doctorWorkLocation.deleteMany({
+            where: {
+              doctorId: id,
+              locationId: { notIn: locationIds },
+            },
+          });
+
+          if (locationIds.length > 0) {
+            await tx.doctorWorkLocation.createMany({
+              data: locationIds.map((locationId) => ({
+                doctorId: id,
+                locationId,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        // Update doctor basic data
+        return tx.doctor.update({
+          where: { id },
+          data: doctorData,
+          include: {
+            doctorSpecialties: {
+              include: { specialty: true },
+            },
+            doctorWorkLocations: {
+              include: { location: true },
+            },
           },
         });
-
-        if (specialtyIds.length > 0) {
-          await tx.doctorSpecialty.createMany({
-            data: specialtyIds.map((specialtyId) => ({
-              id: createId(),
-              doctorId: id,
-              specialtyId,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
-
-      // Update work location relationships if provided
-      if (Array.isArray(locationIds)) {
-        await tx.doctorWorkLocation.deleteMany({
-          where: {
-            doctorId: id,
-            locationId: { notIn: locationIds },
-          },
-        });
-
-        if (locationIds.length > 0) {
-          await tx.doctorWorkLocation.createMany({
-            data: locationIds.map((locationId) => ({
-              id: createId(),
-              doctorId: id,
-              locationId,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
-
-      // Update doctor basic data
-      return tx.doctor.update({
-        where: { id },
-        data: doctorData,
-        include: {
-          doctorSpecialties: {
-            include: { specialty: true },
-          },
-          doctorWorkLocations: {
-            include: { location: true },
-          },
-        },
       });
-    });
 
-    return this.transformDoctorResponse(result);
+      return this.transformDoctorResponse(result);
+    } catch (e: any) {
+      if (e?.code === 'P2003') {
+        throw new BadRequestError(
+          'Foreign key constraint violation: referenced specialty or location does not exist',
+        );
+      }
+      throw e;
+    }
   }
 
   async remove(id: string): Promise<DoctorProfileResponseDto> {

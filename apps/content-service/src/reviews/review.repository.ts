@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createId } from '@paralleldrive/cuid2';
 import { ReviewResponseDto } from '@app/contracts';
 
 @Injectable()
@@ -17,7 +16,6 @@ export class ReviewRepository {
   }): Promise<ReviewResponseDto> {
     const review = await this.prisma.review.create({
       data: {
-        id: createId(),
         ...data,
       },
     });

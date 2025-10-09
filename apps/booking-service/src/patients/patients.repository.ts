@@ -70,10 +70,8 @@ export class PatientRepository extends BaseRepository<
   }
 
   async create(data: CreatePatientDto): Promise<Patient> {
-    const { createId } = await import('@paralleldrive/cuid2');
     return await this.model.create({
       data: {
-        id: createId(),
         ...data,
       },
     });

@@ -6,7 +6,7 @@ import { HealthModule } from './health/health.module';
 import { ClientsModule } from './clients/clients.module';
 import { CacheModule } from './cache/cache.module';
 import { SagaModule } from './saga/saga.module';
-import { DoctorCreationModule } from './command-orchestration/doctor-creation';
+import { DoctorOrchestratorModule } from './command-orchestration/doctor';
 import { DoctorCompositeModule } from './read-composition';
 import { EventHandlersModule } from './event-handlers';
 
@@ -21,7 +21,7 @@ import { EventHandlersModule } from './event-handlers';
     ClientsModule,
     CacheModule,
     SagaModule,
-    DoctorCreationModule,
+    DoctorOrchestratorModule,
     DoctorCompositeModule,
     EventHandlersModule,
   ],

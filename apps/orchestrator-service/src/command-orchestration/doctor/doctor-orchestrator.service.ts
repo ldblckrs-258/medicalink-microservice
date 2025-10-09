@@ -20,8 +20,8 @@ interface DoctorCreationSagaOutput {
  * Uses Saga pattern for reliable multi-step orchestration
  */
 @Injectable()
-export class DoctorCreationOrchestratorService {
-  private readonly logger = new Logger(DoctorCreationOrchestratorService.name);
+export class DoctorOrchestratorService {
+  private readonly logger = new Logger(DoctorOrchestratorService.name);
 
   constructor(
     @Inject('ACCOUNTS_SERVICE')
@@ -38,17 +38,11 @@ export class DoctorCreationOrchestratorService {
   async createDoctor(
     command: CreateDoctorCommandDto,
   ): Promise<DoctorCreationResultDto> {
-    this.logger.log(
-      `Starting doctor creation orchestration for email: ${command.email}`,
-    );
-
     // Define saga steps
     const steps: SagaStep[] = [
       {
         name: 'createAccount',
         execute: async (input) => {
-          this.logger.debug('Step 1: Creating staff account with DOCTOR role');
-
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { correlationId, userId, idempotencyKey, ...accountData } =
             input;
@@ -58,13 +52,9 @@ export class DoctorCreationOrchestratorService {
             accountData,
             { timeoutMs: 12000 },
           );
-          this.logger.debug(`Account created: ${account.id}`);
           return { ...input, account };
         },
         compensate: async (output) => {
-          this.logger.warn(
-            `Compensating: Deleting account ${output.account.id}`,
-          );
           try {
             await this.clientHelper.send(
               this.accountsClient,
@@ -72,7 +62,6 @@ export class DoctorCreationOrchestratorService {
               output.account.id,
               { timeoutMs: 8000 },
             );
-            this.logger.debug('Account deleted successfully');
           } catch (error) {
             this.logger.error(
               'Failed to delete account during compensation',
@@ -84,24 +73,17 @@ export class DoctorCreationOrchestratorService {
       {
         name: 'createProfile',
         execute: async (input) => {
-          this.logger.debug(
-            `Step 2: Creating empty doctor profile for account: ${input.account.id}`,
-          );
           const profile = await this.clientHelper.send<{ id: string }>(
             this.providerClient,
             SERVICE_PATTERNS.PROVIDER.PROFILE_CREATE_EMPTY,
             { staffAccountId: input.account.id },
             { timeoutMs: 12000 },
           );
-          this.logger.debug(`Profile created: ${profile.id}`);
           return { ...input, profile };
         },
         compensate: async (output) => {
           if (!output.profile) return;
 
-          this.logger.warn(
-            `Compensating: Deleting profile ${output.profile.id}`,
-          );
           try {
             await this.clientHelper.send(
               this.providerClient,
@@ -109,7 +91,6 @@ export class DoctorCreationOrchestratorService {
               output.profile.id,
               { timeoutMs: 8000 },
             );
-            this.logger.debug('Profile deleted successfully');
           } catch (error) {
             this.logger.error(
               'Failed to delete profile during compensation',
@@ -131,11 +112,6 @@ export class DoctorCreationOrchestratorService {
 
     // If saga failed, throw SagaOrchestrationError
     if (!result.success) {
-      this.logger.error(
-        `Doctor creation failed at step: ${result.error?.step}`,
-        result.error?.originalError,
-      );
-
       throw new SagaOrchestrationError(
         result.error?.message || 'Doctor creation failed',
         {
@@ -148,11 +124,6 @@ export class DoctorCreationOrchestratorService {
         },
       );
     }
-
-    // Return success result
-    this.logger.log(
-      `Doctor creation completed successfully. Account: ${result.data!.account.id}, Profile: ${result.data!.profile.id}`,
-    );
 
     return {
       account: result.data!.account,

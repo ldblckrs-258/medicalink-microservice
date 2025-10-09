@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createId } from '@paralleldrive/cuid2';
 import { QuestionResponseDto, AnswerResponseDto } from '@app/contracts';
 
 @Injectable()
@@ -14,7 +13,6 @@ export class QuestionRepository {
   }): Promise<QuestionResponseDto> {
     const question = await this.prisma.question.create({
       data: {
-        id: createId(),
         title: data.title,
         body: data.content,
         authorEmail: data.authorId,
@@ -115,7 +113,6 @@ export class QuestionRepository {
   }): Promise<AnswerResponseDto> {
     const answer = await this.prisma.answer.create({
       data: {
-        id: createId(),
         ...data,
         isAccepted: false,
       },

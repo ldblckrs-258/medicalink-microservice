@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createId } from '@paralleldrive/cuid2';
 import { BlogResponseDto, BlogCategoryResponseDto } from '@app/contracts';
 
 @Injectable()
@@ -16,7 +15,6 @@ export class BlogRepository {
   }): Promise<BlogResponseDto> {
     const blog = await this.prisma.blog.create({
       data: {
-        id: createId(),
         title: data.title,
         content: data.content,
         slug: this.generateSlug(data.title),
@@ -131,7 +129,6 @@ export class BlogRepository {
   }): Promise<BlogCategoryResponseDto> {
     const category = await this.prisma.blogCategory.create({
       data: {
-        id: createId(),
         name: data.name,
         slug: this.generateSlug(data.name),
       },
