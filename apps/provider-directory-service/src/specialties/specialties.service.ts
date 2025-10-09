@@ -14,7 +14,7 @@ import {
   UpdateSpecialtyInfoSectionDto,
   SpecialtyInfoSectionResponseDto,
 } from '@app/contracts';
-import { NotFoundError, ConflictError, ErrorCode } from '@app/domain-errors';
+import { NotFoundError, ConflictError } from '@app/domain-errors';
 
 @Injectable()
 export class SpecialtiesService {
@@ -73,9 +73,7 @@ export class SpecialtiesService {
       await this.specialtyRepository.findByIdWithInfoSectionsCount(id);
 
     if (!specialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     return this.mapToSpecialtyResponseDto({
@@ -93,9 +91,7 @@ export class SpecialtiesService {
     );
 
     if (existingSpecialty) {
-      throw new ConflictError('Specialty name already exists', {
-        code: ErrorCode.UNIQUE_VIOLATION,
-      });
+      throw new ConflictError('Specialty name already exists');
     }
 
     const specialty = await this.specialtyRepository.create(createSpecialtyDto);
@@ -113,9 +109,7 @@ export class SpecialtiesService {
     const existingSpecialty = await this.specialtyRepository.findById(id);
 
     if (!existingSpecialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     // Check if name is being updated and already exists
@@ -128,9 +122,7 @@ export class SpecialtiesService {
       );
 
       if (specialtyWithName) {
-        throw new ConflictError('Specialty name already exists', {
-          code: ErrorCode.UNIQUE_VIOLATION,
-        });
+        throw new ConflictError('Specialty name already exists');
       }
     }
 
@@ -148,9 +140,7 @@ export class SpecialtiesService {
     const existingSpecialty = await this.specialtyRepository.findById(id);
 
     if (!existingSpecialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     const specialty = await this.specialtyRepository.delete(id);
@@ -212,9 +202,7 @@ export class SpecialtiesService {
       await this.specialtyRepository.findBySlugWithInfoSections(slug);
 
     if (!specialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     return {
@@ -239,9 +227,7 @@ export class SpecialtiesService {
     // Check if specialty exists
     const specialty = await this.specialtyRepository.findById(specialtyId);
     if (!specialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     const infoSections =
@@ -267,9 +253,7 @@ export class SpecialtiesService {
       createInfoSectionDto.specialtyId,
     );
     if (!specialty) {
-      throw new NotFoundError('Specialty not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Specialty not found');
     }
 
     const infoSection =
@@ -293,9 +277,7 @@ export class SpecialtiesService {
     const existingInfoSection =
       await this.specialtyInfoSectionRepository.findById(id);
     if (!existingInfoSection) {
-      throw new NotFoundError('Info section not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Info section not found');
     }
 
     const infoSection = await this.specialtyInfoSectionRepository.update(
@@ -320,9 +302,7 @@ export class SpecialtiesService {
     const existingInfoSection =
       await this.specialtyInfoSectionRepository.findById(id);
     if (!existingInfoSection) {
-      throw new NotFoundError('Info section not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Info section not found');
     }
 
     const infoSection = await this.specialtyInfoSectionRepository.delete(id);

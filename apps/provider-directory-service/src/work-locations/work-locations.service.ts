@@ -7,7 +7,7 @@ import {
   WorkLocationResponseDto,
   WorkLocationPaginatedResponseDto,
 } from '@app/contracts';
-import { NotFoundError, ConflictError, ErrorCode } from '@app/domain-errors';
+import { NotFoundError, ConflictError } from '@app/domain-errors';
 
 @Injectable()
 export class WorkLocationsService {
@@ -38,9 +38,7 @@ export class WorkLocationsService {
     const workLocation = await this.workLocationRepository.findById(id);
 
     if (!workLocation) {
-      throw new NotFoundError('Work location not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Work location not found');
     }
 
     return this.mapToWorkLocationResponseDto(workLocation);
@@ -55,9 +53,7 @@ export class WorkLocationsService {
     );
 
     if (existingLocation) {
-      throw new ConflictError('Work location name already exists', {
-        code: ErrorCode.UNIQUE_VIOLATION,
-      });
+      throw new ConflictError('Work location name already exists');
     }
 
     const workLocation = await this.workLocationRepository.create(
@@ -74,9 +70,7 @@ export class WorkLocationsService {
     const existingLocation = await this.workLocationRepository.findById(id);
 
     if (!existingLocation) {
-      throw new NotFoundError('Work location not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Work location not found');
     }
 
     // Check if name is being updated and already exists
@@ -89,9 +83,7 @@ export class WorkLocationsService {
       );
 
       if (locationWithName) {
-        throw new ConflictError('Work location name already exists', {
-          code: ErrorCode.UNIQUE_VIOLATION,
-        });
+        throw new ConflictError('Work location name already exists');
       }
     }
 
@@ -107,9 +99,7 @@ export class WorkLocationsService {
     const existingLocation = await this.workLocationRepository.findById(id);
 
     if (!existingLocation) {
-      throw new NotFoundError('Work location not found', {
-        code: ErrorCode.RECORD_NOT_FOUND,
-      });
+      throw new NotFoundError('Work location not found');
     }
 
     const workLocation = await this.workLocationRepository.delete(id);

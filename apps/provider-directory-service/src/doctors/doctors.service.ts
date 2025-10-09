@@ -8,7 +8,7 @@ import {
   PaginatedResponse,
   DoctorProfileResponseDto,
 } from '@app/contracts';
-import { NotFoundError, ErrorCode } from '@app/domain-errors';
+import { NotFoundError } from '@app/domain-errors';
 
 @Injectable()
 export class DoctorsService {
@@ -85,9 +85,7 @@ export class DoctorsService {
     });
 
     if (!doctor) {
-      throw new NotFoundError(`Doctor profile with id ${id} not found`, {
-        code: ErrorCode.DOCTOR_PROFILE_NOT_FOUND,
-      });
+      throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
     return doctor;
@@ -100,9 +98,7 @@ export class DoctorsService {
     // Check if doctor exists first
     const existing = await this.doctorRepo.findOne(id);
     if (!existing) {
-      throw new NotFoundError(`Doctor profile with id ${id} not found`, {
-        code: ErrorCode.DOCTOR_PROFILE_NOT_FOUND,
-      });
+      throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
     return this.doctorRepo.update(id, updateDoctorDto);
@@ -112,9 +108,7 @@ export class DoctorsService {
     // Check if doctor exists first
     const existing = await this.doctorRepo.findOne(id);
     if (!existing) {
-      throw new NotFoundError(`Doctor profile with id ${id} not found`, {
-        code: ErrorCode.DOCTOR_PROFILE_NOT_FOUND,
-      });
+      throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
     return this.doctorRepo.remove(id);
@@ -127,9 +121,7 @@ export class DoctorsService {
     const doctor = await this.doctorRepo.toggleActive(id, active);
 
     if (!doctor) {
-      throw new NotFoundError(`Doctor profile with id ${id} not found`, {
-        code: ErrorCode.DOCTOR_PROFILE_NOT_FOUND,
-      });
+      throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
     return doctor;
@@ -182,9 +174,6 @@ export class DoctorsService {
     if (!doctor) {
       throw new NotFoundError(
         `Doctor profile with staff account ID ${staffAccountId} not found`,
-        {
-          code: ErrorCode.DOCTOR_PROFILE_NOT_FOUND,
-        },
       );
     }
 

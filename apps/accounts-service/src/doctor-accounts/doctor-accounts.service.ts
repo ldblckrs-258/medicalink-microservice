@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
+import { ConflictError, NotFoundError } from '@app/domain-errors';
 import { StaffRepository } from '../staffs/staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffAccount, StaffRole } from '../../prisma/generated/client';
@@ -51,17 +51,10 @@ export class DoctorAccountsService {
   async findOne(id: string): Promise<StaffResponse> {
     const staff = await this.staffRepository.findById(id);
 
-    if (!staff) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+    if (!staff || staff.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found');
     }
 
-    if (staff.role !== StaffRole.DOCTOR) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = staff;
     return result;
@@ -75,9 +68,7 @@ export class DoctorAccountsService {
     );
 
     if (existingStaff) {
-      throw new ConflictError('Email already exists', {
-        code: ErrorCode.USER_EMAIL_TAKEN,
-      });
+      throw new ConflictError('Email already exists');
     }
 
     Logger.log(
@@ -117,16 +108,8 @@ export class DoctorAccountsService {
   ): Promise<StaffResponse> {
     const existingDoctor = await this.staffRepository.findById(id);
 
-    if (!existingDoctor) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
-    }
-
-    if (existingDoctor.role !== StaffRole.DOCTOR) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+    if (!existingDoctor || existingDoctor.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found');
     }
 
     const doctorData = { ...updateDoctorDto };
@@ -138,9 +121,7 @@ export class DoctorAccountsService {
       );
 
       if (staffWithEmail) {
-        throw new ConflictError('Email already exists', {
-          code: ErrorCode.USER_EMAIL_TAKEN,
-        });
+        throw new ConflictError('Email already exists');
       }
     }
 
@@ -153,16 +134,8 @@ export class DoctorAccountsService {
   async remove(id: string): Promise<StaffResponse> {
     const existingDoctor = await this.staffRepository.findById(id);
 
-    if (!existingDoctor) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
-    }
-
-    if (existingDoctor.role !== StaffRole.DOCTOR) {
-      throw new NotFoundError('Doctor not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+    if (!existingDoctor || existingDoctor.role !== StaffRole.DOCTOR) {
+      throw new NotFoundError('Doctor not found');
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -200,16 +173,8 @@ export class DoctorAccountsService {
     try {
       const doctor = await this.staffRepository.findById(userId);
 
-      if (!doctor) {
-        throw new NotFoundError('Doctor not found', {
-          code: ErrorCode.USER_NOT_FOUND,
-        });
-      }
-
-      if (doctor.role !== StaffRole.DOCTOR) {
-        throw new NotFoundError('Doctor not found', {
-          code: ErrorCode.USER_NOT_FOUND,
-        });
+      if (!doctor || doctor.role !== StaffRole.DOCTOR) {
+        throw new NotFoundError('Doctor not found');
       }
 
       const role = roleOverride || StaffRole.DOCTOR;

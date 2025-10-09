@@ -17,7 +17,6 @@ export interface ErrorResponse {
   path: string;
   method: string;
   details?: any[];
-  code?: string | number;
   requestId?: string;
 }
 
@@ -25,7 +24,6 @@ type Normalized = {
   status: number;
   message: string;
   details?: any[];
-  code?: string | number;
 };
 
 function isError(e: unknown): e is Error {
@@ -55,7 +53,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: (req as any).originalUrl ?? req.url,
       method: req.method,
       ...(n.details && { details: n.details }),
-      ...(n.code !== undefined && { code: n.code }),
       requestId,
     };
 
@@ -70,16 +67,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (this.isSerializedRpcException(exception)) {
       const obj = exception as { [k: string]: any };
       const rpcPayload = obj.error; // Extract the actual RPC payload
-      const status = this.pickStatus(
-        rpcPayload.statusCode,
-        rpcPayload.status,
-        rpcPayload.code,
-      );
+      const status = this.pickStatus(rpcPayload.statusCode, rpcPayload.status);
       return {
         status,
         message: rpcPayload.message || 'Microservice error',
         details: rpcPayload.details,
-        code: rpcPayload.code,
       };
     }
 
@@ -94,12 +86,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const details = Array.isArray(anyResp.message)
           ? anyResp.message
           : (anyResp.details as any[] | undefined);
-        const code = anyResp.code as string | number | undefined;
         return {
           status,
           message: typeof rawMsg === 'string' ? rawMsg : 'Error',
           details,
-          code,
         };
       }
       return {
@@ -119,15 +109,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             ? (raw as any).response
             : (raw as Record<string, unknown>);
 
-        const status = this.pickStatus(base.statusCode, base.status, base.code);
+        const status = this.pickStatus(base.statusCode, base.status);
 
         const message =
           typeof base.message === 'string'
             ? (base.message as string)
             : 'Microservice error';
         const details = base.details as any[] | undefined;
-        const code = base.code as string | number | undefined;
-        return { status, message, details, code };
+        return { status, message, details };
       }
       const msg = typeof raw === 'string' ? raw : 'RPC Exception';
       return {
@@ -147,7 +136,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 4) Plain object with status/message
     if (exception && typeof exception === 'object') {
       const e = exception as { [k: string]: unknown };
-      const status = this.pickStatus(e.statusCode, e.status, e.code);
+      const status = this.pickStatus(e.statusCode, e.status);
       const message =
         typeof e.message === 'string' ? e.message : 'Internal server error';
       const details = e.details as any[] | undefined;
@@ -155,7 +144,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         status,
         message,
         details,
-        code: e.code as string | number | undefined,
       };
     }
 
@@ -166,11 +154,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private pickStatus(
-    statusCode?: unknown,
-    status?: unknown,
-    code?: unknown,
-  ): number {
+  private pickStatus(statusCode?: unknown, status?: unknown): number {
     const fromStatusCode = this.toHttpStatus(statusCode);
     if (fromStatusCode) {
       return fromStatusCode;
@@ -182,8 +166,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (
-      typeof code === 'string' &&
-      (code === 'ECONNREFUSED' || code === 'ETIMEDOUT')
+      typeof status === 'string' &&
+      (status === 'ECONNREFUSED' || status === 'ETIMEDOUT')
     ) {
       return HttpStatus.SERVICE_UNAVAILABLE;
     }

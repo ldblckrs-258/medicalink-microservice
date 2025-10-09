@@ -30,7 +30,9 @@ export class MicroserviceService {
           .pipe(timeout(timeoutMs), defaultIfEmpty(null as T)),
       );
     } catch (error) {
-      this.logger.warn(`Communicate error: ${serviceName}: ${error.message}`);
+      this.logger.warn(
+        `Error thrown from ${serviceName}: ${error?.message || error.name}`,
+      );
       throw error;
     }
   }

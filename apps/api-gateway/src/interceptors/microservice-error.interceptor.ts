@@ -20,50 +20,35 @@ export class MicroserviceErrorInterceptor implements NestInterceptor {
         const request = context.switchToHttp().getRequest();
         const { method, url } = request;
 
-        this.logger.error(
-          `Microservice error on ${method} ${url}: ${error.message}`,
-          error.stack,
-        );
-
+        const errorObject = error?.err || error;
         // Handle specific error types
         if (
-          error.name === 'TimeoutError' ||
-          error instanceof RequestTimeoutException
+          errorObject.name === 'TimeoutError' ||
+          errorObject instanceof RequestTimeoutException
         ) {
           this.logger.warn(
             `Request timeout on ${method} ${url} - Service not responding`,
           );
           return throwError(
             () =>
-              new RequestTimeoutException(
+              new ServiceUnavailableException(
                 'Service is temporarily unavailable. Please try again later.',
               ),
           );
         }
 
         // Handle connection errors
-        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        if (
+          errorObject.code === 'ECONNREFUSED' ||
+          errorObject.code === 'ENOTFOUND'
+        ) {
           this.logger.error(
-            `Connection error on ${method} ${url} - Service unreachable`,
+            `Connection error on ${method} ${url} - Service unreachable or Message broker is down.`,
           );
           return throwError(
             () =>
               new ServiceUnavailableException(
                 'Service is currently unavailable. Please try again later.',
-              ),
-          );
-        }
-
-        // Handle Redis connection errors
-        if (
-          error.message?.includes('Redis') ||
-          error.message?.includes('REDIS')
-        ) {
-          this.logger.error(`Redis connection error on ${method} ${url}`);
-          return throwError(
-            () =>
-              new ServiceUnavailableException(
-                'Message broker is currently unavailable. Please try again later.',
               ),
           );
         }

@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import { BlogsService } from './blogs/blogs.service';
-import { BlogsController } from './blogs/blogs.controller';
-import { QuestionsService } from './questions/questions.service';
-import { QuestionsController } from './questions/questions.controller';
+import { BlogsModule } from './blogs/blogs.module';
+import { QuestionsModule } from './questions/questions.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -12,8 +10,10 @@ import { HealthController } from './health/health.controller';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    BlogsModule,
+    QuestionsModule,
+    ReviewsModule,
   ],
-  controllers: [BlogsController, QuestionsController, HealthController],
-  providers: [PrismaService, BlogsService, QuestionsService],
+  controllers: [HealthController],
 })
 export class ContentServiceModule {}

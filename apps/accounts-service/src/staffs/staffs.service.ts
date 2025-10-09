@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConflictError, NotFoundError, ErrorCode } from '@app/domain-errors';
+import { ConflictError, NotFoundError } from '@app/domain-errors';
 import { StaffRepository } from './staff.repository';
 import { PermissionAssignmentService } from '../permission/permission-assignment.service';
 import { StaffRole } from '../../prisma/generated/client';
@@ -54,9 +54,7 @@ export class StaffsService {
     const staff = await this.staffRepository.findById(id);
 
     if (!staff) {
-      throw new NotFoundError('Staff member not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Staff member not found');
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = staff;
@@ -70,9 +68,7 @@ export class StaffsService {
     );
 
     if (existingStaff) {
-      throw new ConflictError('Email already exists', {
-        code: ErrorCode.USER_EMAIL_TAKEN,
-      });
+      throw new ConflictError('Email already exists');
     }
 
     // Create staff account
@@ -103,9 +99,7 @@ export class StaffsService {
     const existingStaff = await this.staffRepository.findById(id);
 
     if (!existingStaff) {
-      throw new NotFoundError('Staff member not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Staff member not found');
     }
 
     // Check if email is being updated and already exists
@@ -115,9 +109,7 @@ export class StaffsService {
       );
 
       if (staffWithEmail) {
-        throw new ConflictError('Email already exists', {
-          code: ErrorCode.USER_EMAIL_TAKEN,
-        });
+        throw new ConflictError('Email already exists');
       }
     }
 
@@ -132,9 +124,7 @@ export class StaffsService {
     const existingStaff = await this.staffRepository.findById(id);
 
     if (!existingStaff) {
-      throw new NotFoundError('Staff member not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Staff member not found');
     }
 
     await this.staffRepository.softDelete(id);
@@ -156,9 +146,7 @@ export class StaffsService {
       const staff = await this.staffRepository.findById(userId);
 
       if (!staff) {
-        throw new NotFoundError('Staff member not found', {
-          code: ErrorCode.USER_NOT_FOUND,
-        });
+        throw new NotFoundError('Staff member not found');
       }
 
       const role = roleOverride || staff.role;

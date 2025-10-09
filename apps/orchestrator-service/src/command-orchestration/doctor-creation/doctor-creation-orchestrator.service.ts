@@ -139,7 +139,6 @@ export class DoctorCreationOrchestratorService {
       throw new SagaOrchestrationError(
         result.error?.message || 'Doctor creation failed',
         {
-          code: result.error?.code,
           step: result.error?.step,
           sagaId: result.metadata.sagaId,
           executedSteps: result.metadata.executedSteps,

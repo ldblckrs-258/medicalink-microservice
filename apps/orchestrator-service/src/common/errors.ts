@@ -23,7 +23,6 @@ export class SagaOrchestrationError extends DomainError {
     },
   ) {
     super(message, {
-      code: options.code || 'SAGA_ORCHESTRATION_FAILED',
       details: options.originalError,
       cause: options.originalError,
     });

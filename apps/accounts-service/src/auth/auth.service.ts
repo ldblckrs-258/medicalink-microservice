@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import {
-  ErrorCode,
-  NotFoundError,
-  UnauthorizedError,
-} from '@app/domain-errors';
+import { NotFoundError, UnauthorizedError } from '@app/domain-errors';
 import { AuthRepository } from './auth.repository';
 import { AuthVersionService } from '../auth-version/auth-version.service';
 import { StaffAccount } from '../../prisma/generated/client';
@@ -31,9 +27,7 @@ export class AuthService {
     const staff = await this.authRepository.findByEmail(email);
 
     if (!staff) {
-      throw new NotFoundError('User not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('User not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
@@ -41,9 +35,7 @@ export class AuthService {
     if (isPasswordValid) {
       return staff;
     } else {
-      throw new UnauthorizedError('Invalid credentials', {
-        code: ErrorCode.PASSWORD_INCORRECT,
-      });
+      throw new UnauthorizedError('Password incorrect');
     }
   }
 
@@ -88,9 +80,7 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponseDto> {
     if (!refreshToken || refreshToken.trim() === '') {
-      throw new UnauthorizedError('Refresh token is required', {
-        code: ErrorCode.AUTH_REQUIRED,
-      });
+      throw new UnauthorizedError('Refresh token is required');
     }
 
     let payload: { sub: string };
@@ -101,23 +91,17 @@ export class AuthService {
         }),
       });
     } catch (_error) {
-      throw new UnauthorizedError('Invalid or expired refresh token', {
-        code: ErrorCode.AUTH_REQUIRED,
-      });
+      throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
     if (!payload || !payload.sub) {
-      throw new UnauthorizedError('Invalid refresh token', {
-        code: ErrorCode.AUTH_REQUIRED,
-      });
+      throw new UnauthorizedError('Invalid refresh token');
     }
 
     const staff = await this.authRepository.findById(payload.sub);
 
     if (!staff) {
-      throw new NotFoundError('User not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Account not found');
     }
 
     const loginResult = await this.login(staff);
@@ -133,9 +117,7 @@ export class AuthService {
     const staff = await this.authRepository.findStaffWithProfile(staffId);
 
     if (!staff) {
-      throw new NotFoundError('User not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Account not found');
     }
 
     return {
@@ -164,9 +146,7 @@ export class AuthService {
     const staff = await this.authRepository.findById(staffId);
 
     if (!staff) {
-      throw new NotFoundError('User not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Account not found');
     }
 
     // Verify current password
@@ -176,9 +156,7 @@ export class AuthService {
     );
 
     if (!isCurrentPasswordValid) {
-      throw new UnauthorizedError('Current password is incorrect', {
-        code: ErrorCode.PASSWORD_INCORRECT,
-      });
+      throw new UnauthorizedError('Current password is incorrect');
     }
 
     // Hash new password and update
@@ -210,17 +188,13 @@ export class AuthService {
     const staff = await this.authRepository.findByEmail(email);
 
     if (!staff) {
-      throw new NotFoundError('User not found', {
-        code: ErrorCode.USER_NOT_FOUND,
-      });
+      throw new NotFoundError('Account not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, staff.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedError('Invalid password', {
-        code: ErrorCode.PASSWORD_INCORRECT,
-      });
+      throw new UnauthorizedError('Password incorrect');
     }
 
     return true;

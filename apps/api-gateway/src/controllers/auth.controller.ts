@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, Get } from '@nestjs/common';
+import { Body, Controller, Inject, Post, Get, HttpCode } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { IStaffAccount } from '@app/contracts/interfaces';
 import type {
@@ -72,6 +72,7 @@ export class AuthController {
   }
 
   @Post('verify-password')
+  @HttpCode(200)
   async verifyPassword(
     @Body() verifyPasswordDto: VerifyPasswordDto,
     @CurrentUser() user: JwtPayloadDto,

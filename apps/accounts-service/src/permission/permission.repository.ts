@@ -343,7 +343,6 @@ export class PermissionRepository {
       throw new DomainError(
         `Permission evaluation failed for user '${userId}' on resource '${resource}' action '${action}'`,
         {
-          code: 'PERMISSION_EVALUATION_FAILED',
           details: {
             userId,
             resource,
@@ -376,7 +375,7 @@ export class PermissionRepository {
           !condition.operator ||
           condition.value === undefined
         ) {
-          throw new ValidationError(condition, 'INVALID_PERMISSION_CONDITION');
+          throw new ValidationError(condition);
         }
 
         const contextValue = context[condition.field];
@@ -397,10 +396,7 @@ export class PermissionRepository {
               contextValue.includes(String(condition.value))
             );
           default:
-            throw new ValidationError(
-              condition,
-              'INVALID_PERMISSION_CONDITION',
-            );
+            throw new ValidationError(condition);
         }
       });
     } catch (error) {
@@ -460,10 +456,7 @@ export class PermissionRepository {
             !condition.operator ||
             condition.value === undefined
           ) {
-            throw new ValidationError(
-              condition,
-              'INVALID_PERMISSION_CONDITION',
-            );
+            throw new ValidationError(condition);
           }
         });
       }
@@ -799,10 +792,7 @@ export class PermissionRepository {
             !condition.operator ||
             condition.value === undefined
           ) {
-            throw new ValidationError(
-              condition,
-              'INVALID_PERMISSION_CONDITION',
-            );
+            throw new ValidationError(condition);
           }
         });
       }
