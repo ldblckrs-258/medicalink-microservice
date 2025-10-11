@@ -5,7 +5,7 @@ import {
   DoctorProfileQueryDto,
   DoctorProfileResponseDto,
 } from '@app/contracts';
-import { BadRequestError } from '@app/domain-errors';
+import { BadRequestError, ConflictError } from '@app/domain-errors';
 
 @Injectable()
 export class DoctorRepository {
@@ -29,12 +29,65 @@ export class DoctorRepository {
   async create(
     data: CreateDoctorProfileDto,
   ): Promise<DoctorProfileResponseDto> {
-    const result = await this.prisma.doctor.create({
-      data: {
-        ...data,
-      },
-    });
-    return result as unknown as DoctorProfileResponseDto;
+    const { specialtyIds, locationIds, ...doctorData } = data;
+
+    try {
+      // Create doctor with relationships in a transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create the doctor first
+        const doctor = await tx.doctor.create({
+          data: doctorData,
+        });
+
+        // Create specialty relationships if provided
+        if (Array.isArray(specialtyIds) && specialtyIds.length > 0) {
+          await tx.doctorSpecialty.createMany({
+            data: specialtyIds.map((specialtyId) => ({
+              doctorId: doctor.id,
+              specialtyId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
+        // Create work location relationships if provided
+        if (Array.isArray(locationIds) && locationIds.length > 0) {
+          await tx.doctorWorkLocation.createMany({
+            data: locationIds.map((locationId) => ({
+              doctorId: doctor.id,
+              locationId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
+        // Return the doctor with relationships
+        return tx.doctor.findUnique({
+          where: { id: doctor.id },
+          include: {
+            doctorSpecialties: {
+              include: { specialty: true },
+            },
+            doctorWorkLocations: {
+              include: { location: true },
+            },
+          },
+        });
+      });
+
+      return this.transformDoctorResponse(result);
+    } catch (e: any) {
+      if (e?.code === 'P2003') {
+        throw new BadRequestError(
+          'Referenced specialty or location does not exist',
+        );
+      } else if (e?.code === 'P2002') {
+        throw new ConflictError(
+          'This staff account already has a doctor profile',
+        );
+      }
+      throw e;
+    }
   }
 
   async findAll(

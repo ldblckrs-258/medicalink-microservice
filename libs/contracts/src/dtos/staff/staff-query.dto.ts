@@ -9,6 +9,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { booleanTransformer } from '../../utils/custom-transformer';
 
 export class StaffQueryDto {
   @IsOptional()
@@ -40,12 +41,13 @@ export class StaffQueryDto {
 
   @IsOptional()
   @IsBoolean({ message: 'isMale must be a boolean' })
-  @Transform(({ value }) => {
-    if (value === 'true' || value === true) return true;
-    if (value === 'false' || value === false) return false;
-    return undefined;
-  })
+  @Transform(booleanTransformer)
   isMale?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'isActive must be a boolean' })
+  @Transform(booleanTransformer)
+  isActive?: boolean;
 
   @IsOptional()
   @IsDateString(
@@ -71,6 +73,6 @@ export class StaffQueryDto {
   @IsEnum(['asc', 'desc'], {
     message: 'Sort order must be asc or desc',
   })
-  @Transform(({ value }) => value?.toString().toLowerCase())
+  @Transform(({ value }) => value?.toString().toLowerCase().trim())
   sortOrder?: 'asc' | 'desc' = 'desc';
 }

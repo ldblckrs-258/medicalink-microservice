@@ -20,7 +20,6 @@ import {
   RequireWritePermission,
   RequireDeletePermission,
   CurrentUser,
-  PaginatedResponse,
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
@@ -39,12 +38,21 @@ export class DoctorsController {
   async findAll(
     @Query() query: StaffQueryDto,
     @CurrentUser() _user: JwtPayloadDto,
-  ): Promise<PaginatedResponse<IStaffAccount>> {
-    return this.microserviceService.sendWithTimeout<
-      PaginatedResponse<IStaffAccount>
-    >(this.accountsClient, 'doctor-accounts.findAll', query, {
-      timeoutMs: 15000,
-    });
+  ): Promise<any> {
+    // Use orchestrator to get admin composite list (full metadata)
+    const result: any = await this.microserviceService.sendWithTimeout(
+      this.orchestratorClient,
+      'orchestrator.doctor.listComposite',
+      query,
+      {
+        timeoutMs: 20000,
+      },
+    );
+
+    return {
+      data: result.data,
+      meta: result.meta,
+    };
   }
 
   @RequireReadPermission('doctors')
@@ -67,11 +75,14 @@ export class DoctorsController {
     @Query() query: any,
     @CurrentUser() _user?: JwtPayloadDto,
   ) {
+    // Use orchestrator to get composite list with profileId, isActive, and avatarUrl
     return this.microserviceService.sendWithTimeout(
       this.orchestratorClient,
       'orchestrator.doctor.searchComposite',
       query,
-      { timeoutMs: 20000 },
+      {
+        timeoutMs: 20000,
+      },
     );
   }
 

@@ -11,6 +11,7 @@ import {
   StaffStatsDto,
   PaginatedResponse,
 } from '@app/contracts';
+import { RabbitMQService } from '@app/rabbitmq';
 
 @Injectable()
 export class DoctorAccountsService {
@@ -19,6 +20,7 @@ export class DoctorAccountsService {
   constructor(
     private readonly staffRepository: StaffRepository,
     private readonly permissionAssignmentService: PermissionAssignmentService,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async findAll(
@@ -71,9 +73,6 @@ export class DoctorAccountsService {
       throw new ConflictError('Email already exists');
     }
 
-    Logger.log(
-      'Creating doctor account with data: ' + JSON.stringify(doctorData),
-    );
     let doctor: StaffAccount;
     try {
       doctor = await this.staffRepository.create(doctorData);
@@ -126,6 +125,20 @@ export class DoctorAccountsService {
     }
 
     const doctor = await this.staffRepository.update(id, doctorData);
+
+    // Emit staff account updated event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent('staff.account.updated', {
+        id: doctor.id,
+        role: doctor.role,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit staff.account.updated event for doctor ${doctor.id}:`,
+        error,
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = doctor;
     return result;

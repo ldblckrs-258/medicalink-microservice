@@ -15,34 +15,41 @@ export class AccountEventHandler {
     private readonly doctorCompositeService: DoctorCompositeService,
   ) {}
 
+  // Helper to unwrap enveloped payloads
+  private unwrapPayload<T>(payload: unknown): T {
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      'timestamp' in (payload as any) &&
+      'data' in (payload as any)
+    ) {
+      return (payload as any).data as T;
+    }
+    return payload as T;
+  }
+
   /**
    * Handle staff account created event
    * Only care about DOCTOR role accounts
    */
   @EventPattern(ORCHESTRATOR_EVENTS.STAFF_ACCOUNT_CREATED)
-  async handleStaffAccountCreated(
-    @Payload() data: { id: string; email: string; role: string },
-  ) {
-    // Only handle doctor accounts
+  async handleStaffAccountCreated(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{
+      id: string;
+      email?: string;
+      role: string;
+    }>(payload);
+
     if (data.role !== 'DOCTOR') {
       return;
     }
 
-    this.logger.log(
-      `Doctor account created event received for account: ${data.id}`,
-    );
-
     try {
-      // Invalidate list caches as new doctor account was created
       await this.doctorCompositeService.invalidateDoctorListCache();
-
-      this.logger.debug(
-        `List caches invalidated for new doctor account: ${data.id}`,
-      );
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for account created event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for account created event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -52,45 +59,20 @@ export class AccountEventHandler {
    * Only care about DOCTOR role accounts
    */
   @EventPattern(ORCHESTRATOR_EVENTS.STAFF_ACCOUNT_UPDATED)
-  async handleStaffAccountUpdated(
-    @Payload()
-    data: {
-      id: string;
-      role: string;
-      fields?: string[];
-    },
-  ) {
-    // Only handle doctor accounts
+  async handleStaffAccountUpdated(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{ id: string; role: string }>(payload);
+
     if (data.role !== 'DOCTOR') {
       return;
     }
 
-    this.logger.log(
-      `Doctor account updated event received for account: ${data.id}`,
-    );
-
     try {
-      // Invalidate specific doctor cache
       await this.doctorCompositeService.invalidateDoctorCache(data.id);
-
-      // If personal info changed (name, email), invalidate list caches
-      const listAffectingFields = ['fullName', 'email', 'phone', 'isMale'];
-      const shouldInvalidateLists =
-        !data.fields ||
-        data.fields.some((field) => listAffectingFields.includes(field));
-
-      if (shouldInvalidateLists) {
-        await this.doctorCompositeService.invalidateDoctorListCache();
-        this.logger.debug(
-          'List caches invalidated due to personal info update',
-        );
-      }
-
-      this.logger.debug(`Cache invalidated for doctor account: ${data.id}`);
+      await this.doctorCompositeService.invalidateDoctorListCache();
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for account updated event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for account updated event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -100,32 +82,20 @@ export class AccountEventHandler {
    * Only care about DOCTOR role accounts
    */
   @EventPattern(ORCHESTRATOR_EVENTS.STAFF_ACCOUNT_DELETED)
-  async handleStaffAccountDeleted(
-    @Payload() data: { id: string; role: string },
-  ) {
-    // Only handle doctor accounts
+  async handleStaffAccountDeleted(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{ id: string; role: string }>(payload);
+
     if (data.role !== 'DOCTOR') {
       return;
     }
 
-    this.logger.log(
-      `Doctor account deleted event received for account: ${data.id}`,
-    );
-
     try {
-      // Invalidate doctor composite cache
       await this.doctorCompositeService.invalidateDoctorCache(data.id);
-
-      // Invalidate all list caches as doctor was removed
       await this.doctorCompositeService.invalidateDoctorListCache();
-
-      this.logger.debug(
-        `Cache invalidated for deleted doctor account: ${data.id}`,
-      );
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for account deleted event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for account deleted event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }

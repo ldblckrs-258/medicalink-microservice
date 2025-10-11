@@ -54,7 +54,7 @@ export class DoctorProfileController {
 
     return {
       data: result.data,
-      meta: result.pagination,
+      meta: result.meta,
       // Optional: include cache info for debugging
       ...(result.cache && { _cache: result.cache }),
       ...(result.timestamp && { _timestamp: result.timestamp }),

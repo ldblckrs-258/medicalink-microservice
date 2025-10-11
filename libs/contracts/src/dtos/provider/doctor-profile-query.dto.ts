@@ -47,6 +47,11 @@ export class GetDoctorsByAccountIdsDto {
   staffAccountIds: string[];
 
   @IsOptional()
+  @IsBoolean({ message: 'isActive must be a boolean' })
+  @Type(() => Boolean)
+  isActive?: boolean;
+
+  @IsOptional()
   @IsArray({ message: 'Specialty IDs must be an array' })
   @IsString({ each: true, message: 'Each specialty ID must be a string' })
   specialtyIds?: string[];

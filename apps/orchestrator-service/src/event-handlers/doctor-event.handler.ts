@@ -5,7 +5,7 @@ import { ORCHESTRATOR_EVENTS } from '../common/constants';
 
 /**
  * Event handler for doctor profile events
- * Automatically invalidates cache when doctor data changes
+ * Automatically invalidates cache when doctor profile changes
  */
 @Controller()
 export class DoctorEventHandler {
@@ -15,33 +15,38 @@ export class DoctorEventHandler {
     private readonly doctorCompositeService: DoctorCompositeService,
   ) {}
 
+  // Helper to unwrap enveloped payloads
+  private unwrapPayload<T>(payload: unknown): T {
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      'timestamp' in (payload as any) &&
+      'data' in (payload as any)
+    ) {
+      return (payload as any).data as T;
+    }
+    return payload as T;
+  }
+
   /**
    * Handle doctor profile created event
    */
   @EventPattern(ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_CREATED)
-  async handleDoctorProfileCreated(
-    @Payload() data: { staffAccountId: string; profileId: string },
-  ) {
-    this.logger.log(
-      `Doctor profile created event received for staffAccountId: ${data.staffAccountId}`,
-    );
+  async handleDoctorProfileCreated(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{
+      staffAccountId: string;
+      profileId: string;
+    }>(payload);
 
     try {
-      // Invalidate doctor composite cache
       await this.doctorCompositeService.invalidateDoctorCache(
         data.staffAccountId,
       );
-
-      // Invalidate all list caches as new doctor was added
       await this.doctorCompositeService.invalidateDoctorListCache();
-
-      this.logger.debug(
-        `Cache invalidated for new doctor: ${data.staffAccountId}`,
-      );
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for doctor created event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for doctor profile created event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -50,46 +55,21 @@ export class DoctorEventHandler {
    * Handle doctor profile updated event
    */
   @EventPattern(ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED)
-  async handleDoctorProfileUpdated(
-    @Payload()
-    data: {
+  async handleDoctorProfileUpdated(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{
       staffAccountId: string;
       profileId: string;
-      fields?: string[];
-    },
-  ) {
-    this.logger.log(
-      `Doctor profile updated event received for staffAccountId: ${data.staffAccountId}`,
-    );
+    }>(payload);
 
     try {
-      // Invalidate specific doctor cache
       await this.doctorCompositeService.invalidateDoctorCache(
         data.staffAccountId,
       );
-
-      // If fields that affect search results were updated, invalidate list caches
-      const searchAffectingFields = [
-        'isActive',
-        'specialties',
-        'workLocations',
-      ];
-      const shouldInvalidateLists =
-        !data.fields ||
-        data.fields.some((field) => searchAffectingFields.includes(field));
-
-      if (shouldInvalidateLists) {
-        await this.doctorCompositeService.invalidateDoctorListCache();
-        this.logger.debug(
-          'List caches invalidated due to search-affecting fields update',
-        );
-      }
-
-      this.logger.debug(`Cache invalidated for doctor: ${data.staffAccountId}`);
+      await this.doctorCompositeService.invalidateDoctorListCache();
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for doctor updated event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for doctor profile updated event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }
@@ -98,29 +78,21 @@ export class DoctorEventHandler {
    * Handle doctor profile deleted event
    */
   @EventPattern(ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_DELETED)
-  async handleDoctorProfileDeleted(
-    @Payload() data: { staffAccountId: string; profileId: string },
-  ) {
-    this.logger.log(
-      `Doctor profile deleted event received for staffAccountId: ${data.staffAccountId}`,
-    );
+  async handleDoctorProfileDeleted(@Payload() payload: unknown) {
+    const data = this.unwrapPayload<{
+      staffAccountId: string;
+      profileId: string;
+    }>(payload);
 
     try {
-      // Invalidate doctor composite cache
       await this.doctorCompositeService.invalidateDoctorCache(
         data.staffAccountId,
       );
-
-      // Invalidate all list caches as doctor was removed
       await this.doctorCompositeService.invalidateDoctorListCache();
-
-      this.logger.debug(
-        `Cache invalidated for deleted doctor: ${data.staffAccountId}`,
-      );
     } catch (error) {
       this.logger.error(
-        `Failed to invalidate cache for doctor deleted event: ${error.message}`,
-        error.stack,
+        `Failed to invalidate cache for doctor profile deleted event: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }

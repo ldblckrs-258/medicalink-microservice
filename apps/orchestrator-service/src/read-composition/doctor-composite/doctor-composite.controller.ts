@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DoctorCompositeService } from './doctor-composite.service';
 import { DoctorCompositeQueryDto } from './dto';
 import { ORCHESTRATOR_PATTERNS } from '../../common/constants';
+import { StaffQueryDto } from '@app/contracts';
 
 /**
  * Controller for doctor composite read operations
@@ -47,10 +48,16 @@ export class DoctorCompositeController {
       await this.doctorCompositeService.searchDoctorComposites(query);
 
     this.logger.log(
-      `Found ${result.data.length} doctors (page ${result.pagination.page})`,
+      `Found ${result.data.length} doctors (page ${result.meta.page})`,
     );
 
     return result;
+  }
+
+  // Admin doctor list composite (uses StaffQueryDto)
+  @MessagePattern(ORCHESTRATOR_PATTERNS.DOCTOR_LIST_COMPOSITE)
+  async listDoctorComposites(@Payload() query: StaffQueryDto) {
+    return this.doctorCompositeService.listDoctorCompositesAdmin(query);
   }
 
   /**

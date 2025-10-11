@@ -98,7 +98,7 @@ export interface PaginationParams {
  */
 export interface PaginatedCompositeResult<T = any> {
   data: T[];
-  pagination: PaginationMetadata;
+  meta: PaginationMetadata;
   cache?: CacheMetadata;
   timestamp: Date;
 }

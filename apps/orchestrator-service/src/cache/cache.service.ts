@@ -72,14 +72,24 @@ export class CacheService {
   async invalidatePattern(pattern: string, prefix?: string): Promise<number> {
     try {
       const fullPattern = this.buildKey(pattern, prefix);
-      const keys = await this.redisService.keys(fullPattern);
+      const clientPrefix = this.redisService.getKeyPrefix();
 
-      if (keys.length > 0) {
-        await Promise.all(keys.map((key) => this.redisService.del(key)));
-        this.logger.debug(
-          `Cache INVALIDATED ${keys.length} keys matching: ${fullPattern}`,
-        );
-        return keys.length;
+      const directPattern = clientPrefix
+        ? `${clientPrefix}${fullPattern}`
+        : fullPattern;
+
+      const directKeys = await this.redisService.keys(directPattern);
+
+      if (directKeys.length > 0) {
+        for (const key of directKeys) {
+          const normalizedKey =
+            clientPrefix && key.startsWith(clientPrefix)
+              ? key.substring(clientPrefix.length)
+              : key;
+          await this.redisService.del(normalizedKey);
+        }
+
+        return directKeys.length;
       }
 
       return 0;

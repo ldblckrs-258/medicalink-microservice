@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CacheService } from '../../cache/cache.service';
@@ -16,6 +17,7 @@ import {
 } from './dto';
 import { IStaffAccount } from '@app/contracts/interfaces';
 import { BaseCompositeService } from '../base';
+import { StaffQueryDto } from '@app/contracts';
 
 /**
  * Service for composing doctor data from multiple sources
@@ -84,7 +86,10 @@ export class DoctorCompositeService extends BaseCompositeService<
   ): Promise<DoctorCompositeListResultDto> {
     const cacheKey = this.buildListCacheKey(query);
 
-    return this.searchCompositeWithCache<IStaffAccount, DoctorProfileData>(
+    const rawResult = await this.searchCompositeWithCache<
+      IStaffAccount,
+      DoctorProfileData
+    >(
       query,
       {
         primaryFetch: {
@@ -136,6 +141,114 @@ export class DoctorCompositeService extends BaseCompositeService<
         return this.mergeData(account, profile);
       },
     );
+
+    // Sanitize for public endpoint: remove sensitive fields
+    const sanitizedResult: DoctorCompositeListResultDto = {
+      ...rawResult,
+      data: rawResult.data.map((item) => this.sanitizePublicComposite(item)),
+    };
+
+    // Overwrite cache with sanitized result to ensure future hits are safe
+    await this.cacheService.set(cacheKey, sanitizedResult, CACHE_TTL.SHORT);
+
+    return sanitizedResult;
+  }
+
+  // Admin list composite: use StaffQueryDto and DO NOT sanitize (return full metadata)
+  async listDoctorCompositesAdmin(
+    query: StaffQueryDto,
+  ): Promise<DoctorCompositeListResultDto> {
+    const cacheKey = this.buildListCacheKey({
+      ...query,
+      __admin: true,
+    });
+
+    const result = await this.searchCompositeWithCache<
+      IStaffAccount,
+      DoctorProfileData
+    >(
+      query,
+      {
+        primaryFetch: {
+          client: this.accountsClient,
+          pattern: SERVICE_PATTERNS.ACCOUNTS.DOCTOR_FIND_ALL,
+          payload: query,
+          timeoutMs: 12000,
+          serviceName: 'accounts-service',
+        },
+        secondaryFetch: (accounts: IStaffAccount[]) => ({
+          client: this.providerClient,
+          pattern: SERVICE_PATTERNS.PROVIDER.PROFILE_GET_BY_ACCOUNT_IDS,
+          payload: {
+            staffAccountIds: accounts.map((acc) => acc.id),
+            ...(query.isActive !== undefined && { isActive: query.isActive }),
+          },
+          timeoutMs: 15000,
+          serviceName: 'provider-directory-service',
+        }),
+        cacheKey,
+        cacheTtl: CACHE_TTL.SHORT,
+        skipCache: (query as any)?.skipCache ?? false,
+        extractIds: (accounts) => accounts.map((acc) => acc.id),
+        extractMeta: (primaryResult) => primaryResult.meta,
+      },
+      (account: IStaffAccount, profiles: DoctorProfileData[]) => {
+        const profile = profiles.find((p) => p.staffAccountId === account.id);
+        if (!profile && query.isActive !== undefined) {
+          return null;
+        } else if (!profile) {
+          return {
+            id: account.id,
+            fullName: account.fullName,
+            email: account.email,
+            phone: account.phone,
+            isMale: account.isMale,
+            dateOfBirth: account.dateOfBirth,
+          } as DoctorCompositeData;
+        }
+        return this.mergeData(account, profile);
+      },
+    );
+
+    return result;
+  }
+
+  /**
+   * Sanitize composite item for public consumption
+   * - Remove email, phone
+   * - Remove account/profile timestamps
+   * - Ensure specialties/workLocations do not carry createdAt/updatedAt
+   */
+  private sanitizePublicComposite(
+    item: DoctorCompositeData,
+  ): DoctorCompositeData {
+    const {
+      email,
+      phone,
+      accountCreatedAt,
+      accountUpdatedAt,
+      profileCreatedAt,
+      profileUpdatedAt,
+      specialties,
+      workLocations,
+      ...rest
+    } = item as any;
+
+    const sanitized: any = {
+      ...rest,
+      specialties: specialties?.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+      })),
+      workLocations: workLocations?.map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        address: w.address,
+      })),
+    };
+
+    return sanitized as DoctorCompositeData;
   }
 
   /**

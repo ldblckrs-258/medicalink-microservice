@@ -130,6 +130,14 @@ export class RedisService {
     return await this.redis.scan(cursor);
   }
 
+  /**
+   * Returns the configured key prefix of the underlying Redis client (if any).
+   */
+  getKeyPrefix(): string {
+    const prefix = (this.redis.options as any)?.keyPrefix;
+    return typeof prefix === 'string' ? prefix : '';
+  }
+
   // Pipeline operations for better performance
   pipeline() {
     return this.redis.pipeline();

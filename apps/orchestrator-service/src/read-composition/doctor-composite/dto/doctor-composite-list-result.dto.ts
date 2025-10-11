@@ -10,7 +10,7 @@ export class DoctorCompositeListResultDto
 {
   data: DoctorCompositeData[];
 
-  pagination: PaginationMetadata;
+  meta: PaginationMetadata;
 
   cache?: CacheMetadata;
 

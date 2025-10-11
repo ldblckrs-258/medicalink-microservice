@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DoctorRepository } from './doctor.repository';
 import {
   CreateDoctorProfileDto,
@@ -9,15 +9,39 @@ import {
   DoctorProfileResponseDto,
 } from '@app/contracts';
 import { NotFoundError } from '@app/domain-errors';
+import { RabbitMQService } from '@app/rabbitmq';
 
 @Injectable()
 export class DoctorsService {
-  constructor(private readonly doctorRepo: DoctorRepository) {}
+  private readonly logger = new Logger(DoctorsService.name);
+
+  constructor(
+    private readonly doctorRepo: DoctorRepository,
+    private readonly rabbitMQService: RabbitMQService,
+  ) {}
 
   async create(
     createDoctorDto: CreateDoctorProfileDto,
   ): Promise<DoctorProfileResponseDto> {
-    return this.doctorRepo.create(createDoctorDto);
+    const result = await this.doctorRepo.create(createDoctorDto);
+
+    // Emit doctor profile created event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent('doctor.profile.created', {
+        profileId: result.id,
+        staffAccountId: result.staffAccountId,
+      });
+      this.logger.debug(
+        `Emitted doctor.profile.created event for doctor ${result.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit doctor.profile.created event: ${error.message}`,
+      );
+      // Don't throw error to avoid breaking the main operation
+    }
+
+    return result;
   }
 
   /**
@@ -101,7 +125,26 @@ export class DoctorsService {
       throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
-    return this.doctorRepo.update(id, updateDoctorDto);
+    const result = await this.doctorRepo.update(id, updateDoctorDto);
+
+    // Emit doctor profile updated event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent('doctor.profile.updated', {
+        profileId: result.id,
+        staffAccountId: result.staffAccountId,
+      });
+      this.logger.log(
+        `Emitted doctor.profile.updated event for doctor ${result.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit doctor.profile.updated event for doctor ${result.id}:`,
+        error,
+      );
+      // Continue execution - event emission failure should not break the update operation
+    }
+
+    return result;
   }
 
   async remove(id: string): Promise<DoctorProfileResponseDto> {
@@ -136,7 +179,7 @@ export class DoctorsService {
   ): Promise<DoctorProfileResponseDto[]> {
     const where: any = {
       staffAccountId: { in: payload.staffAccountIds },
-      isActive: true, // Only return active doctors
+      ...(payload.isActive !== undefined && { isActive: payload.isActive }),
     };
 
     // Filter by specialties if provided

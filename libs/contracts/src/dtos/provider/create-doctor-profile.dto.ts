@@ -5,9 +5,11 @@ import {
   IsArray,
   MaxLength,
 } from 'class-validator';
+import { IsCuid } from '@app/contracts/decorators';
 
 export class CreateDoctorProfileDto {
   @IsString({ message: 'Staff account ID must be a string' })
+  @IsCuid({ message: 'Staff account ID must be a valid CUID' })
   staffAccountId: string;
 
   @IsBoolean({ message: 'isActive must be a boolean' })

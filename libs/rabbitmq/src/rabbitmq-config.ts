@@ -68,6 +68,9 @@ export class RabbitMQConfig {
           durable: true,
           type: 'topic',
         },
+        // Enable topic exchange type explicitly and wildcard pattern support
+        exchangeType: 'topic',
+        wildcards: true,
         socketOptions: {
           heartbeatIntervalInSeconds: 60,
           reconnectTimeInSeconds: 5,
@@ -96,6 +99,9 @@ export class RabbitMQConfig {
           durable: true,
           type: 'topic',
         },
+        // Explicitly set exchange type and enable wildcard matching for topic patterns
+        exchangeType: 'topic',
+        wildcards: true,
         queue: queueName,
         queueOptions: {
           durable: true,

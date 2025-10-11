@@ -232,7 +232,7 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
     if (primaryData.length === 0) {
       const emptyResult: PaginatedCompositeResult<TComposite> = {
         data: [],
-        pagination: config.extractMeta(primaryResult),
+        meta: config.extractMeta(primaryResult),
         cache: {
           hit: false,
           ttl: config.cacheTtl || this.defaultCacheTtl,
@@ -265,7 +265,7 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
 
     const result: PaginatedCompositeResult<TComposite> = {
       data: compositeData,
-      pagination: config.extractMeta(primaryResult),
+      meta: config.extractMeta(primaryResult),
       cache: {
         hit: false,
         ttl: config.cacheTtl || this.defaultCacheTtl,

@@ -5,12 +5,14 @@ import { DoctorsModule } from './doctors/doctors.module';
 import { SpecialtiesModule } from './specialties/specialties.module';
 import { WorkLocationsModule } from './work-locations/work-locations.module';
 import { HealthController } from './health/health.controller';
+import { RabbitMQModule } from '@app/rabbitmq';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    RabbitMQModule,
     SpecialtiesModule,
     WorkLocationsModule,
     DoctorsModule,
