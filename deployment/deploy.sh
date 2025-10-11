@@ -112,8 +112,13 @@ case $COMMAND in
     logs)
         print_header "Showing logs for" $SERVICE
         if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ]; then
-            # For specific services, include the infrastructure file to ensure networks are defined
-            docker compose -f "${SERVICE_FILES[infrastructure]}" -f "$COMPOSE_FILE" logs -f
+
+            if ! docker network ls | grep -q medicalink-network; then
+                echo -e "${YELLOW}⚠️  Creating medicalink-network...${NC}"
+                docker network create medicalink-network 2>/dev/null || true
+            fi
+
+            docker compose -f "$COMPOSE_FILE" logs -f
         else
             docker compose -f "$COMPOSE_FILE" logs -f
         fi
