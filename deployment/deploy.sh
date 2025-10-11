@@ -111,7 +111,12 @@ case $COMMAND in
     
     logs)
         print_header "Showing logs for" $SERVICE
-        docker compose -f "$COMPOSE_FILE" logs -f
+        if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ]; then
+            # For specific services, include the infrastructure file to ensure networks are defined
+            docker compose -f "${SERVICE_FILES[infrastructure]}" -f "$COMPOSE_FILE" logs -f
+        else
+            docker compose -f "$COMPOSE_FILE" logs -f
+        fi
         ;;
     
     build)
