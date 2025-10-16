@@ -16,19 +16,19 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_header() {
-    echo -e "\n${CYAN}🚀 $1 $2...${NC}"
+    echo -e "\n${CYAN} $1 $2...${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED} $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 # Validate arguments
@@ -114,7 +114,7 @@ case $COMMAND in
         if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ]; then
 
             if ! docker network ls | grep -q medicalink-network; then
-                echo -e "${YELLOW}⚠️  Creating medicalink-network...${NC}"
+                echo -e "${YELLOW}  Creating medicalink-network...${NC}"
                 docker network create medicalink-network 2>/dev/null || true
             fi
 
@@ -137,20 +137,36 @@ case $COMMAND in
     
     update)
         print_header "Updating" $SERVICE
-        echo -e "${YELLOW}📦 Building application...${NC}"
+        echo -e "${YELLOW} Building application...${NC}"
         pnpm install
-        pnpm run prisma:generate
-        pnpm run build
         
-        echo -e "${YELLOW}🐳 Building Docker images...${NC}"
+        # Handle different service types
+        if [ "$SERVICE" = "infrastructure" ]; then
+            echo -e "${YELLOW}  Infrastructure service doesn't require code build${NC}"
+        elif [ "$SERVICE" = "gateway" ] || [ "$SERVICE" = "orchestrator" ]; then
+            echo -e "${YELLOW}  Building $SERVICE (no Prisma needed)...${NC}"
+            cd .. && pnpm run "build:$SERVICE" && cd deployment
+        elif [ "$SERVICE" != "all" ]; then
+            echo -e "${YELLOW} Generating Prisma for $SERVICE...${NC}"
+            cd .. && pnpm run "prisma:generate:$SERVICE" && cd deployment
+            echo -e "${YELLOW}  Building $SERVICE...${NC}"
+            cd .. && pnpm run "build:$SERVICE" && cd deployment
+        else
+            echo -e "${YELLOW} Generating Prisma for all services...${NC}"
+            pnpm run prisma:generate
+            echo -e "${YELLOW}  Building all services...${NC}"
+            pnpm run build
+        fi
+        
+        echo -e "${YELLOW} Building Docker images...${NC}"
         docker compose -f "$COMPOSE_FILE" build --no-cache
         
-        echo -e "${YELLOW}🔄 Restarting services...${NC}"
+        echo -e "${YELLOW} Restarting services...${NC}"
         docker compose -f "$COMPOSE_FILE" up -d --force-recreate
         
         print_success "$SERVICE updated successfully"
         ;;
 esac
 
-echo -e "\n${MAGENTA}📊 Current Status:${NC}"
+echo -e "\n${MAGENTA} Current Status:${NC}"
 docker compose -f "$COMPOSE_FILE" ps
