@@ -1,26 +1,21 @@
 import { Controller, Post, Body, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
-import {
-  GenerateSignatureDto,
-  CloudinarySignatureResponse,
-} from '@app/contracts';
+import { MicroserviceService } from '../utils/microservice.service';
+import { CloudinarySignatureResponse } from '@app/contracts';
 
 @Controller('utilities')
 export class UtilitiesController {
   constructor(
     @Inject('CONTENT_SERVICE') private readonly contentClient: ClientProxy,
+    private readonly microserviceService: MicroserviceService,
   ) {}
 
   @Post('upload-signature')
-  async generateUploadSignature(
-    @Body() generateSignatureDto: GenerateSignatureDto,
-  ): Promise<CloudinarySignatureResponse> {
-    return firstValueFrom(
-      this.contentClient.send(
-        'assets.generate_upload_signature',
-        generateSignatureDto,
-      ),
+  async generateUploadSignature(): Promise<CloudinarySignatureResponse> {
+    return this.microserviceService.sendWithTimeout<CloudinarySignatureResponse>(
+      this.contentClient,
+      'assets.generate_upload_signature',
+      {},
     );
   }
 }

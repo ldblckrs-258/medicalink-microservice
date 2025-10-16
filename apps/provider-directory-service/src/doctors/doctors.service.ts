@@ -151,7 +151,6 @@ export class DoctorsService {
         `Failed to emit doctor.profile.updated event for doctor ${result.id}:`,
         error,
       );
-      // Continue execution - event emission failure should not break the update operation
     }
 
     return result;
@@ -196,6 +195,22 @@ export class DoctorsService {
 
     if (!doctor) {
       throw new NotFoundError(`Doctor profile with id ${id} not found`);
+    }
+
+    // Emit doctor profile updated event for cache invalidation and asset management
+    try {
+      this.rabbitMQService.emitEvent('doctor.profile.updated', {
+        profileId: doctor.id,
+        staffAccountId: doctor.staffAccountId,
+      });
+      this.logger.log(
+        `Emitted doctor.profile.updated event for doctor ${doctor.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit doctor.profile.updated event for doctor ${doctor.id}:`,
+        error,
+      );
     }
 
     return doctor;

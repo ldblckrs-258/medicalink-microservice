@@ -14,41 +14,15 @@ export class AssetsController {
   ) {}
 
   @MessagePattern('assets.generate_upload_signature')
-  generateUploadSignature(
-    data: GenerateSignatureDto,
-  ): CloudinarySignatureResponse {
+  generateUploadSignature(): CloudinarySignatureResponse {
     const timestamp = Math.round(new Date().getTime() / 1000);
 
-    // Build upload parameters
+    // Use only essential parameters for signature generation
     const uploadParams: SignApiOptions = {
       timestamp,
     };
 
-    if (data.folder) {
-      uploadParams.folder = data.folder;
-    }
-
-    if (data.publicId) {
-      uploadParams.public_id = data.publicId;
-    }
-
-    if (data.transformation) {
-      uploadParams.transformation = data.transformation;
-    }
-
-    if (data.resourceType) {
-      uploadParams.resource_type = data.resourceType;
-    }
-
-    if (data.format) {
-      uploadParams.format = data.format;
-    }
-
-    if (data.tags && data.tags.length > 0) {
-      uploadParams.tags = data.tags.join(',');
-    }
-
-    // Generate signature
+    // Generate signature with minimal parameters
     const signature = this.cloudinary.utils.api_sign_request(
       uploadParams,
       this.cloudinary.config().api_secret as string,
@@ -59,7 +33,6 @@ export class AssetsController {
       timestamp,
       apiKey: this.cloudinary.config().api_key as string,
       cloudName: this.cloudinary.config().cloud_name as string,
-      ...uploadParams,
     };
   }
 }
