@@ -70,6 +70,7 @@ apps/booking-service/prisma/generated/
 apps/content-service/prisma/generated/
 apps/notification-service/prisma/generated/
 apps/provider-directory-service/prisma/generated/
+nginx/ssl/
 
 # TypeScript incremental cache
 .tsbuildinfo

@@ -76,15 +76,15 @@ fi
 
 # Define service file mappings
 declare -A SERVICE_FILES
-SERVICE_FILES[all]="deployment/docker-compose.yml"
-SERVICE_FILES[infrastructure]="deployment/docker-compose.infrastructure.yml"
-SERVICE_FILES[gateway]="deployment/docker-compose.gateway.yml"
-SERVICE_FILES[accounts]="deployment/docker-compose.accounts.yml"
-SERVICE_FILES[provider]="deployment/docker-compose.provider.yml"
-SERVICE_FILES[booking]="deployment/docker-compose.booking.yml"
-SERVICE_FILES[content]="deployment/docker-compose.content.yml"
-SERVICE_FILES[notification]="deployment/docker-compose.notification.yml"
-SERVICE_FILES[orchestrator]="deployment/docker-compose.orchestrator.yml"
+SERVICE_FILES[all]="$PROJECT_ROOT/deployment/docker-compose.yml"
+SERVICE_FILES[infrastructure]="$PROJECT_ROOT/deployment/docker-compose.infrastructure.yml"
+SERVICE_FILES[gateway]="$PROJECT_ROOT/deployment/docker-compose.gateway.yml"
+SERVICE_FILES[accounts]="$PROJECT_ROOT/deployment/docker-compose.accounts.yml"
+SERVICE_FILES[provider]="$PROJECT_ROOT/deployment/docker-compose.provider.yml"
+SERVICE_FILES[booking]="$PROJECT_ROOT/deployment/docker-compose.booking.yml"
+SERVICE_FILES[content]="$PROJECT_ROOT/deployment/docker-compose.content.yml"
+SERVICE_FILES[notification]="$PROJECT_ROOT/deployment/docker-compose.notification.yml"
+SERVICE_FILES[orchestrator]="$PROJECT_ROOT/deployment/docker-compose.orchestrator.yml"
 
 # Get compose file for the specified service
 COMPOSE_FILE=${SERVICE_FILES[$SERVICE]}
@@ -138,6 +138,7 @@ case $COMMAND in
     update)
         print_header "Updating" $SERVICE
         echo -e "${YELLOW} Building application...${NC}"
+        cd "$PROJECT_ROOT"
         pnpm install
         
         # Handle different service types
@@ -145,12 +146,12 @@ case $COMMAND in
             echo -e "${YELLOW}  Infrastructure service doesn't require code build${NC}"
         elif [ "$SERVICE" = "gateway" ] || [ "$SERVICE" = "orchestrator" ]; then
             echo -e "${YELLOW}  Building $SERVICE (no Prisma needed)...${NC}"
-            cd .. && pnpm run "build:$SERVICE" && cd deployment
+            pnpm run "build:$SERVICE"
         elif [ "$SERVICE" != "all" ]; then
             echo -e "${YELLOW} Generating Prisma for $SERVICE...${NC}"
-            cd .. && pnpm run "prisma:generate:$SERVICE" && cd deployment
+            pnpm run "prisma:generate:$SERVICE"
             echo -e "${YELLOW}  Building $SERVICE...${NC}"
-            cd .. && pnpm run "build:$SERVICE" && cd deployment
+            pnpm run "build:$SERVICE"
         else
             echo -e "${YELLOW} Generating Prisma for all services...${NC}"
             pnpm run prisma:generate
