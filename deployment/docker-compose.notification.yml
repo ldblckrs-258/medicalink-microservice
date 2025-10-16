@@ -13,13 +13,6 @@ services:
       - NOTIFICATION_SERVICE_PORT=3005
     networks:
       - medicalink-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     command: ["node", "dist/apps/notification-service/main.js"]
     restart: unless-stopped
 
