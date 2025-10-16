@@ -29,10 +29,6 @@ export class AssetsClientService {
    * Create a new asset
    */
   async createAsset(createAssetDto: CreateAssetDto): Promise<AssetResponseDto> {
-    this.logger.log(
-      `Creating asset for entity ${createAssetDto.entityType}:${createAssetDto.entityId}`,
-    );
-
     try {
       const result = await this.clientHelper.send<AssetResponseDto>(
         this.contentClient,
@@ -41,12 +37,25 @@ export class AssetsClientService {
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
 
-      this.logger.log(`Asset created successfully: ${result.id}`);
       return result;
     } catch (error) {
-      this.logger.error(
-        `Failed to create asset: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Check if it's a conflict error (asset already exists)
+      if (
+        errorMessage.includes('already exists') ||
+        errorMessage.includes('409')
+      ) {
+        this.logger.debug(
+          `Asset ${createAssetDto.publicId} already exists for entity ${createAssetDto.entityType}:${createAssetDto.entityId} - skipping creation`,
+        );
+      } else {
+        this.logger.error(
+          `Failed to create asset ${createAssetDto.publicId}: ${errorMessage}`,
+        );
+      }
+
       throw error;
     }
   }
@@ -259,18 +268,12 @@ export class AssetsClientService {
    * Cleanup orphaned assets
    */
   async cleanupOrphanedAssets(publicIds: string[]): Promise<void> {
-    this.logger.log(`Cleaning up orphaned assets: ${publicIds.length} items`);
-
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
         SERVICE_PATTERNS.CONTENT_ASSETS.CLEANUP_ORPHANED,
         { publicIds },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
-      );
-
-      this.logger.log(
-        `Orphaned assets cleaned up successfully: ${publicIds.length} items`,
       );
     } catch (error) {
       this.logger.error(

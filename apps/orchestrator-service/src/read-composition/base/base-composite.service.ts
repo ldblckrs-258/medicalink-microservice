@@ -56,7 +56,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
     if (!config.skipCache) {
       const cached = await this.cacheService.get<TComposite>(config.cacheKey);
       if (cached) {
-        this.logger.debug(`Cache hit: ${config.cacheKey}`);
         return {
           data: cached,
           sources: [
@@ -72,8 +71,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
         };
       }
     }
-
-    this.logger.debug(`Cache miss, fetching from services...`);
 
     // Parallel fetch from both services
     const [result1, result2] = await Promise.allSettled([
@@ -204,7 +201,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
         PaginatedCompositeResult<TComposite>
       >(config.cacheKey);
       if (cached) {
-        this.logger.debug(`Cache hit for list: ${config.cacheKey}`);
         return {
           ...cached,
           cache: {
@@ -215,8 +211,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
         };
       }
     }
-
-    this.logger.debug(`Cache miss, fetching list from services...`);
 
     // Fetch primary data
     const primaryResult = await this.clientHelper.send<any>(
@@ -295,7 +289,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
   async invalidateEntityCache(entityId: string): Promise<void> {
     const cacheKey = `${this.cachePrefix}${entityId}`;
     await this.cacheService.invalidate(cacheKey);
-    this.logger.debug(`Invalidated cache for entity: ${entityId}`);
   }
 
   /**
@@ -303,7 +296,6 @@ export abstract class BaseCompositeService<TComposite, TQueryDto = any> {
    */
   async invalidateListCache(): Promise<void> {
     await this.cacheService.invalidatePattern(`${this.listCachePrefix}*`);
-    this.logger.debug(`Invalidated all list caches`);
   }
 
   /**

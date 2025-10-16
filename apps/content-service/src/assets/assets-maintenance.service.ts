@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { v2 as Cloudinary } from 'cloudinary';
 import { CLOUDINARY } from './cloudinary.provider';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * AssetsMaintenanceService: handle cleanup/replace assets on entity lifecycle.
@@ -11,17 +12,30 @@ export class AssetsMaintenanceService {
 
   constructor(
     @Inject(CLOUDINARY) private readonly cloudinary: typeof Cloudinary,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
    * Delete all assets by their public IDs.
    */
   async cleanupEntityAssets(publicIds: string[]): Promise<void> {
-    if (!Array.isArray(publicIds) || publicIds.length === 0) return;
+    if (!Array.isArray(publicIds) || publicIds.length === 0) {
+      return;
+    }
 
     const uniqueIds = Array.from(new Set(publicIds.filter(Boolean)));
-    for (const publicId of uniqueIds) {
-      await this.safeDestroy(publicId);
+
+    // Process assets in parallel with concurrency limit
+    const concurrencyLimit = 5;
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += concurrencyLimit) {
+      chunks.push(uniqueIds.slice(i, i + concurrencyLimit));
+    }
+
+    for (const chunk of chunks) {
+      await Promise.allSettled(
+        chunk.map((publicId: string) => this.safeDestroy(publicId)),
+      );
     }
   }
 
@@ -43,32 +57,16 @@ export class AssetsMaintenanceService {
     await this.cleanupEntityAssets(removed);
   }
 
-  /**
-   * Utility: try to destroy asset with simple retry and graceful handling.
-   */
   private async safeDestroy(publicId: string): Promise<void> {
-    const maxRetries = 3;
-    let attempt = 0;
+    const folder =
+      this.configService.get<string>('SERVICE_NAME', { infer: true }) ||
+      'medicalink';
+    this.logger.log('SAFE DESTROY', publicId, folder);
 
-    while (attempt < maxRetries) {
-      attempt++;
-      try {
-        const res = await this.cloudinary.uploader.destroy(publicId);
-        // res = { result: 'ok' | 'not found' | 'error' }
-        if (res?.result === 'ok' || res?.result === 'not found') {
-          if (res.result === 'not found') {
-            this.logger.warn(`Asset not found for destroy: ${publicId}`);
-          }
-          return;
-        }
-        this.logger.warn(
-          `Unexpected destroy result for ${publicId}: ${res?.result}`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Destroy failed for ${publicId} (attempt ${attempt}): ${error}`,
-        );
-      }
+    try {
+      await this.cloudinary.uploader.destroy(`${folder}/${publicId}`);
+    } catch (error) {
+      this.logger.error(`Destroy failed for ${publicId}: ${error}`);
     }
   }
 }

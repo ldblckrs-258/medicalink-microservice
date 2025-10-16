@@ -29,31 +29,50 @@ export class MicroserviceClientHelper {
     const logErrors = options?.logErrors ?? true;
 
     try {
-      this.logger.debug(`Sending message: ${pattern}`);
-
       const result = await firstValueFrom(
         client.send<T>(pattern, data).pipe(
           timeout(timeoutMs),
           catchError((error) => {
             if (logErrors) {
-              this.logger.error(
-                `Error calling ${pattern}:`,
-                error.message || error,
-              );
+              const errorMessage = error.message || String(error);
+
+              // Check if it's a conflict error (asset already exists)
+              if (
+                errorMessage.includes('already exists') ||
+                errorMessage.includes('409')
+              ) {
+                this.logger.debug(
+                  `Conflict error calling ${pattern}: ${errorMessage}`,
+                );
+              } else {
+                this.logger.error(`Error calling ${pattern}: ${errorMessage}`);
+              }
             }
             throw error;
           }),
         ),
       );
 
-      this.logger.debug(`Received response from: ${pattern}`);
       return result;
     } catch (error) {
       if (logErrors) {
-        this.logger.error(
-          `Failed to call ${pattern} after ${timeoutMs}ms:`,
-          error,
-        );
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        // Check if it's a conflict error (asset already exists)
+        if (
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('409')
+        ) {
+          this.logger.debug(
+            `Conflict error calling ${pattern} after ${timeoutMs}ms: ${errorMessage}`,
+          );
+        } else {
+          this.logger.error(
+            `Failed to call ${pattern} after ${timeoutMs}ms: ${errorMessage}`,
+            error,
+          );
+        }
       }
       throw error;
     }

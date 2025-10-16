@@ -47,8 +47,6 @@ export class SagaOrchestratorService {
       for (const step of steps) {
         const stepStartTime = Date.now();
 
-        this.logger.debug(`Executing step: ${step.name} (saga: ${sagaId})`);
-
         try {
           // Execute with timeout
           const output = await this.executeWithTimeout(

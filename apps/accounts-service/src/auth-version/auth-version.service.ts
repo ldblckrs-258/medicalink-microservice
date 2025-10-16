@@ -48,10 +48,6 @@ export class AuthVersionService {
           version: 2, // Start at 2 (1 is default for new users)
         },
       });
-
-      this.logger.debug(
-        `Incremented auth version for user ${userId} to ${result.version}`,
-      );
       return result.version;
     } catch (error) {
       this.logger.error(
@@ -87,8 +83,6 @@ export class AuthVersionService {
           });
         }
       });
-
-      this.logger.debug(`Incremented auth version for ${userIds.length} users`);
     } catch (error) {
       this.logger.error(
         `Error incrementing auth version for multiple users:`,
@@ -158,8 +152,6 @@ export class AuthVersionService {
           version: 1,
         },
       });
-
-      this.logger.debug(`Reset auth version for user ${userId} to 1`);
     } catch (error) {
       this.logger.error(
         `Error resetting auth version for user ${userId}:`,
@@ -184,8 +176,6 @@ export class AuthVersionService {
           },
         },
       });
-
-      this.logger.debug(`Cleaned up ${result.count} old auth version entries`);
       return result.count;
     } catch (error) {
       this.logger.error(`Error cleaning up old auth versions:`, error);

@@ -67,7 +67,6 @@ export class PermissionService {
         );
       }
 
-      this.logger.debug(`User ${user.email} has permission ${permissionKey}`);
       return true;
     } catch (error) {
       this.logger.error('Error checking permission:', error);
@@ -144,9 +143,6 @@ export class PermissionService {
       if (keys.length > 0) {
         // Delete keys one by one since del doesn't accept spread
         await Promise.all(keys.map((key) => this.redisService.del(key)));
-        this.logger.debug(
-          `Invalidated ${keys.length} permission cache entries for user ${userId}`,
-        );
       }
     } catch (error) {
       this.logger.error('Error invalidating user permissions:', error);
@@ -236,10 +232,6 @@ export class PermissionService {
         cacheKey,
         JSON.stringify(cacheData),
         this.CACHE_TTL,
-      );
-
-      this.logger.debug(
-        `Cached permission snapshot for user ${snapshot.userId} (${snapshot.permissions.size} permissions)`,
       );
     } catch (error) {
       this.logger.error('Error caching permission snapshot:', error);

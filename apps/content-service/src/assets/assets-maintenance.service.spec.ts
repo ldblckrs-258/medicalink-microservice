@@ -64,24 +64,22 @@ describe('AssetsMaintenanceService', () => {
   it('should retry on errors and eventually succeed', async () => {
     destroyMock
       .mockRejectedValueOnce(new Error('fail-1'))
-      .mockRejectedValueOnce(new Error('fail-2'))
       .mockResolvedValueOnce({ result: 'ok' });
 
     await service.cleanupEntityAssets(['retry-id']);
 
-    expect(destroyMock).toHaveBeenCalledTimes(3);
+    expect(destroyMock).toHaveBeenCalledTimes(2);
     expect(destroyMock).toHaveBeenLastCalledWith('retry-id');
   });
 
   it('should retry on unexpected result', async () => {
     destroyMock
       .mockResolvedValueOnce({ result: 'error' })
-      .mockResolvedValueOnce({ result: 'error' })
       .mockResolvedValueOnce({ result: 'error' });
 
     await service.cleanupEntityAssets(['bad']);
 
-    expect(destroyMock).toHaveBeenCalledTimes(3);
+    expect(destroyMock).toHaveBeenCalledTimes(2);
     expect(destroyMock).toHaveBeenLastCalledWith('bad');
   });
 });

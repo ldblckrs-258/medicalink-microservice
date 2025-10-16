@@ -23,12 +23,6 @@ export class CacheService {
       const fullKey = this.buildKey(key, prefix);
       const cached = await this.redisService.getJson<T>(fullKey);
 
-      if (cached) {
-        this.logger.debug(`Cache HIT: ${fullKey}`);
-      } else {
-        this.logger.debug(`Cache MISS: ${fullKey}`);
-      }
-
       return cached;
     } catch (error) {
       this.logger.error(`Cache get error for key ${key}:`, error.message);
@@ -44,7 +38,6 @@ export class CacheService {
       const fullKey = this.buildKey(key);
       const cacheTtl = ttl || this.defaultTTL;
       await this.redisService.setJson(fullKey, value, cacheTtl);
-      this.logger.debug(`Cache set: ${fullKey} (TTL: ${cacheTtl}s)`);
     } catch (error) {
       this.logger.error(`Failed to set cache for key ${key}:`, error);
     }

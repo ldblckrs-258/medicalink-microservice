@@ -22,7 +22,6 @@ export class AssetCacheService {
   async invalidateAssetCache(assetId: string): Promise<void> {
     const cacheKey = `${this.assetCachePrefix}:${assetId}`;
     await this.cacheService.invalidate(cacheKey);
-    this.logger.debug(`Invalidated asset cache: ${assetId}`);
   }
 
   /**
@@ -34,9 +33,6 @@ export class AssetCacheService {
   ): Promise<void> {
     const cacheKey = `${this.entityAssetsCachePrefix}:${entityType}:${entityId}`;
     await this.cacheService.invalidate(cacheKey);
-    this.logger.debug(
-      `Invalidated entity assets cache: ${entityType}:${entityId}`,
-    );
   }
 
   /**
@@ -51,11 +47,7 @@ export class AssetCacheService {
 
     // Invalidate all asset caches that might be related to this entity
     const pattern = `${this.assetCachePrefix}:*:${entityType}:${entityId}`;
-    const deletedCount = await this.cacheService.invalidatePattern(pattern);
-
-    this.logger.debug(
-      `Invalidated ${deletedCount} asset caches for entity ${entityType}:${entityId}`,
-    );
+    await this.cacheService.invalidatePattern(pattern);
   }
 
   /**
@@ -63,11 +55,7 @@ export class AssetCacheService {
    */
   async invalidateAssetListCaches(entityType: AssetEntityType): Promise<void> {
     const pattern = `${this.entityAssetsCachePrefix}:${entityType}:*`;
-    const deletedCount = await this.cacheService.invalidatePattern(pattern);
-
-    this.logger.debug(
-      `Invalidated ${deletedCount} asset list caches for entity type ${entityType}`,
-    );
+    await this.cacheService.invalidatePattern(pattern);
   }
 
   /**
@@ -83,7 +71,6 @@ export class AssetCacheService {
     );
 
     await Promise.all(invalidationPromises);
-    this.logger.debug(`Invalidated ${assetIds.length} asset caches`);
   }
 
   /**
@@ -101,11 +88,7 @@ export class AssetCacheService {
     });
 
     const results = await Promise.all(invalidationPromises);
-    const totalDeleted = results.reduce((sum, count) => sum + count, 0);
-
-    this.logger.debug(
-      `Invalidated ${totalDeleted} asset caches for ${publicIds.length} public IDs`,
-    );
+    results.reduce((sum, count) => sum + count, 0);
   }
 
   /**
@@ -115,9 +98,6 @@ export class AssetCacheService {
     await this.invalidateAllEntityAssetCaches(
       AssetEntityType.DOCTOR,
       doctorProfileId,
-    );
-    this.logger.debug(
-      `Invalidated all doctor asset caches for profile: ${doctorProfileId}`,
     );
   }
 
@@ -138,10 +118,6 @@ export class AssetCacheService {
 
     // Invalidate doctor asset list caches
     await this.invalidateAssetListCaches(AssetEntityType.DOCTOR);
-
-    this.logger.log(
-      `Comprehensive cache invalidation completed for doctor ${doctorProfileId} with ${assetPublicIds?.length || 0} assets`,
-    );
   }
 
   /**
@@ -149,6 +125,5 @@ export class AssetCacheService {
    */
   async invalidatePattern(pattern: string): Promise<void> {
     await this.cacheService.invalidatePattern(pattern);
-    this.logger.debug(`Invalidated cache pattern: ${pattern}`);
   }
 }

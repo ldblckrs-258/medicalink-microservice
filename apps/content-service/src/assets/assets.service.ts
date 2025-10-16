@@ -206,6 +206,21 @@ export class AssetsService {
     });
   }
 
+  /**
+   * Delete many assets by their public IDs. Idempotent: ignores missing records.
+   * Returns number of records deleted.
+   */
+  async deleteAssetsByPublicIds(publicIds: string[]): Promise<number> {
+    const uniqueIds = Array.from(new Set((publicIds || []).filter(Boolean)));
+    if (uniqueIds.length === 0) return 0;
+
+    const result = await this.prisma.asset.deleteMany({
+      where: { publicId: { in: uniqueIds } },
+    });
+
+    return result.count;
+  }
+
   private mapToResponseDto(asset: any): AssetResponseDto {
     return {
       id: asset.id,

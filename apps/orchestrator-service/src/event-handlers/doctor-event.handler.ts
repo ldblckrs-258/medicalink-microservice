@@ -181,10 +181,6 @@ export class DoctorEventHandler {
     }>(payload);
 
     try {
-      this.logger.log(
-        `Processing doctor profile updated event for profile ${data.profileId}`,
-      );
-
       // Invalidate cache
       await this.retryWithBackoff(
         async () => {
@@ -300,17 +296,22 @@ export class DoctorEventHandler {
   }
 
   /**
-   * Create asset entities for doctor profile with retry mechanism
+   * Create asset entities for doctor profile (no retry - skip failures)
    */
   private async createDoctorAssetsWithRetry(
     profileId: string,
     assetPublicIds: string[],
   ): Promise<void> {
-    return this.retryWithBackoff(
-      () => this.createDoctorAssets(profileId, assetPublicIds),
-      'asset creation',
-      `profile ${profileId}`,
-    );
+    try {
+      await this.createDoctorAssets(profileId, assetPublicIds);
+    } catch (error) {
+      // Log error but don't re-throw to prevent retry mechanism
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Asset creation completed with some failures for profile ${profileId}: ${errorMessage}`,
+      );
+    }
   }
 
   /**
@@ -347,21 +348,27 @@ export class DoctorEventHandler {
       .filter(({ result }) => result.status === 'rejected');
 
     if (failures.length > 0) {
-      const errorMessages = failures.map(
-        ({ result, publicId }) =>
-          `${publicId}: ${(result as PromiseRejectedResult).reason}`,
+      const errorMessages = failures.map(({ result, publicId }) => {
+        const error = (result as PromiseRejectedResult).reason;
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        // Check if it's a conflict error (asset already exists)
+        if (
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('409')
+        ) {
+          return `${publicId}: already exists (skipped)`;
+        }
+        return `${publicId}: ${errorMessage}`;
+      });
+
+      this.logger.warn(
+        `Skipped ${failures.length}/${assetPublicIds.length} asset entities for doctor ${profileId}: ${errorMessages.join(', ')}`,
       );
 
-      this.logger.error(
-        `Failed to create ${failures.length}/${assetPublicIds.length} asset entities for doctor ${profileId}: ${errorMessages.join(', ')}`,
-      );
-
-      // If more than half failed, throw error to trigger retry
-      if (failures.length > assetPublicIds.length / 2) {
-        throw new Error(
-          `Too many asset creation failures: ${failures.length}/${assetPublicIds.length}`,
-        );
-      }
+      // Don't throw error - just continue with successful ones
+      // This prevents unnecessary retries for conflicts and other non-critical errors
     }
 
     const successCount = results.length - failures.length;
@@ -393,20 +400,11 @@ export class DoctorEventHandler {
     prevAssets: string[],
     nextAssets: string[],
   ): Promise<void> {
-    this.logger.log(
-      `Reconciling assets for doctor ${profileId} (prev: ${prevAssets.length}, next: ${nextAssets.length})`,
-    );
-
-    // Find assets to add and remove
     const assetsToAdd = nextAssets.filter(
       (asset) => !prevAssets.includes(asset),
     );
     const assetsToRemove = prevAssets.filter(
       (asset) => !nextAssets.includes(asset),
-    );
-
-    this.logger.debug(
-      `Asset reconciliation plan for doctor ${profileId}: adding ${assetsToAdd.length}, removing ${assetsToRemove.length}`,
     );
 
     const operations: Promise<void>[] = [];

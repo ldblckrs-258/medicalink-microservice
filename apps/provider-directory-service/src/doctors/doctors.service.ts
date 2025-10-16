@@ -10,6 +10,7 @@ import {
 } from '@app/contracts';
 import { NotFoundError } from '@app/domain-errors';
 import { RabbitMQService } from '@app/rabbitmq';
+import { extractPublicIdFromUrl } from '../utils/extractor';
 
 @Injectable()
 export class DoctorsService {
@@ -276,47 +277,15 @@ export class DoctorsService {
     const publicIds: string[] = [];
 
     if (doctor.avatarUrl) {
-      const publicId = this.extractPublicIdFromUrl(doctor.avatarUrl);
+      const publicId = extractPublicIdFromUrl(doctor.avatarUrl);
       if (publicId) publicIds.push(publicId);
     }
 
     if (doctor.portrait) {
-      const publicId = this.extractPublicIdFromUrl(doctor.portrait);
+      const publicId = extractPublicIdFromUrl(doctor.portrait);
       if (publicId) publicIds.push(publicId);
     }
 
     return publicIds;
-  }
-
-  /**
-   * Extract public ID from Cloudinary URL
-   * Example: https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg -> sample
-   */
-  private extractPublicIdFromUrl(url: string): string | null {
-    try {
-      // Handle different Cloudinary URL formats
-      const patterns = [
-        // Standard format: /v{version}/{public_id}.{extension}
-        /\/v\d+\/(.+)\.(jpg|jpeg|png|gif|webp)$/i,
-        // Format without version: /{public_id}.{extension}
-        /\/([^/]+)\.(jpg|jpeg|png|gif|webp)$/i,
-        // Format with transformations: /v{version}/{transformations}/{public_id}.{extension}
-        /\/v\d+\/[^/]*\/(.+)\.(jpg|jpeg|png|gif|webp)$/i,
-      ];
-
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-          // Remove any transformation parameters from public_id
-          return match[1].split('/').pop() || null;
-        }
-      }
-
-      this.logger.warn(`Could not extract public ID from URL: ${url}`);
-      return null;
-    } catch (error) {
-      this.logger.error(`Error extracting public ID from URL ${url}:`, error);
-      return null;
-    }
   }
 }
