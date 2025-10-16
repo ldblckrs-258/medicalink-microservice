@@ -3,6 +3,7 @@ import { ClientsModule as NestClientsModule } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { RabbitMQConfig, QUEUE_NAMES } from '@app/rabbitmq';
 import { MicroserviceClientHelper } from './microservice-client.helper';
+import { AssetsClientService } from './assets-client.service';
 
 @Module({
   imports: [
@@ -54,7 +55,7 @@ import { MicroserviceClientHelper } from './microservice-client.helper';
       },
     ]),
   ],
-  providers: [MicroserviceClientHelper],
-  exports: [NestClientsModule, MicroserviceClientHelper],
+  providers: [MicroserviceClientHelper, AssetsClientService],
+  exports: [NestClientsModule, MicroserviceClientHelper, AssetsClientService],
 })
 export class ClientsModule {}

@@ -1,13 +1,14 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { IsCuid } from '@app/contracts/decorators';
 
 export class CreateAnswerDto {
-  @IsString()
-  @IsNotEmpty()
-  content: string;
+  @IsString({ message: 'Answer body must be a string' })
+  @IsNotEmpty({ message: 'Answer body cannot be empty' })
+  body: string;
 
-  @IsUUID()
+  @IsCuid({ message: 'Question ID must be a valid CUID' })
   questionId: string;
 
-  @IsUUID()
+  @IsCuid({ message: 'Author ID must be a valid CUID' })
   authorId: string;
 }

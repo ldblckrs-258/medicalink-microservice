@@ -7,6 +7,7 @@ export interface BlogDto {
   imageUrl?: string;
   authorId: string;
   categoryId?: string;
+  specialtyIds?: string[];
   tags?: string[];
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   publishedAt?: Date;

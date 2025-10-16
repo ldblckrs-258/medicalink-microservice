@@ -34,21 +34,25 @@ export class QuestionsController {
     data: {
       id: string;
       updateQuestionDto: UpdateQuestionDto;
-      userId: string;
+      authorEmail: string;
+      isAdmin?: boolean;
     },
   ) {
     return this.questionsService.updateQuestion(
       data.id,
       data.updateQuestionDto,
-      data.userId,
+      data.authorEmail,
+      data.isAdmin,
     );
   }
 
   @MessagePattern('delete_question')
-  remove(@Payload() data: { id: string; userId: string; isAdmin?: boolean }) {
+  remove(
+    @Payload() data: { id: string; authorEmail: string; isAdmin?: boolean },
+  ) {
     return this.questionsService.deleteQuestion(
       data.id,
-      data.userId,
+      data.authorEmail,
       data.isAdmin,
     );
   }
@@ -60,10 +64,21 @@ export class QuestionsController {
 
   @MessagePattern('get_answers')
   getAnswers(
-    @Payload() data: { page?: number; limit?: number; questionId?: string },
+    @Payload()
+    data: {
+      page?: number;
+      limit?: number;
+      questionId?: string;
+      authorId?: string;
+    },
   ) {
-    const { page = 1, limit = 10, questionId } = data || {};
-    return this.questionsService.getAnswers({ page, limit, questionId });
+    const { page = 1, limit = 10, questionId, authorId } = data || {};
+    return this.questionsService.getAnswers({
+      page,
+      limit,
+      questionId,
+      authorId,
+    });
   }
 
   @MessagePattern('get_answer_by_id')
@@ -77,23 +92,23 @@ export class QuestionsController {
     data: {
       id: string;
       updateAnswerDto: UpdateAnswerDto;
-      doctorId: string;
+      authorId: string;
     },
   ) {
     return this.questionsService.updateAnswer(
       data.id,
       data.updateAnswerDto,
-      data.doctorId,
+      data.authorId,
     );
   }
 
   @MessagePattern('delete_answer')
   deleteAnswer(
-    @Payload() data: { id: string; doctorId: string; isAdmin?: boolean },
+    @Payload() data: { id: string; authorId: string; isAdmin?: boolean },
   ) {
     return this.questionsService.deleteAnswer(
       data.id,
-      data.doctorId,
+      data.authorId,
       data.isAdmin,
     );
   }

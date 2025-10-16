@@ -44,6 +44,35 @@ export interface StaffRoleChanged extends BaseEvent {
   };
 }
 
+// Doctor Profile Events with Asset Management
+export interface DoctorProfileCreated extends BaseEvent {
+  event: 'DoctorProfileCreated';
+  data: {
+    profileId: string;
+    staffAccountId: string;
+    assets: string[]; // Array of Cloudinary public IDs
+  };
+}
+
+export interface DoctorProfileUpdated extends BaseEvent {
+  event: 'DoctorProfileUpdated';
+  data: {
+    profileId: string;
+    staffAccountId: string;
+    prevAssets: string[]; // Previous asset public IDs
+    nextAssets: string[]; // New asset public IDs
+  };
+}
+
+export interface DoctorProfileDeleted extends BaseEvent {
+  event: 'DoctorProfileDeleted';
+  data: {
+    profileId: string;
+    staffAccountId?: string;
+    assetPublicIds: string[]; // Assets to be cleaned up
+  };
+}
+
 // Provider Events
 export interface ScheduleSlotCreated extends BaseEvent {
   event: 'ScheduleSlotCreated';
@@ -180,6 +209,9 @@ export type AllEvents =
   | StaffCreated
   | StaffUpdated
   | StaffRoleChanged
+  | DoctorProfileCreated
+  | DoctorProfileUpdated
+  | DoctorProfileDeleted
   | ScheduleSlotCreated
   | ScheduleSlotUpdated
   | ScheduleSlotDeleted

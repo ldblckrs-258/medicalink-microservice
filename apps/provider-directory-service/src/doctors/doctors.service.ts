@@ -25,14 +25,16 @@ export class DoctorsService {
   ): Promise<DoctorProfileResponseDto> {
     const result = await this.doctorRepo.create(createDoctorDto);
 
-    // Emit doctor profile created event for cache invalidation
+    // Emit doctor profile created event for cache invalidation and asset management
     try {
+      const assets = this.extractAssetPublicIds(result);
       this.rabbitMQService.emitEvent('doctor.profile.created', {
         profileId: result.id,
         staffAccountId: result.staffAccountId,
+        assets,
       });
       this.logger.debug(
-        `Emitted doctor.profile.created event for doctor ${result.id}`,
+        `Emitted doctor.profile.created event for doctor ${result.id} with ${assets.length} assets`,
       );
     } catch (error) {
       this.logger.error(
@@ -119,22 +121,30 @@ export class DoctorsService {
     id: string,
     updateDoctorDto: Omit<UpdateDoctorProfileDto, 'id'>,
   ): Promise<DoctorProfileResponseDto> {
-    // Check if doctor exists first
+    // Check if doctor exists first and get current data for asset comparison
     const existing = await this.doctorRepo.findOne(id);
     if (!existing) {
       throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
+    // Extract current asset URLs for comparison
+    const prevAssets = this.extractAssetPublicIds(existing);
+
     const result = await this.doctorRepo.update(id, updateDoctorDto);
 
-    // Emit doctor profile updated event for cache invalidation
+    // Extract new asset URLs
+    const nextAssets = this.extractAssetPublicIds(result);
+
+    // Emit doctor profile updated event for cache invalidation and asset management
     try {
       this.rabbitMQService.emitEvent('doctor.profile.updated', {
         profileId: result.id,
         staffAccountId: result.staffAccountId,
+        prevAssets,
+        nextAssets,
       });
       this.logger.log(
-        `Emitted doctor.profile.updated event for doctor ${result.id}`,
+        `Emitted doctor.profile.updated event for doctor ${result.id} (prev: ${prevAssets.length}, next: ${nextAssets.length} assets)`,
       );
     } catch (error) {
       this.logger.error(
@@ -148,13 +158,34 @@ export class DoctorsService {
   }
 
   async remove(id: string): Promise<DoctorProfileResponseDto> {
-    // Check if doctor exists first
+    // Check if doctor exists first and get asset data for cleanup
     const existing = await this.doctorRepo.findOne(id);
     if (!existing) {
       throw new NotFoundError(`Doctor profile with id ${id} not found`);
     }
 
-    return this.doctorRepo.remove(id);
+    // Extract asset URLs for cleanup
+    const assetPublicIds = this.extractAssetPublicIds(existing);
+
+    const result = await this.doctorRepo.remove(id);
+
+    // Emit doctor profile deleted event for asset cleanup
+    try {
+      this.rabbitMQService.emitEvent('doctor.profile.deleted', {
+        profileId: id,
+        assetPublicIds,
+      });
+      this.logger.log(
+        `Emitted doctor.profile.deleted event for doctor ${id} with ${assetPublicIds.length} assets for cleanup`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit doctor.profile.deleted event for doctor ${id}:`,
+        error,
+      );
+    }
+
+    return result;
   }
 
   async toggleActive(
@@ -221,5 +252,56 @@ export class DoctorsService {
     }
 
     return doctor;
+  }
+
+  /**
+   * Extract Cloudinary public IDs from doctor profile URLs
+   */
+  private extractAssetPublicIds(doctor: DoctorProfileResponseDto): string[] {
+    const publicIds: string[] = [];
+
+    if (doctor.avatarUrl) {
+      const publicId = this.extractPublicIdFromUrl(doctor.avatarUrl);
+      if (publicId) publicIds.push(publicId);
+    }
+
+    if (doctor.portrait) {
+      const publicId = this.extractPublicIdFromUrl(doctor.portrait);
+      if (publicId) publicIds.push(publicId);
+    }
+
+    return publicIds;
+  }
+
+  /**
+   * Extract public ID from Cloudinary URL
+   * Example: https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg -> sample
+   */
+  private extractPublicIdFromUrl(url: string): string | null {
+    try {
+      // Handle different Cloudinary URL formats
+      const patterns = [
+        // Standard format: /v{version}/{public_id}.{extension}
+        /\/v\d+\/(.+)\.(jpg|jpeg|png|gif|webp)$/i,
+        // Format without version: /{public_id}.{extension}
+        /\/([^/]+)\.(jpg|jpeg|png|gif|webp)$/i,
+        // Format with transformations: /v{version}/{transformations}/{public_id}.{extension}
+        /\/v\d+\/[^/]*\/(.+)\.(jpg|jpeg|png|gif|webp)$/i,
+      ];
+
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+          // Remove any transformation parameters from public_id
+          return match[1].split('/').pop() || null;
+        }
+      }
+
+      this.logger.warn(`Could not extract public ID from URL: ${url}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`Error extracting public ID from URL ${url}:`, error);
+      return null;
+    }
   }
 }

@@ -70,10 +70,16 @@ export const ORCHESTRATOR_EVENTS = {
   STAFF_ACCOUNT_UPDATED: 'staff.account.updated',
   STAFF_ACCOUNT_DELETED: 'staff.account.deleted',
 
-  // Appointment events
+  // Appointment events (future)
   APPOINTMENT_CREATED: 'appointment.created',
   APPOINTMENT_UPDATED: 'appointment.updated',
   APPOINTMENT_CANCELLED: 'appointment.cancelled',
+
+  // Assets events
+  ASSET_CREATED: 'asset.created',
+  ASSET_UPDATED: 'asset.updated',
+  ASSET_DELETED: 'asset.deleted',
+  ASSETS_BULK_DELETED: 'assets.bulk.deleted',
 } as const;
 
 /**
@@ -109,9 +115,25 @@ export const SERVICE_PATTERNS = {
     APPOINTMENT_CANCEL: 'appointments.cancel',
   },
 
-  // Notification Service
+  // Notification service
   NOTIFICATION: {
     EMAIL_SEND: 'notification.email.send',
     SMS_SEND: 'notification.sms.send',
+  },
+
+  // Content service - Assets
+  CONTENT_ASSETS: {
+    CREATE: 'assets.create',
+    GET_BY_ID: 'assets.get_by_id',
+    GET_BY_PUBLIC_ID: 'assets.get_by_public_id',
+    GET_LIST: 'assets.get_list',
+    GET_BY_ENTITY: 'assets.get_by_entity',
+    UPDATE: 'assets.update',
+    DELETE: 'assets.delete',
+    DELETE_BY_PUBLIC_ID: 'assets.delete_by_public_id',
+    DELETE_BY_ENTITY: 'assets.delete_by_entity',
+    CLEANUP_ORPHANED: 'assets.cleanup_orphaned',
+    RECONCILE_ENTITY: 'assets.reconcile_entity',
+    HEALTH_CHECK: 'assets.health_check',
   },
 } as const;

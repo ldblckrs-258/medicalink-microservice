@@ -1,24 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BlogResponseDto, BlogCategoryResponseDto } from '@app/contracts';
+import {
+  BlogResponseDto,
+  BlogCategoryResponseDto,
+  CreateBlogDto,
+  UpdateBlogDto,
+} from '@app/contracts';
+import { PostStatus } from '../../prisma/generated/client';
 
 @Injectable()
 export class BlogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBlog(data: {
-    title: string;
-    content: string;
-    authorId: string;
-    categoryId: string;
-    status?: 'DRAFT' | 'PUBLISHED';
-  }): Promise<BlogResponseDto> {
+  async createBlog(data: CreateBlogDto): Promise<BlogResponseDto> {
     const blog = await this.prisma.blog.create({
       data: {
         title: data.title,
         content: data.content,
         slug: this.generateSlug(data.title),
-        status: data.status ?? 'DRAFT',
+        status: PostStatus.DRAFT,
         authorId: data.authorId,
         categoryId: data.categoryId,
       },
@@ -27,7 +27,13 @@ export class BlogRepository {
       },
     });
 
-    return this.transformBlogResponse(blog);
+    // Persist assets if provided
+    if (Array.isArray(data.publicIds)) {
+      await this.setEntityAssets('BLOG', blog.id, data.publicIds);
+    }
+
+    const publicIds = await this.getPublicIdsForEntity('BLOG', blog.id);
+    return this.transformBlogResponse(blog, publicIds);
   }
 
   async findAllBlogs(params: {
@@ -60,8 +66,17 @@ export class BlogRepository {
       this.prisma.blog.count({ where }),
     ]);
 
+    const dataWithAssets = await Promise.all(
+      blogs.map(async (blog) => ({
+        blog,
+        publicIds: await this.getPublicIdsForEntity('BLOG', blog.id),
+      })),
+    );
+
     return {
-      data: blogs.map((blog) => this.transformBlogResponse(blog)),
+      data: dataWithAssets.map(({ blog, publicIds }) =>
+        this.transformBlogResponse(blog, publicIds),
+      ),
       total,
       page,
       limit,
@@ -77,18 +92,12 @@ export class BlogRepository {
       },
     });
 
-    return blog ? this.transformBlogResponse(blog) : null;
+    if (!blog) return null;
+    const publicIds = await this.getPublicIdsForEntity('BLOG', blog.id);
+    return this.transformBlogResponse(blog, publicIds);
   }
 
-  async updateBlog(
-    id: string,
-    data: {
-      title?: string;
-      content?: string;
-      categoryId?: string;
-      status?: string;
-    },
-  ): Promise<BlogResponseDto> {
+  async updateBlog(id: string, data: UpdateBlogDto): Promise<BlogResponseDto> {
     const updateData: any = {};
     if (data.title) {
       updateData.title = data.title;
@@ -100,9 +109,9 @@ export class BlogRepository {
     if (data.categoryId) {
       updateData.categoryId = data.categoryId;
     }
-    if (data.status) {
-      updateData.status = data.status;
-      if (data.status === 'PUBLISHED') {
+    if ((data as any).status) {
+      updateData.status = (data as any).status;
+      if ((data as any).status === 'PUBLISHED') {
         updateData.publishedAt = new Date();
       }
     }
@@ -115,12 +124,25 @@ export class BlogRepository {
       },
     });
 
-    return this.transformBlogResponse(blog);
+    if (Array.isArray((data as any).publicIds)) {
+      await this.setEntityAssets(
+        'BLOG',
+        blog.id,
+        (data as any).publicIds as string[],
+      );
+    }
+
+    const publicIds = await this.getPublicIdsForEntity('BLOG', blog.id);
+    return this.transformBlogResponse(blog, publicIds);
   }
 
   async deleteBlog(id: string): Promise<void> {
     await this.prisma.blog.delete({
       where: { id },
+    });
+    // Remove assets records for this entity
+    await this.prisma.asset.deleteMany({
+      where: { entityType: 'BLOG', entityId: id },
     });
   }
 
@@ -193,7 +215,10 @@ export class BlogRepository {
       .slice(0, 220);
   }
 
-  private transformBlogResponse(blog: any): BlogResponseDto {
+  private transformBlogResponse(
+    blog: any,
+    publicIds?: string[],
+  ): BlogResponseDto {
     return {
       id: blog.id,
       title: blog.title,
@@ -212,6 +237,7 @@ export class BlogRepository {
       publishedAt: blog.publishedAt,
       createdAt: blog.createdAt,
       updatedAt: blog.updatedAt,
+      publicIds,
     };
   }
 
@@ -223,5 +249,56 @@ export class BlogRepository {
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };
+  }
+
+  private async getPublicIdsForEntity(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+  ): Promise<string[]> {
+    const assets = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return assets.map((a) => a.publicId);
+  }
+
+  private async setEntityAssets(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+    publicIds: string[],
+  ): Promise<void> {
+    const desired = this.normalizePublicIds(publicIds);
+    const existing = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+    });
+    const existingSet = new Set(existing.map((a) => a.publicId));
+
+    const toRemove = existing
+      .filter((a) => !desired.includes(a.publicId))
+      .map((a) => a.publicId);
+    const toAdd = desired.filter((id) => !existingSet.has(id));
+
+    if (toRemove.length > 0) {
+      await this.prisma.asset.deleteMany({
+        where: { publicId: { in: toRemove } },
+      });
+    }
+
+    for (const publicId of toAdd) {
+      await this.prisma.asset.upsert({
+        where: { publicId },
+        update: { entityType, entityId },
+        create: { publicId, entityType, entityId },
+      });
+    }
+  }
+
+  private normalizePublicIds(publicIds?: string[] | null): string[] {
+    const ids = (publicIds ?? []).filter(
+      (id): id is string => typeof id === 'string' && id.trim().length > 0,
+    );
+    return Array.from(new Set<string>(ids));
   }
 }

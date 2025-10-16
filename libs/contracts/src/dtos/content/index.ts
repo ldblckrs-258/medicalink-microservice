@@ -22,3 +22,13 @@ export * from './blog-category-response.dto';
 export * from './question-response.dto';
 export * from './answer-response.dto';
 export * from './review-response.dto';
+
+// Assets DTOs
+export * from './generate-signature.dto';
+export * from './cloudinary-signature-response.dto';
+export * from './asset-entity-type.enum';
+export * from './create-asset.dto';
+export * from './update-asset.dto';
+export * from './asset-response.dto';
+export * from './get-assets-query.dto';
+export * from './assets-list-response.dto';

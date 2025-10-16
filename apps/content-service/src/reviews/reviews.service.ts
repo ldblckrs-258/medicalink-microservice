@@ -1,47 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import {
-  NotFoundError,
-  ForbiddenError,
-  ConflictError,
-} from '@app/domain-errors';
-import { PaginatedResponse } from '@app/contracts';
-import {
-  CreateReviewDto,
-  UpdateReviewDto,
-  ReviewResponseDto,
-} from '@app/contracts';
 import { ReviewRepository } from './review.repository';
+import { CreateReviewDto, ReviewResponseDto } from '@app/contracts';
+import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
+import { NotFoundError, ForbiddenError } from '@app/domain-errors';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly reviewRepository: ReviewRepository) {}
+  constructor(
+    private readonly reviewRepository: ReviewRepository,
+    private readonly assetsMaintenance: AssetsMaintenanceService,
+  ) {}
 
   async createReview(
     createReviewDto: CreateReviewDto,
   ): Promise<ReviewResponseDto> {
-    // Check if user already reviewed this doctor
-    if (createReviewDto.authorEmail) {
-      const existingReview = await this.reviewRepository.findExistingReview(
-        createReviewDto.authorEmail,
-        createReviewDto.doctorId,
-      );
-
-      if (existingReview) {
-        throw new ConflictError('You have already reviewed this doctor');
-      }
-    }
-
     return this.reviewRepository.createReview(createReviewDto);
   }
 
-  async getReviews(params: {
-    page: number;
-    limit: number;
-    doctorId?: string;
-    userId?: string;
-  }): Promise<PaginatedResponse<ReviewResponseDto>> {
+  async getReviews(params: { page: number; limit: number }) {
     const result = await this.reviewRepository.findAllReviews(params);
-
+    const hasNext = params.page * params.limit < result.total;
+    const hasPrev = params.page > 1;
     return {
       data: result.data,
       meta: {
@@ -49,23 +28,20 @@ export class ReviewsService {
         page: result.page,
         limit: result.limit,
         totalPages: result.totalPages,
-        hasNext: result.page < result.totalPages,
-        hasPrev: result.page > 1,
+        hasNext,
+        hasPrev,
       },
     };
   }
 
-  async getReviewsByDoctor(
-    doctorId: string,
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<PaginatedResponse<ReviewResponseDto>> {
-    const result = await this.reviewRepository.findReviewsByDoctorId({
-      doctorId,
-      page,
-      limit,
-    });
-
+  async getReviewsByDoctor(params: {
+    page: number;
+    limit: number;
+    doctorId: string;
+  }) {
+    const result = await this.reviewRepository.findReviewsByDoctorId(params);
+    const hasNext = params.page * params.limit < result.total;
+    const hasPrev = params.page > 1;
     return {
       data: result.data,
       meta: {
@@ -73,8 +49,8 @@ export class ReviewsService {
         page: result.page,
         limit: result.limit,
         totalPages: result.totalPages,
-        hasNext: result.page < result.totalPages,
-        hasPrev: result.page > 1,
+        hasNext,
+        hasPrev,
       },
     };
   }
@@ -87,39 +63,19 @@ export class ReviewsService {
     return review;
   }
 
-  async updateReview(
-    id: string,
-    updateReviewDto: UpdateReviewDto,
-    authorEmail: string,
-  ): Promise<ReviewResponseDto> {
+  async deleteReview(id: string, isAdmin: boolean = false): Promise<void> {
     const review = await this.getReviewById(id);
 
-    if (review.authorEmail !== authorEmail) {
-      throw new ForbiddenError('You can only update your own reviews');
-    }
-
-    return this.reviewRepository.updateReview(id, updateReviewDto);
-  }
-
-  async deleteReview(
-    id: string,
-    authorEmail: string,
-    isAdmin: boolean = false,
-  ): Promise<void> {
-    const review = await this.getReviewById(id);
-
-    if (!isAdmin && review.authorEmail !== authorEmail) {
+    if (!isAdmin) {
       throw new ForbiddenError('You can only delete your own reviews');
     }
 
-    await this.reviewRepository.deleteReview(id);
-  }
+    // Cleanup assets
+    const publicIds: string[] = Array.isArray(review.publicIds)
+      ? review.publicIds
+      : [];
+    await this.assetsMaintenance.cleanupEntityAssets(publicIds);
 
-  async getDoctorReviewStats(doctorId: string): Promise<{
-    averageRating: number;
-    totalReviews: number;
-    ratingDistribution: { rating: number; count: number }[];
-  }> {
-    return this.reviewRepository.getReviewStats(doctorId);
+    await this.reviewRepository.deleteReview(id);
   }
 }

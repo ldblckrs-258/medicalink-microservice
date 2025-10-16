@@ -3,6 +3,7 @@ export interface ReviewResponseDto {
   rating: number;
   title?: string;
   body?: string;
+  publicIds?: string[];
   authorName?: string;
   authorEmail?: string;
   doctorId: string;

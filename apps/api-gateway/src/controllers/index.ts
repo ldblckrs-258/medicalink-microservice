@@ -5,4 +5,5 @@ export * from './patients.controller';
 export * from './permissions.controller';
 export * from './specialties.controller';
 export * from './staffs.controller';
+export * from './utilities.controller';
 export * from './work-locations.controller';

@@ -33,16 +33,17 @@ model BlogCategory {
 }
 
 model Blog {
-  id          String     @id @default(cuid())
-  title       String     @db.VarChar(200)
-  slug        String     @unique @db.VarChar(220)
-  content     String     @db.Text
-  categoryId  String     @map("category_id") @db.VarChar(27)
-  authorId    String     @map("author_id") @db.VarChar(27)
-  status      PostStatus @default(DRAFT)
-  publishedAt DateTime?  @map("published_at") @db.Timestamptz(6)
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String     @id @default(cuid())
+  title        String     @db.VarChar(200)
+  slug         String     @unique @db.VarChar(220)
+  content      String     @db.Text
+  categoryId   String     @map("category_id") @db.VarChar(27)
+  specialtyIds String[]   @map("specialty_ids") @db.VarChar(27)
+  authorId     String     @map("author_id") @db.VarChar(27)
+  status       PostStatus @default(DRAFT)
+  publishedAt  DateTime?  @map("published_at") @db.Timestamptz(6)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
@@ -56,6 +57,7 @@ model Question {
   title       String         @db.VarChar(200)
   body        String         @db.Text
   status      QuestionStatus @default(PENDING)
+  specialtyId String?        @map("specialty_id") @db.VarChar(27)
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -67,7 +69,7 @@ model Question {
 model Answer {
   id         String   @id @default(cuid())
   questionId String   @map("question_id") @db.VarChar(27)
-  doctorId   String   @map("doctor_id") @db.VarChar(27)
+  authorId   String   @map("author_id") @db.VarChar(27)
   body       String   @db.Text
   isAccepted Boolean  @default(false) @map("is_accepted")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -76,7 +78,7 @@ model Answer {
   question Question @relation(fields: [questionId], references: [id])
 
   @@index([questionId], map: "idx_answers_question")
-  @@index([doctorId, createdAt], map: "idx_answers_doctor_created")
+  @@index([authorId, createdAt], map: "idx_answers_author_created")
   @@map("answers")
 }
 
@@ -94,4 +96,24 @@ model Review {
   @@index([doctorId], map: "idx_reviews_doctor")
   @@index([rating], map: "idx_reviews_rating")
   @@map("reviews")
+}
+
+// Asset entity type for polymorphic association
+enum AssetEntityType {
+  BLOG
+  QUESTION
+  REVIEW
+  DOCTOR
+}
+
+model Asset {
+  id         String          @id @default(cuid())
+  entityType AssetEntityType
+  entityId   String          @map("entity_id") @db.VarChar(27)
+  publicId   String          @unique @map("public_id") @db.VarChar(160)
+  metadata   Json?
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([entityType, entityId], map: "idx_assets_entity")
+  @@map("assets")
 }

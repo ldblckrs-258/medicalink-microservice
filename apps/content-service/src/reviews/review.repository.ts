@@ -1,26 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ReviewResponseDto } from '@app/contracts';
+import {
+  ReviewResponseDto,
+  CreateReviewDto,
+  UpdateReviewDto,
+} from '@app/contracts';
 
 @Injectable()
 export class ReviewRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createReview(data: {
-    rating: number;
-    title?: string;
-    body?: string;
-    authorName?: string;
-    authorEmail?: string;
-    doctorId: string;
-  }): Promise<ReviewResponseDto> {
+  async createReview(data: CreateReviewDto): Promise<ReviewResponseDto> {
     const review = await this.prisma.review.create({
       data: {
-        ...data,
+        rating: data.rating,
+        title: data.title,
+        body: data.body,
+        authorName: data.authorName,
+        authorEmail: data.authorEmail,
+        doctorId: data.doctorId,
       },
     });
 
-    return this.transformReviewResponse(review);
+    if (Array.isArray((data as any).publicIds)) {
+      await this.setEntityAssets(
+        'REVIEW',
+        review.id,
+        (data as any).publicIds as string[],
+      );
+    }
+    const publicIds = await this.getPublicIdsForEntity('REVIEW', review.id);
+
+    return this.transformReviewResponse(review, publicIds);
   }
 
   async findAllReviews(params: {
@@ -48,8 +59,17 @@ export class ReviewRepository {
       this.prisma.review.count({ where }),
     ]);
 
+    const dataWithAssets = await Promise.all(
+      reviews.map(async (review) => ({
+        review,
+        publicIds: await this.getPublicIdsForEntity('REVIEW', review.id),
+      })),
+    );
+
     return {
-      data: reviews.map((review) => this.transformReviewResponse(review)),
+      data: dataWithAssets.map(({ review, publicIds }) =>
+        this.transformReviewResponse(review, publicIds),
+      ),
       total,
       page,
       limit,
@@ -77,8 +97,17 @@ export class ReviewRepository {
       this.prisma.review.count({ where: { doctorId } }),
     ]);
 
+    const dataWithAssets = await Promise.all(
+      reviews.map(async (review) => ({
+        review,
+        publicIds: await this.getPublicIdsForEntity('REVIEW', review.id),
+      })),
+    );
+
     return {
-      data: reviews.map((review) => this.transformReviewResponse(review)),
+      data: dataWithAssets.map(({ review, publicIds }) =>
+        this.transformReviewResponse(review, publicIds),
+      ),
       total,
       page,
       limit,
@@ -91,27 +120,46 @@ export class ReviewRepository {
       where: { id },
     });
 
-    return review ? this.transformReviewResponse(review) : null;
+    if (!review) return null;
+    const publicIds = await this.getPublicIdsForEntity('REVIEW', review.id);
+
+    return this.transformReviewResponse(review, publicIds);
   }
 
   async updateReview(
     id: string,
-    data: {
-      rating?: number;
-      comment?: string;
-    },
+    data: UpdateReviewDto,
   ): Promise<ReviewResponseDto> {
+    const updateData: any = {};
+    if (typeof data.rating === 'number') updateData.rating = data.rating;
+    if (typeof data.title === 'string') updateData.title = data.title;
+    if (typeof data.body === 'string') updateData.body = data.body;
+    if (typeof (data as any).isPublic === 'boolean')
+      updateData.isPublic = (data as any).isPublic;
+
     const review = await this.prisma.review.update({
       where: { id },
-      data,
+      data: updateData,
     });
 
-    return this.transformReviewResponse(review);
+    if (Array.isArray((data as any).publicIds)) {
+      await this.setEntityAssets(
+        'REVIEW',
+        review.id,
+        (data as any).publicIds as string[],
+      );
+    }
+    const publicIds = await this.getPublicIdsForEntity('REVIEW', review.id);
+
+    return this.transformReviewResponse(review, publicIds);
   }
 
   async deleteReview(id: string): Promise<void> {
     await this.prisma.review.delete({
       where: { id },
+    });
+    await this.prisma.asset.deleteMany({
+      where: { entityType: 'REVIEW', entityId: id },
     });
   }
 
@@ -126,7 +174,9 @@ export class ReviewRepository {
       },
     });
 
-    return review ? this.transformReviewResponse(review) : null;
+    if (!review) return null;
+    const publicIds = await this.getPublicIdsForEntity('REVIEW', review.id);
+    return this.transformReviewResponse(review, publicIds);
   }
 
   async getAverageRating(doctorId: string): Promise<number> {
@@ -169,7 +219,10 @@ export class ReviewRepository {
     };
   }
 
-  private transformReviewResponse(review: any): ReviewResponseDto {
+  private transformReviewResponse(
+    review: any,
+    publicIds?: string[],
+  ): ReviewResponseDto {
     return {
       id: review.id,
       rating: review.rating,
@@ -180,6 +233,58 @@ export class ReviewRepository {
       doctorId: review.doctorId,
       isPublic: review.isPublic,
       createdAt: review.createdAt,
+      publicIds,
     };
+  }
+
+  private async getPublicIdsForEntity(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+  ): Promise<string[]> {
+    const assets = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return assets.map((a) => a.publicId);
+  }
+
+  private async setEntityAssets(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+    publicIds: string[],
+  ): Promise<void> {
+    const desired = this.normalizePublicIds(publicIds);
+    const existing = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+    });
+    const existingSet = new Set(existing.map((a) => a.publicId));
+
+    const toRemove = existing
+      .filter((a) => !desired.includes(a.publicId))
+      .map((a) => a.publicId);
+    const toAdd = desired.filter((id) => !existingSet.has(id));
+
+    if (toRemove.length > 0) {
+      await this.prisma.asset.deleteMany({
+        where: { publicId: { in: toRemove } },
+      });
+    }
+
+    for (const publicId of toAdd) {
+      await this.prisma.asset.upsert({
+        where: { publicId },
+        update: { entityType, entityId },
+        create: { publicId, entityType, entityId },
+      });
+    }
+  }
+
+  private normalizePublicIds(publicIds?: string[] | null): string[] {
+    const ids = (publicIds ?? []).filter(
+      (id): id is string => typeof id === 'string' && id.trim().length > 0,
+    );
+    return Array.from(new Set<string>(ids));
   }
 }

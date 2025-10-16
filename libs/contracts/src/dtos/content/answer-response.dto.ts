@@ -1,6 +1,6 @@
 export interface AnswerResponseDto {
   id: string;
-  content: string;
+  body: string;
   questionId: string;
   authorId: string;
   isAccepted: boolean;

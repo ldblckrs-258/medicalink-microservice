@@ -3,29 +3,36 @@ import {
   IsNotEmpty,
   MaxLength,
   IsOptional,
-  IsUUID,
   IsArray,
+  IsEmail,
 } from 'class-validator';
+import { IsCuid } from '@app/contracts/decorators';
 
 export class CreateQuestionDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
+  @IsString({ message: 'title must be a string' })
+  @IsNotEmpty({ message: 'title is required' })
+  @MaxLength(200, { message: 'title must be at most 200 characters' })
   title: string;
 
-  @IsString()
-  @IsNotEmpty()
-  content: string;
+  @IsString({ message: 'body must be a string' })
+  @IsNotEmpty({ message: 'body is required' })
+  body: string;
 
-  @IsUUID()
-  authorId: string;
-
-  @IsUUID()
+  @IsString({ message: 'authorName must be a string' })
   @IsOptional()
-  categoryId?: string;
+  @MaxLength(120, { message: 'authorName must be at most 120 characters' })
+  authorName?: string;
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsEmail({}, { message: 'authorEmail must be a valid email address' })
   @IsOptional()
-  tags?: string[];
+  authorEmail?: string;
+
+  @IsCuid({ message: 'specialtyId must be a valid CUID' })
+  @IsOptional()
+  specialtyId?: string;
+
+  @IsArray({ message: 'publicIds must be an array of strings' })
+  @IsString({ each: true, message: 'each publicId must be a string' })
+  @IsOptional()
+  publicIds?: string[];
 }

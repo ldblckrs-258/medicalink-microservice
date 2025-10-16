@@ -13,10 +13,14 @@ import {
   ForbiddenError,
   ConflictError,
 } from '@app/domain-errors';
+import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
 
 @Injectable()
 export class BlogsService {
-  constructor(private readonly blogRepository: BlogRepository) {}
+  constructor(
+    private readonly blogRepository: BlogRepository,
+    private readonly assetsMaintenance: AssetsMaintenanceService,
+  ) {}
 
   async createBlog(createBlogDto: CreateBlogDto): Promise<BlogResponseDto> {
     // Check if category exists
@@ -87,6 +91,18 @@ export class BlogsService {
       }
     }
 
+    // Reconcile assets
+    const prevPublicIds: string[] = Array.isArray(blog.publicIds)
+      ? blog.publicIds
+      : [];
+    const nextPublicIds: string[] = Array.isArray(updateBlogDto.publicIds)
+      ? updateBlogDto.publicIds
+      : prevPublicIds;
+    await this.assetsMaintenance.reconcileEntityAssets(
+      prevPublicIds,
+      nextPublicIds,
+    );
+
     return this.blogRepository.updateBlog(id, updateBlogDto);
   }
 
@@ -100,6 +116,12 @@ export class BlogsService {
     if (!isAdmin && blog.authorId !== authorId) {
       throw new ForbiddenError('You can only delete your own blogs');
     }
+
+    // Cleanup assets before/after delete
+    const publicIds: string[] = Array.isArray(blog.publicIds)
+      ? blog.publicIds
+      : [];
+    await this.assetsMaintenance.cleanupEntityAssets(publicIds);
 
     await this.blogRepository.deleteBlog(id);
   }

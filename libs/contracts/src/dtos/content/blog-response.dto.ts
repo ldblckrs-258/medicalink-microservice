@@ -5,6 +5,7 @@ export interface BlogResponseDto {
   content: string;
   summary?: string;
   imageUrl?: string;
+  publicIds?: string[];
   authorId: string;
   categoryId?: string;
   category?: {
@@ -12,6 +13,7 @@ export interface BlogResponseDto {
     name: string;
     description?: string;
   };
+  specialtyIds?: string[];
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   publishedAt?: Date;
   createdAt: Date;

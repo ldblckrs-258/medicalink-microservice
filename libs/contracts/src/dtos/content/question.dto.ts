@@ -1,12 +1,13 @@
 export interface QuestionDto {
   id: string;
   title: string;
-  content: string;
-  authorId: string;
-  categoryId?: string;
-  tags?: string[];
+  body: string;
+  authorName?: string;
+  authorEmail?: string;
+  specialtyId?: string;
   isAnswered: boolean;
-  viewCount: number;
+  status: string;
+  publicIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

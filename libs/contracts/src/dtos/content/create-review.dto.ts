@@ -7,34 +7,40 @@ import {
   IsEmail,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
 
 export class CreateReviewDto {
-  @IsNumber()
-  @Min(1)
-  @Max(5)
+  @IsNumber({}, { message: 'Rating must be a number' })
+  @Min(1, { message: 'Rating must be at least 1' })
+  @Max(5, { message: 'Rating must be at most 5' })
   rating: number;
 
-  @IsString()
+  @IsString({ message: 'Title must be a string' })
   @IsOptional()
   title?: string;
 
-  @IsString()
+  @IsString({ message: 'Body must be a string' })
   @IsOptional()
   body?: string;
 
-  @IsString()
+  @IsArray({ message: 'publicIds must be an array of strings' })
+  @IsString({ each: true, message: 'Each publicId must be a string' })
+  @IsOptional()
+  publicIds?: string[];
+
+  @IsString({ message: 'Author name must be a string' })
   @IsOptional()
   authorName?: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsOptional()
   authorEmail?: string;
 
-  @IsUUID()
+  @IsUUID('4', { message: 'Doctor ID must be a valid UUID' })
   doctorId: string;
 
-  @IsBoolean()
+  @IsBoolean({ message: 'isPublic must be a boolean value' })
   @IsOptional()
   isPublic?: boolean;
 }

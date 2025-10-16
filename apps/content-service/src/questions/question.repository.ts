@@ -1,39 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { QuestionResponseDto, AnswerResponseDto } from '@app/contracts';
+import {
+  QuestionResponseDto,
+  AnswerResponseDto,
+  CreateQuestionDto,
+  UpdateQuestionDto,
+} from '@app/contracts';
 
 @Injectable()
 export class QuestionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createQuestion(data: {
-    title: string;
-    content: string;
-    authorId: string;
-  }): Promise<QuestionResponseDto> {
+  async createQuestion(data: CreateQuestionDto): Promise<QuestionResponseDto> {
     const question = await this.prisma.question.create({
       data: {
         title: data.title,
-        body: data.content,
-        authorEmail: data.authorId,
+        body: data.body,
+        authorName: data.authorName ?? undefined,
+        authorEmail: data.authorEmail ?? undefined,
+        specialtyId: data.specialtyId ?? undefined,
         status: 'PENDING',
       },
     });
 
-    return this.transformQuestionResponse(question);
+    // Persist assets if provided
+    if (Array.isArray((data as any).publicIds)) {
+      await this.setEntityAssets(
+        'QUESTION',
+        question.id,
+        (data as any).publicIds as string[],
+      );
+    }
+    const publicIds = await this.getPublicIdsForEntity('QUESTION', question.id);
+
+    return this.transformQuestionResponse(question, publicIds);
   }
 
   async findAllQuestions(params: {
     page: number;
     limit: number;
-    authorId?: string;
+    authorEmail?: string;
     status?: string;
   }) {
-    const { page, limit, authorId, status } = params;
+    const { page, limit, authorEmail, status } = params;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (authorId) where.authorEmail = authorId;
+    if (authorEmail) where.authorEmail = authorEmail;
     if (status) where.status = status;
 
     const [questions, total] = await Promise.all([
@@ -48,9 +61,16 @@ export class QuestionRepository {
       this.prisma.question.count({ where }),
     ]);
 
+    const dataWithAssets = await Promise.all(
+      questions.map(async (question) => ({
+        question,
+        publicIds: await this.getPublicIdsForEntity('QUESTION', question.id),
+      })),
+    );
+
     return {
-      data: questions.map((question) =>
-        this.transformQuestionResponse(question),
+      data: dataWithAssets.map(({ question, publicIds }) =>
+        this.transformQuestionResponse(question, publicIds),
       ),
       total,
       page,
@@ -61,21 +81,35 @@ export class QuestionRepository {
 
   async updateQuestion(
     id: string,
-    data: {
-      title?: string;
-      content?: string;
-    },
+    data: UpdateQuestionDto,
   ): Promise<QuestionResponseDto> {
     const updateData: any = {};
-    if (data.title) updateData.title = data.title;
-    if (data.content) updateData.body = data.content;
+    if ((data as any).title) updateData.title = (data as any).title;
+    if ((data as any).body) updateData.body = (data as any).body;
+    if ((data as any).authorName !== undefined)
+      updateData.authorName = (data as any).authorName ?? undefined;
+    if ((data as any).authorEmail !== undefined)
+      updateData.authorEmail = (data as any).authorEmail ?? undefined;
+    if ((data as any).specialtyId !== undefined)
+      updateData.specialtyId = (data as any).specialtyId ?? undefined;
+    if ((data as any).status !== undefined)
+      updateData.status = (data as any).status;
 
     const question = await this.prisma.question.update({
       where: { id },
       data: updateData,
     });
 
-    return this.transformQuestionResponse(question);
+    if (Array.isArray((data as any).publicIds)) {
+      await this.setEntityAssets(
+        'QUESTION',
+        question.id,
+        (data as any).publicIds as string[],
+      );
+    }
+    const publicIds = await this.getPublicIdsForEntity('QUESTION', question.id);
+
+    return this.transformQuestionResponse(question, publicIds);
   }
 
   async findQuestionById(id: string): Promise<QuestionResponseDto | null> {
@@ -83,12 +117,18 @@ export class QuestionRepository {
       where: { id },
     });
 
-    return question ? this.transformQuestionResponse(question) : null;
+    if (!question) return null;
+    const publicIds = await this.getPublicIdsForEntity('QUESTION', question.id);
+
+    return this.transformQuestionResponse(question, publicIds);
   }
 
   async deleteQuestion(id: string): Promise<void> {
     await this.prisma.question.delete({
       where: { id },
+    });
+    await this.prisma.asset.deleteMany({
+      where: { entityType: 'QUESTION', entityId: id },
     });
   }
 
@@ -101,7 +141,7 @@ export class QuestionRepository {
     await this.prisma.question.update({
       where: { id },
       data: {
-        status: status as any, // Cast to any to avoid type issues with QuestionStatus enum
+        status: status as any,
       },
     });
   }
@@ -109,11 +149,13 @@ export class QuestionRepository {
   async createAnswer(data: {
     body: string;
     questionId: string;
-    doctorId: string;
+    authorId: string;
   }): Promise<AnswerResponseDto> {
     const answer = await this.prisma.answer.create({
       data: {
-        ...data,
+        body: data.body,
+        questionId: data.questionId,
+        authorId: data.authorId,
         isAccepted: false,
       },
     });
@@ -209,17 +251,14 @@ export class QuestionRepository {
     if (!answer) return;
 
     await this.prisma.$transaction([
-      // Unaccept all other answers for this question
       this.prisma.answer.updateMany({
         where: { questionId: answer.questionId },
         data: { isAccepted: false },
       }),
-      // Accept this answer
       this.prisma.answer.update({
         where: { id },
         data: { isAccepted: true },
       }),
-      // Mark question as answered
       this.prisma.question.update({
         where: { id: answer.questionId },
         data: { status: 'ANSWERED' },
@@ -233,24 +272,20 @@ export class QuestionRepository {
     });
   }
 
-  private transformQuestionResponse(question: any): QuestionResponseDto {
+  private transformQuestionResponse(
+    question: any,
+    publicIds?: string[],
+  ): QuestionResponseDto {
     return {
       id: question.id,
       title: question.title,
-      content: question.body || question.content, // Support both field names
-      authorId: question.authorId || question.authorEmail || '',
-      categoryId: question.categoryId,
-      category: question.category
-        ? {
-            id: question.category.id,
-            name: question.category.name,
-            description: question.category.description,
-          }
-        : undefined,
-      tags: question.tags,
-      isAnswered: question.status === 'ANSWERED', // Derive from status
+      body: question.body,
+      authorName: question.authorName,
+      authorEmail: question.authorEmail,
+      specialtyId: question.specialtyId,
+      publicIds,
+      isAnswered: question.status === 'ANSWERED',
       status: question.status,
-      viewCount: 0, // Default value since field doesn't exist in schema
       createdAt: question.createdAt,
       updatedAt: question.updatedAt,
     };
@@ -259,12 +294,68 @@ export class QuestionRepository {
   private transformAnswerResponse(answer: any): AnswerResponseDto {
     return {
       id: answer.id,
-      content: answer.content,
-      questionId: answer.questionId,
+      body: answer.body,
       authorId: answer.authorId,
+      questionId: answer.questionId,
       isAccepted: answer.isAccepted,
       createdAt: answer.createdAt,
       updatedAt: answer.updatedAt,
     };
+  }
+
+  private async getPublicIdsForEntity(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+  ): Promise<string[]> {
+    const assets = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return assets.map((a) => a.publicId);
+  }
+
+  private async setEntityAssets(
+    entityType: 'BLOG' | 'QUESTION' | 'REVIEW',
+    entityId: string,
+    publicIds: string[],
+  ): Promise<void> {
+    const desired = this.normalizePublicIds(publicIds);
+    const existingAssets = await this.prisma.asset.findMany({
+      where: { entityType, entityId },
+      select: { publicId: true },
+    });
+
+    const existing = existingAssets.filter(
+      (a) => typeof a.publicId === 'string',
+    ) as Array<{ publicId: string }>;
+
+    const existingSet = new Set(existing.map((a) => a.publicId));
+
+    const toRemove = existing
+      .filter((a) => !desired.includes(a.publicId))
+      .map((a) => a.publicId);
+    const toAdd = desired.filter((id) => !existingSet.has(id));
+
+    if (toRemove.length > 0) {
+      await this.prisma.asset.deleteMany({
+        where: { publicId: { in: toRemove } },
+      });
+    }
+
+    for (const publicId of toAdd) {
+      await this.prisma.asset.upsert({
+        where: { publicId },
+        update: { entityType, entityId },
+        create: { publicId, entityType, entityId },
+      });
+    }
+  }
+
+  private normalizePublicIds(publicIds?: string[] | null): string[] {
+    const ids = (publicIds ?? []).filter(
+      (id): id is string => typeof id === 'string' && id.trim().length > 0,
+    );
+    return Array.from(new Set<string>(ids));
   }
 }
