@@ -73,7 +73,7 @@ services:
 
 networks:
   medicalink-network:
-    driver: bridge
+    external: true
 
 volumes:
   postgres_data:

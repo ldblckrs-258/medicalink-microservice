@@ -22,3 +22,7 @@ services:
         condition: service_healthy
     command: ["node", "dist/apps/accounts-service/main.js"]
     restart: unless-stopped
+
+networks:
+  medicalink-network:
+    external: true

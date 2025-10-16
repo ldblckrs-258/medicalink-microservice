@@ -24,8 +24,12 @@ services:
         condition: service_healthy
     command: ["node", "dist/apps/api-gateway/main.js"]
     restart: unless-stopped
+
+networks:
+  medicalink-network:
+    external: true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
