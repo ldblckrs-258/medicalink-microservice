@@ -141,6 +141,19 @@ export class PermissionGuard implements CanActivate {
       if (params.patientId) {
         context.patientId = params.patientId;
       }
+
+      // Generic mapping: infer common ids from param keys
+      for (const key of Object.keys(params)) {
+        const value = (params as any)[key];
+        if (typeof value === 'string') {
+          if (!context.targetUserId && /user/i.test(key)) {
+            context.targetUserId = value;
+          }
+          if (!context.doctorId && /doctor/i.test(key)) {
+            context.doctorId = value;
+          }
+        }
+      }
     }
 
     // Extract context from query parameters
@@ -167,6 +180,18 @@ export class PermissionGuard implements CanActivate {
       if (body.id) {
         context.targetUserId = body.id;
       }
+    }
+
+    // Generic self-update inference: if any known identifier equals current user
+    const possibleSelfIds = [
+      context.targetUserId,
+      context.doctorId,
+      context.resourceId,
+    ];
+    if (
+      possibleSelfIds.some((id) => typeof id === 'string' && id === user.sub)
+    ) {
+      context.isSelfUpdate = true;
     }
 
     return context;

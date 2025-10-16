@@ -66,20 +66,10 @@ export class DoctorEventHandler {
             this.retryConfig.maxDelay,
           );
 
-          this.logger.warn(
-            `Retrying ${operationName} for ${context} (attempt ${attempt}/${this.retryConfig.maxRetries}) after ${delay}ms delay`,
-          );
-
           await this.sleep(delay);
         }
 
         const result = await operation();
-
-        if (attempt > 0) {
-          this.logger.log(
-            `${operationName} succeeded for ${context} after ${attempt} retries`,
-          );
-        }
 
         return result;
       } catch (error) {
@@ -121,10 +111,6 @@ export class DoctorEventHandler {
     }>(payload);
 
     try {
-      this.logger.log(
-        `Processing doctor profile created event for profile ${data.profileId} with ${data.assets?.length || 0} assets`,
-      );
-
       // Invalidate cache
       await this.retryWithBackoff(
         async () => {
@@ -153,10 +139,6 @@ export class DoctorEventHandler {
           `profile ${data.profileId}`,
         );
       }
-
-      this.logger.log(
-        `Successfully processed doctor profile created event for ${data.profileId}`,
-      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -217,10 +199,6 @@ export class DoctorEventHandler {
           `profile ${data.profileId}`,
         );
       }
-
-      this.logger.log(
-        `Successfully processed doctor profile updated event for ${data.profileId}`,
-      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -243,10 +221,6 @@ export class DoctorEventHandler {
     }>(payload);
 
     try {
-      this.logger.log(
-        `Processing doctor profile deleted event for profile ${data.profileId} with ${data.assetPublicIds?.length || 0} assets to cleanup`,
-      );
-
       // Invalidate cache if staffAccountId is available
       if (data.staffAccountId) {
         const staffAccountId = data.staffAccountId;
@@ -281,10 +255,6 @@ export class DoctorEventHandler {
           `profile ${data.profileId}`,
         );
       }
-
-      this.logger.log(
-        `Successfully processed doctor profile deleted event for ${data.profileId}`,
-      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -321,10 +291,6 @@ export class DoctorEventHandler {
     profileId: string,
     assetPublicIds: string[],
   ): Promise<void> {
-    this.logger.log(
-      `Creating ${assetPublicIds.length} asset entities for doctor ${profileId}`,
-    );
-
     const results = await Promise.allSettled(
       assetPublicIds.map(async (publicId) => {
         const createAssetDto: CreateAssetDto = {
@@ -366,9 +332,6 @@ export class DoctorEventHandler {
       this.logger.warn(
         `Skipped ${failures.length}/${assetPublicIds.length} asset entities for doctor ${profileId}: ${errorMessages.join(', ')}`,
       );
-
-      // Don't throw error - just continue with successful ones
-      // This prevents unnecessary retries for conflicts and other non-critical errors
     }
 
     const successCount = results.length - failures.length;
@@ -424,10 +387,6 @@ export class DoctorEventHandler {
     if (operations.length > 0) {
       await Promise.all(operations);
     }
-
-    this.logger.log(
-      `Asset reconciliation completed for doctor ${profileId}: added ${assetsToAdd.length}, removed ${assetsToRemove.length}`,
-    );
   }
 
   /**
@@ -451,10 +410,6 @@ export class DoctorEventHandler {
     profileId: string,
     assetPublicIds: string[],
   ): Promise<void> {
-    this.logger.log(
-      `Deleting ${assetPublicIds.length} assets for doctor ${profileId}`,
-    );
-
     const operations: Promise<void>[] = [];
 
     // Delete assets by entity (removes from database)

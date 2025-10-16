@@ -21,7 +21,7 @@ import {
   UpdateSpecialtyInfoSectionDto,
   SpecialtyInfoSectionResponseDto,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
   RequireDeletePermission,
   RequirePermission,
 } from '@app/contracts';
@@ -109,7 +109,7 @@ export class SpecialtiesController {
     );
   }
 
-  @RequireWritePermission('specialties')
+  @RequireUpdatePermission('specialties')
   @Post('info-sections')
   createInfoSection(
     @Body() createInfoSectionDto: CreateSpecialtyInfoSectionDto,
@@ -121,7 +121,7 @@ export class SpecialtiesController {
     );
   }
 
-  @RequireWritePermission('specialties')
+  @RequireUpdatePermission('specialties')
   @Patch('info-sections/:id')
   updateInfoSection(
     @Param('id') id: string,
@@ -149,7 +149,7 @@ export class SpecialtiesController {
     );
   }
 
-  @RequireWritePermission('specialties')
+  @RequireUpdatePermission('specialties')
   @Post()
   create(
     @Body() createSpecialtyDto: CreateSpecialtyDto,
@@ -162,7 +162,7 @@ export class SpecialtiesController {
   }
 
   // Admin only - update specialty
-  @RequireWritePermission('specialties')
+  @RequireUpdatePermission('specialties')
   @Patch(':id')
   update(
     @Param('id') id: string,

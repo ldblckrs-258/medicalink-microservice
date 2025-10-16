@@ -16,7 +16,7 @@ import {
   UpdatePatientDto,
   PaginationDto,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
   RequireDeletePermission,
   CurrentUser,
 } from '@app/contracts';
@@ -29,7 +29,7 @@ export class PatientsController {
     private readonly microserviceService: MicroserviceService,
   ) {}
 
-  @RequireWritePermission('patients')
+  @RequireUpdatePermission('patients')
   @Post()
   async create(
     @Body() createPatientDto: CreatePatientDto,
@@ -66,7 +66,7 @@ export class PatientsController {
     );
   }
 
-  @RequireWritePermission('patients')
+  @RequireUpdatePermission('patients')
   @Put(':id')
   async update(
     @Param('id') id: string,

@@ -157,6 +157,24 @@ export class DoctorsService {
     return result;
   }
 
+  /**
+   * Update self profile by staff account id; resolves profile then delegates to update
+   */
+  async updateSelf(
+    staffAccountId: string,
+    updateDoctorDto: Omit<UpdateDoctorProfileDto, 'id' | 'staffAccountId'>,
+  ): Promise<DoctorProfileResponseDto> {
+    const doctor = await this.doctorRepo.findOneByStaffAccountId({
+      staffAccountId,
+    });
+    if (!doctor) {
+      throw new NotFoundError(
+        `Doctor profile with staff account ID ${staffAccountId} not found`,
+      );
+    }
+    return this.update(doctor.id, updateDoctorDto);
+  }
+
   async remove(id: string): Promise<DoctorProfileResponseDto> {
     // Check if doctor exists first and get asset data for cleanup
     const existing = await this.doctorRepo.findOne(id);

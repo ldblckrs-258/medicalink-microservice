@@ -70,6 +70,7 @@ Authorization: Bearer <your_jwt_token>
   "timestamp": 1705312200,
   "apiKey": "your_cloudinary_api_key",
   "cloudName": "your_cloud_name",
+  "folder": "medicalink"
 }
 ```
 
@@ -83,12 +84,13 @@ file: <image_file>
 api_key: <api_key_from_signature>
 timestamp: <timestamp_from_signature>
 signature: <signature_from_response>
+folder: <folder_from_signature> || 'medicalink'
 ```
 
 **Response:**
 ```json
 {
-  "public_id": "doctors/avatars/cm4abc123def456ghi_avatar",
+  "public_id": "medicalink/cm4abc123def456ghi_avatar",
   "version": 1705312250,
   "signature": "xyz789...",
   "width": 300,
@@ -99,8 +101,8 @@ signature: <signature_from_response>
   "tags": ["doctor", "avatar"],
   "bytes": 45678,
   "type": "upload",
-  "url": "http://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/doctors/avatars/cm4abc123def456ghi_avatar.jpg",
-  "secure_url": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/doctors/avatars/cm4abc123def456ghi_avatar.jpg"
+  "url": "http://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/medicalink/cm4abc123def456ghi_avatar.jpg",
+  "secure_url": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/medicalink/cm4abc123def456ghi_avatar.jpg"
 }
 ```
 
@@ -128,7 +130,7 @@ signature: <signature_from_response>
     "Bác sĩ điều trị - Bệnh viện Tim Hà Nội (2010-2018)",
     "Trưởng khoa Tim mạch - Bệnh viện Đa khoa Medlatec (2018-nay)"
   ],
-  "avatarUrl": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/doctors/avatars/cm4abc123def456ghi_avatar.jpg",
+  "avatarUrl": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/medicalink/cm4abc123def456ghi_avatar.jpg",
   "portrait": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312300/doctors/portraits/cm4abc123def456ghi_portrait.jpg",
   "specialtyIds": ["cm4specialty1", "cm4specialty2"],
   "locationIds": ["cm4location1", "cm4location2"]
@@ -156,7 +158,7 @@ signature: <signature_from_response>
     "Bác sĩ điều trị - Bệnh viện Tim Hà Nội (2010-2018)",
     "Trưởng khoa Tim mạch - Bệnh viện Đa khoa Medlatec (2018-nay)"
   ],
-  "avatarUrl": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/doctors/avatars/cm4abc123def456ghi_avatar.jpg",
+  "avatarUrl": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312250/medicalink/cm4abc123def456ghi_avatar.jpg",
   "portrait": "https://res.cloudinary.com/your_cloud_name/image/upload/v1705312300/doctors/portraits/cm4abc123def456ghi_portrait.jpg",
   "createdAt": "2024-01-15T10:35:00.000Z",
   "updatedAt": "2024-01-15T10:35:00.000Z",

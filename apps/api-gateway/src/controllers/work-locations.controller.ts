@@ -18,7 +18,7 @@ import {
   WorkLocationDto,
   Public,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
   RequireDeletePermission,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
@@ -91,7 +91,7 @@ export class WorkLocationsController {
   }
 
   // Admin only - create new work location
-  @RequireWritePermission('work-locations')
+  @RequireUpdatePermission('work-locations')
   @Post()
   create(
     @Body() createWorkLocationDto: CreateWorkLocationDto,
@@ -103,7 +103,7 @@ export class WorkLocationsController {
     );
   }
 
-  @RequireWritePermission('work-locations')
+  @RequireUpdatePermission('work-locations')
   @Patch(':id')
   update(
     @Param('id') id: string,

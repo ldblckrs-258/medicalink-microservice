@@ -190,7 +190,7 @@ export class PermissionGuard implements CanActivate {
 
 // Helper decorators
 @RequireReadPermission('appointments')
-@RequireWritePermission('appointments')
+@RequireUpdatePermission('appointments')
 @RequireDeletePermission('appointments')
 @RequireManagePermission('appointments')
 
@@ -214,7 +214,7 @@ export class AppointmentsController {
   }
 
   @Post()
-  @RequireWritePermission('appointments')
+  @RequireUpdatePermission('appointments')
   async createAppointment(@Body() dto: CreateAppointmentDto) {
     // Chỉ user có quyền "appointments:write" mới access được
   }

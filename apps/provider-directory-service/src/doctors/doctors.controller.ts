@@ -35,6 +35,17 @@ export class DoctorsController {
     return this.doctorsService.update(String(id), data);
   }
 
+  @MessagePattern('doctor-profile.updateSelf')
+  async updateSelf(
+    @Payload()
+    payload: {
+      staffAccountId: string;
+      data: Omit<UpdateDoctorProfileDto, 'id' | 'staffAccountId'>;
+    },
+  ) {
+    return this.doctorsService.updateSelf(payload.staffAccountId, payload.data);
+  }
+
   @MessagePattern('doctor-profile.remove')
   async remove(@Payload() payload: { id: string }) {
     const { id } = payload;

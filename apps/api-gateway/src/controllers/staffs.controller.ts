@@ -17,7 +17,7 @@ import {
   StaffQueryDto,
   StaffStatsDto,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
   RequireDeletePermission,
   RequireUserManagement,
   CurrentUser,
@@ -83,7 +83,7 @@ export class StaffsController {
     );
   }
 
-  @RequireWritePermission('staff')
+  @RequireUpdatePermission('staff')
   @Patch(':id')
   async update(
     @Param('id') id: string,

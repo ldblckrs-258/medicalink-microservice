@@ -23,10 +23,10 @@ export const RequireReadPermission = (
   context?: Record<string, any>,
 ) => RequirePermission(resource, 'read', context);
 
-export const RequireWritePermission = (
+export const RequireUpdatePermission = (
   resource: string,
   context?: Record<string, any>,
-) => RequirePermission(resource, 'write', context);
+) => RequirePermission(resource, 'update', context);
 
 export const RequireDeletePermission = (
   resource: string,

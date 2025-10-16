@@ -18,8 +18,11 @@ import {
   Public,
   RequireDeletePermission,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
+  RequirePermission,
+  CurrentUser,
 } from '@app/contracts';
+import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 
 @Controller('doctors/profile')
@@ -61,6 +64,18 @@ export class DoctorProfileController {
     };
   }
 
+  // Get self profile using account id from JWT
+  @RequirePermission('doctors', 'read', { isSelfUpdate: true })
+  @Get('me')
+  getMyProfile(@CurrentUser() user: JwtPayloadDto) {
+    return this.microserviceService.sendWithTimeout(
+      this.providerDirectoryClient,
+      'doctor-profile.getByAccountId',
+      { staffAccountId: user.sub },
+      { timeoutMs: 8000 },
+    );
+  }
+
   @RequireReadPermission('doctors')
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -71,7 +86,7 @@ export class DoctorProfileController {
     );
   }
 
-  @RequireWritePermission('doctors')
+  @RequireUpdatePermission('doctors')
   @Post()
   create(@Body() createDto: CreateDoctorProfileDto) {
     return this.microserviceService.sendWithTimeout(
@@ -82,7 +97,21 @@ export class DoctorProfileController {
     );
   }
 
-  @RequireWritePermission('doctors')
+  @RequirePermission('doctors', 'update', { isSelfUpdate: true })
+  @Patch('me')
+  updateMyProfile(
+    @Body() updateDto: Omit<UpdateDoctorProfileDto, 'id' | 'staffAccountId'>,
+    @CurrentUser() user: JwtPayloadDto,
+  ) {
+    return this.microserviceService.sendWithTimeout(
+      this.providerDirectoryClient,
+      'doctor-profile.updateSelf',
+      { staffAccountId: user.sub, data: updateDto },
+      { timeoutMs: 12000 },
+    );
+  }
+
+  @RequireUpdatePermission('doctors')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -96,7 +125,7 @@ export class DoctorProfileController {
     );
   }
 
-  @RequireWritePermission('doctors')
+  @RequireUpdatePermission('doctors')
   @Patch(':id/toggle-active')
   toggleActive(
     @Param('id') id: string,

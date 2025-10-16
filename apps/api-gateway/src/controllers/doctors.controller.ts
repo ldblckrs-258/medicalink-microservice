@@ -17,7 +17,7 @@ import {
   StaffQueryDto,
   StaffStatsDto,
   RequireReadPermission,
-  RequireWritePermission,
+  RequireUpdatePermission,
   RequireDeletePermission,
   CurrentUser,
 } from '@app/contracts';
@@ -122,7 +122,7 @@ export class DoctorsController {
    * Create a complete doctor (account + profile)
    * Uses orchestrator for multi-step saga orchestration
    */
-  @RequireWritePermission('doctors')
+  @RequireUpdatePermission('doctors')
   @Post()
   async create(
     @Body() createDoctorDto: CreateAccountDto,
@@ -140,7 +140,7 @@ export class DoctorsController {
     );
   }
 
-  @RequireWritePermission('doctors')
+  @RequireUpdatePermission('doctors')
   @Patch(':id')
   async update(
     @Param('id') id: string,
