@@ -3,7 +3,6 @@ export interface BlogResponseDto {
   title: string;
   slug: string;
   content: string;
-  summary?: string;
   imageUrl?: string;
   publicIds?: string[];
   authorId: string;

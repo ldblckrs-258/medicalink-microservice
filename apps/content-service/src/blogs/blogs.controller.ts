@@ -7,6 +7,7 @@ import {
   CreateBlogCategoryDto,
   UpdateBlogCategoryDto,
 } from '@app/contracts';
+import { BlogQueryDto } from '@app/contracts';
 
 @Controller('blogs')
 export class BlogsController {
@@ -18,11 +19,10 @@ export class BlogsController {
   }
 
   @MessagePattern('get_blogs')
-  async getBlogs(
-    @Payload() payload: { page?: number; limit?: number; categoryId?: string },
-  ) {
-    const { page = 1, limit = 10, categoryId } = payload;
-    return this.blogsService.getBlogs({ page, limit, categoryId });
+  async getBlogs(@Payload() query: BlogQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    return this.blogsService.getBlogs({ ...query, page, limit });
   }
 
   @MessagePattern('get_blog_by_id')
@@ -35,21 +35,17 @@ export class BlogsController {
     @Payload()
     payload: {
       id: string;
-      updateBlogDto: UpdateBlogDto;
-      authorId: string;
-      isAdmin?: boolean;
+      data: UpdateBlogDto;
     },
   ) {
-    const { id, updateBlogDto, authorId, isAdmin = false } = payload;
-    return this.blogsService.updateBlog(id, updateBlogDto, authorId, isAdmin);
+    const { id, data } = payload;
+    return this.blogsService.updateBlog(id, data);
   }
 
   @MessagePattern('delete_blog')
-  async deleteBlog(
-    @Payload() payload: { id: string; authorId: string; isAdmin?: boolean },
-  ) {
-    const { id, authorId, isAdmin = false } = payload;
-    return this.blogsService.deleteBlog(id, authorId, isAdmin);
+  async deleteBlog(@Payload() payload: { id: string }) {
+    const { id } = payload;
+    return this.blogsService.deleteBlog(id);
   }
 
   @MessagePattern('get_blog_categories')
@@ -74,15 +70,20 @@ export class BlogsController {
     @Payload()
     payload: {
       id: string;
-      updateBlogCategoryDto: UpdateBlogCategoryDto;
+      data: UpdateBlogCategoryDto;
     },
   ) {
-    const { id, updateBlogCategoryDto } = payload;
-    return this.blogsService.updateBlogCategory(id, updateBlogCategoryDto);
+    const { id, data } = payload;
+    return this.blogsService.updateBlogCategory(id, data);
   }
 
   @MessagePattern('delete_blog_category')
-  async deleteBlogCategory(@Payload() payload: { id: string }) {
-    return this.blogsService.deleteBlogCategory(payload.id);
+  async deleteBlogCategory(
+    @Payload() payload: { id: string; forceBulkDelete?: boolean },
+  ) {
+    return this.blogsService.deleteBlogCategory(
+      payload.id,
+      payload.forceBulkDelete === true,
+    );
   }
 }

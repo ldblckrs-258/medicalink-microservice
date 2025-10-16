@@ -5,7 +5,8 @@ import { IsCuid } from '@app/contracts/decorators';
 
 export class UpdateBlogDto extends PartialType(CreateBlogDto) {
   @IsCuid({ message: 'Blog ID must be a valid CUID' })
-  id: string;
+  @IsOptional()
+  id?: string;
 
   @IsString({ message: 'Status must be a string' })
   @IsOptional()

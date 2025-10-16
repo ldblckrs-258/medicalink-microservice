@@ -7,3 +7,6 @@ export * from './specialties.controller';
 export * from './staffs.controller';
 export * from './utilities.controller';
 export * from './work-locations.controller';
+export * from './blogs.controller';
+export * from './questions.controller';
+export * from './reviews.controller';

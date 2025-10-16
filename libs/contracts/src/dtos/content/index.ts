@@ -32,3 +32,14 @@ export * from './update-asset.dto';
 export * from './asset-response.dto';
 export * from './get-assets-query.dto';
 export * from './assets-list-response.dto';
+
+// Query DTOs
+export * from './get-blogs-query.dto';
+export * from './blog-query.dto';
+export * from './blog-public-query.dto';
+export * from './get-questions-query.dto';
+export * from './get-answers-query.dto';
+export * from './get-reviews-query.dto';
+
+// Misc DTOs
+export * from './update-blog-status.dto';

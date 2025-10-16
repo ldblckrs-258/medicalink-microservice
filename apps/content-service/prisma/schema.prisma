@@ -21,11 +21,12 @@ enum PostStatus {
 }
 
 model BlogCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique @db.VarChar(120)
-  slug      String   @unique @db.VarChar(140)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(120)
+  description String? @db.Text
+  slug        String   @unique @db.VarChar(140)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   blogs Blog[]
 

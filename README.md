@@ -155,6 +155,24 @@ This approach reduces costs while maintaining logical separation between service
 - Permissions: users/groups management, checks, stats — see [permissions.controller.ts](apps/api-gateway/src/permissions/permissions.controller.ts)
 - Health: [health.controller.ts](apps/api-gateway/src/health/health.controller.ts)
 
+### Content: Blogs, Questions/Answers, Reviews
+
+- Blogs — see [blogs.controller.ts](apps/api-gateway/src/controllers/blogs.controller.ts)
+  - Public: `GET /blogs`, `GET /blogs/:id`, `GET /blogs/categories`, `GET /blogs/categories/:id`
+  - Doctor: `POST /blogs` (create)
+  - Admin: `PATCH /blogs/:id`, `DELETE /blogs/:id`, `POST /blogs/categories`, `PATCH /blogs/categories/:id`, `DELETE /blogs/categories/:id`, `PATCH /blogs/:id/status` (change status)
+- Questions & Answers — see [questions.controller.ts](apps/api-gateway/src/controllers/questions.controller.ts)
+  - Public: `POST /questions` (throttled), `GET /questions`, `GET /questions/:id`, `GET /questions/:id/answers` (accepted only), `GET /answers/:answerId`
+  - Doctor: `POST /questions/:id/answers` (create answer)
+  - Admin: `PATCH /questions/:id`, `DELETE /questions/:id`, `PATCH /answers/:answerId`, `DELETE /answers/:answerId`, `POST /answers/:answerId/accept` (accept answer)
+- Reviews — see [reviews.controller.ts](apps/api-gateway/src/controllers/reviews.controller.ts)
+  - Public: `POST /reviews` (throttled), `GET /reviews`, `GET /reviews/doctors/:doctorId`, `GET /reviews/:id`
+  - Admin: `DELETE /reviews/:id`
+
+Notes:
+- Public creation endpoints (`POST /questions`, `POST /reviews`) sử dụng rate limit tuỳ biến thông qua decorator `PublicCreateThrottle` (mặc định 3 requests/60s) bên cạnh throttle global.
+- Quyền được kiểm soát bằng decorators `Require*Permission` và `Public` từ `libs/contracts` cùng với guards toàn cục.
+
 Note: Booking Service has internal HTTP controllers ([appointments.controller.ts](apps/booking-service/src/appointments/appointments.controller.ts)) but does not expose an HTTP server externally; it communicates via RabbitMQ.
 
 ## 🐳 Docker Support

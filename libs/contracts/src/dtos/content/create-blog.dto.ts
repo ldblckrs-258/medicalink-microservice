@@ -17,20 +17,6 @@ export class CreateBlogDto {
   @IsNotEmpty({ message: 'Content is required' })
   content: string;
 
-  @IsString({ message: 'Summary must be a string' })
-  @IsOptional()
-  @MaxLength(500, { message: 'Summary must be at most 500 characters' })
-  summary?: string;
-
-  @IsString({ message: 'Image URL must be a string' })
-  @IsOptional()
-  imageUrl?: string;
-
-  @IsArray({ message: 'publicIds must be an array of strings' })
-  @IsString({ each: true, message: 'Each publicId must be a string' })
-  @IsOptional()
-  publicIds?: string[];
-
   @IsArray({ message: 'specialtyIds must be an array of strings' })
   @IsString({ each: true, message: 'Each specialtyId must be a string' })
   @IsOptional()
@@ -40,6 +26,15 @@ export class CreateBlogDto {
   categoryId: string;
 
   @IsCuid({ message: 'Author ID must be a valid CUID' })
-  @IsNotEmpty({ message: 'Author ID is required' })
-  authorId: string;
+  @IsOptional()
+  authorId?: string;
+
+  @IsString({ message: 'Image URL must be a string' })
+  @IsOptional()
+  imageUrl?: string;
+
+  @IsArray({ message: 'publicIds must be an array of strings' })
+  @IsString({ each: true, message: 'Each publicId must be a string' })
+  @IsOptional()
+  publicIds?: string[];
 }

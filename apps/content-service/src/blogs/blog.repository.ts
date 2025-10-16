@@ -3,16 +3,22 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   BlogResponseDto,
   BlogCategoryResponseDto,
-  CreateBlogDto,
   UpdateBlogDto,
 } from '@app/contracts';
-import { PostStatus } from '../../prisma/generated/client';
+import { PostStatus, Prisma } from '../../prisma/generated/client';
+import { BlogQueryDto } from '@app/contracts';
 
 @Injectable()
 export class BlogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBlog(data: CreateBlogDto): Promise<BlogResponseDto> {
+  async createBlog(data: {
+    title: string;
+    content: string;
+    authorId: string;
+    categoryId: string;
+    publicIds?: string[];
+  }): Promise<BlogResponseDto> {
     const blog = await this.prisma.blog.create({
       data: {
         title: data.title,
@@ -36,33 +42,70 @@ export class BlogRepository {
     return this.transformBlogResponse(blog, publicIds);
   }
 
-  async findAllBlogs(params: {
-    page: number;
-    limit: number;
-    categoryId?: string;
-    authorId?: string;
-    status?: string;
-  }) {
-    const { page, limit, categoryId, authorId, status } = params;
-    const skip = (page - 1) * limit;
+  async findAllBlogs(params: BlogQueryDto & { authorId?: string }) {
+    const {
+      page,
+      limit,
+      search,
+      categoryId,
+      authorId,
+      status,
+      specialyId,
+      sortBy,
+      sortOrder,
+    } = params;
+    const safePage = page ?? 1;
+    const safeLimit = limit ?? 10;
+    const skip = (safePage - 1) * safeLimit;
 
     const where: any = {};
     if (categoryId) where.categoryId = categoryId;
     if (authorId) where.authorId = authorId;
     if (status) where.status = status;
+    if (specialyId) where.specialyId = specialyId;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const selectMinimal: Prisma.BlogSelect = {
+      id: true,
+      title: true,
+      slug: true,
+      authorId: true,
+      categoryId: true,
+      status: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    };
+
+    const baseArgs: Prisma.BlogFindManyArgs = {
+      where,
+      skip,
+      take: safeLimit,
+      orderBy: {
+        [sortBy || 'createdAt']:
+          (sortOrder as Prisma.SortOrder) || Prisma.SortOrder.desc,
+      } as any,
+    };
+
+    const findArgs: Prisma.BlogFindManyArgs = {
+      ...baseArgs,
+      select: selectMinimal,
+    };
 
     const [blogs, total] = await Promise.all([
-      this.prisma.blog.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          category: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
+      this.prisma.blog.findMany(findArgs),
       this.prisma.blog.count({ where }),
     ]);
 
@@ -75,12 +118,12 @@ export class BlogRepository {
 
     return {
       data: dataWithAssets.map(({ blog, publicIds }) =>
-        this.transformBlogResponse(blog, publicIds),
+        this.transformBlogListItem(blog, publicIds),
       ),
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 
@@ -148,10 +191,12 @@ export class BlogRepository {
 
   async createCategory(data: {
     name: string;
+    description?: string;
   }): Promise<BlogCategoryResponseDto> {
     const category = await this.prisma.blogCategory.create({
       data: {
         name: data.name,
+        description: data.description,
         slug: this.generateSlug(data.name),
       },
     });
@@ -183,12 +228,17 @@ export class BlogRepository {
     id: string,
     data: {
       name?: string;
+      description?: string;
     },
   ): Promise<BlogCategoryResponseDto> {
     const updateData: any = {};
     if (data.name) {
       updateData.name = data.name;
       updateData.slug = this.generateSlug(data.name);
+    }
+
+    if (data.description) {
+      updateData.description = data.description;
     }
 
     const category = await this.prisma.blogCategory.update({
@@ -205,6 +255,26 @@ export class BlogRepository {
 
   async deleteCategory(id: string): Promise<void> {
     await this.prisma.blogCategory.delete({ where: { id } });
+  }
+
+  async bulkDeleteBlogsByCategory(categoryId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const blogs = await tx.blog.findMany({
+        where: { categoryId },
+        select: { id: true },
+      });
+
+      const blogIds = blogs.map((b) => b.id);
+      if (blogIds.length === 0) return;
+
+      // Delete assets linked to these blogs
+      await tx.asset.deleteMany({
+        where: { entityType: 'BLOG', entityId: { in: blogIds } },
+      });
+
+      // Delete blogs
+      await tx.blog.deleteMany({ where: { id: { in: blogIds } } });
+    });
   }
 
   private generateSlug(text: string): string {
@@ -241,11 +311,34 @@ export class BlogRepository {
     };
   }
 
+  private transformBlogListItem(blog: any, publicIds?: string[]) {
+    return {
+      id: blog.id,
+      title: blog.title,
+      slug: blog.slug,
+      authorId: blog.authorId,
+      categoryId: blog.categoryId,
+      category: blog.category
+        ? {
+            id: blog.category.id,
+            name: blog.category.name,
+            description: undefined,
+          }
+        : undefined,
+      status: blog.status,
+      publishedAt: blog.publishedAt,
+      createdAt: blog.createdAt,
+      updatedAt: blog.updatedAt,
+      publicIds,
+    } as Partial<BlogResponseDto>;
+  }
+
   private transformCategoryResponse(category: any): BlogCategoryResponseDto {
     return {
       id: category.id,
       name: category.name,
       slug: category.slug,
+      description: category.description,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

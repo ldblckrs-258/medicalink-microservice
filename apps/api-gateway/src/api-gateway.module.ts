@@ -36,6 +36,9 @@ import {
   SpecialtiesController,
   UtilitiesController,
   WorkLocationsController,
+  BlogsController,
+  QuestionsController,
+  ReviewsController,
 } from './controllers';
 import { HealthController } from './health/health.controller';
 
@@ -67,6 +70,9 @@ import { HealthController } from './health/health.controller';
     SpecialtiesController,
     UtilitiesController,
     WorkLocationsController,
+    BlogsController,
+    QuestionsController,
+    ReviewsController,
     PatientsController,
     HealthController,
   ],
