@@ -13,6 +13,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
     super({
       datasourceUrl: process.env.CONTENT_DATABASE_URL,
+      log: ['warn', 'error'],
+      errorFormat: 'minimal',
     });
   }
 
