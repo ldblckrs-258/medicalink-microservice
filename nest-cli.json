@@ -90,6 +90,42 @@
       "compilerOptions": {
         "tsConfigPath": "libs/redis/tsconfig.lib.json"
       }
+    },
+    "domain-errors": {
+      "type": "library",
+      "root": "libs/domain-errors",
+      "entryFile": "index",
+      "sourceRoot": "libs/domain-errors/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/domain-errors/tsconfig.lib.json"
+      }
+    },
+    "error-adapters": {
+      "type": "library",
+      "root": "libs/error-adapters",
+      "entryFile": "index",
+      "sourceRoot": "libs/error-adapters/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/error-adapters/tsconfig.lib.json"
+      }
+    },
+    "rabbitmq": {
+      "type": "library",
+      "root": "libs/rabbitmq",
+      "entryFile": "index",
+      "sourceRoot": "libs/rabbitmq/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rabbitmq/tsconfig.lib.json"
+      }
+    },
+    "repositories": {
+      "type": "library",
+      "root": "libs/repositories",
+      "entryFile": "index",
+      "sourceRoot": "libs/repositories/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/repositories/tsconfig.lib.json"
+      }
     }
   }
 }

@@ -38,7 +38,6 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/api-gateway ./dist/apps/api-gateway
-COPY --from=builder /app/dist/libs ./dist/libs
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

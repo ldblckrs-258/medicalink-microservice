@@ -47,7 +47,6 @@ RUN cd apps/provider-directory-service && npx prisma generate && cd ../..
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/provider-directory-service ./dist/apps/provider-directory-service
-COPY --from=builder /app/dist/libs ./dist/libs
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
