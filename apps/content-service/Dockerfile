@@ -11,8 +11,6 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
-COPY apps/content-service/package.json ./apps/content-service/
-COPY libs/*/package.json ./libs/*/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
