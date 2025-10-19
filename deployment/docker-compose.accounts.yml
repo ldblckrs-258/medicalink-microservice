@@ -4,7 +4,7 @@ services:
   accounts-service:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: apps/accounts-service/Dockerfile
     container_name: medicalink-accounts
     env_file:
       - ../.env.production

@@ -4,7 +4,7 @@ services:
   content-service:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: apps/content-service/Dockerfile
     container_name: medicalink-content
     env_file:
       - ../.env.production
