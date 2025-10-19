@@ -115,16 +115,35 @@ export class BlogRepository {
       this.prisma.blog.count({ where }),
     ]);
 
-    const dataWithAssets = await Promise.all(
-      blogs.map(async (blog) => ({
-        blog,
-        publicIds: await this.getPublicIdsForEntity('BLOG', blog.id),
-      })),
-    );
+    // Batch query assets for all blogs to reduce connection usage
+    const blogIds = blogs.map((blog) => blog.id);
+    const allAssets =
+      blogIds.length > 0
+        ? await this.prisma.asset.findMany({
+            where: {
+              entityType: 'BLOG',
+              entityId: { in: blogIds },
+            },
+            select: {
+              publicId: true,
+              entityId: true,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+    // Group assets by entityId for efficient lookup
+    const assetsMap = new Map<string, string[]>();
+    allAssets.forEach((asset) => {
+      if (!assetsMap.has(asset.entityId)) {
+        assetsMap.set(asset.entityId, []);
+      }
+      assetsMap.get(asset.entityId)!.push(asset.publicId);
+    });
 
     return {
-      data: dataWithAssets.map(({ blog, publicIds }) =>
-        this.transformBlogListItem(blog, publicIds),
+      data: blogs.map((blog) =>
+        this.transformBlogListItem(blog, assetsMap.get(blog.id) || []),
       ),
       total,
       page: safePage,
