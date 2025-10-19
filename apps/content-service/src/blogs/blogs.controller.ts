@@ -25,6 +25,11 @@ export class BlogsController {
     return this.blogsService.getBlogs({ ...query, page, limit });
   }
 
+  @MessagePattern('get_published_blog')
+  async getPublishedBlog(@Payload() payload: { slug: string }) {
+    return this.blogsService.getPublishedBlog(payload.slug);
+  }
+
   @MessagePattern('get_blog_by_id')
   async getBlogById(@Payload() payload: { id: string }) {
     return this.blogsService.getBlogById(payload.id);

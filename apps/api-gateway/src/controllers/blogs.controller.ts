@@ -114,8 +114,18 @@ export class BlogsController {
 
   // Public - get blog by id (published only)
   @Public()
+  @Get('/public/:slug')
+  async findOnePublic(@Param('slug') slug: string) {
+    return this.microserviceService.sendWithTimeout(
+      this.contentClient,
+      'get_published_blog',
+      { slug },
+    );
+  }
+
+  @Public()
   @Get(':id')
-  async findOnePublic(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
       'get_blog_by_id',
@@ -164,20 +174,6 @@ export class BlogsController {
       this.contentClient,
       'delete_blog',
       { id },
-    );
-  }
-
-  // Admin - change blog status (quick endpoint)
-  @RequirePermission('blogs', 'manage')
-  @Patch(':id/status')
-  async changeStatus(
-    @Param('id') id: string,
-    @Body() body: UpdateBlogStatusDto,
-  ) {
-    return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      'update_blog',
-      { id, data: { status: body.status } },
     );
   }
 }

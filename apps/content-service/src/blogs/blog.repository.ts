@@ -47,10 +47,11 @@ export class BlogRepository {
       page,
       limit,
       search,
+      categorySlug,
       categoryId,
       authorId,
       status,
-      specialyId,
+      specialtyId,
       sortBy,
       sortOrder,
     } = params;
@@ -62,12 +63,17 @@ export class BlogRepository {
     if (categoryId) where.categoryId = categoryId;
     if (authorId) where.authorId = authorId;
     if (status) where.status = status;
-    if (specialyId) where.specialyId = specialyId;
+    if (specialtyId) where.specialtyId = specialtyId;
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
       ];
+    }
+    if (categorySlug) {
+      where.category = {
+        slug: { equals: categorySlug, mode: 'insensitive' },
+      };
     }
 
     const selectMinimal: Prisma.BlogSelect = {
@@ -136,6 +142,19 @@ export class BlogRepository {
     });
 
     if (!blog) return null;
+    const publicIds = await this.getPublicIdsForEntity('BLOG', blog.id);
+    return this.transformBlogResponse(blog, publicIds);
+  }
+
+  async findPublishedBlog(slug: string): Promise<BlogResponseDto | null> {
+    const blog = await this.prisma.blog.findUnique({
+      where: { slug, status: PostStatus.PUBLISHED },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!blog || blog.status !== PostStatus.PUBLISHED) return null;
     const publicIds = await this.getPublicIdsForEntity('BLOG', blog.id);
     return this.transformBlogResponse(blog, publicIds);
   }
@@ -322,7 +341,7 @@ export class BlogRepository {
         ? {
             id: blog.category.id,
             name: blog.category.name,
-            description: undefined,
+            slug: blog.category.slug,
           }
         : undefined,
       status: blog.status,

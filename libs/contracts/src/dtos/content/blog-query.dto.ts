@@ -1,14 +1,21 @@
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
 import { PaginationDto } from '../common/pagination.dto';
 
 export class BlogQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString({ message: 'categorySlug must be a string' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'categorySlug must be a slug string',
+  })
+  categorySlug?: string;
+
   @IsOptional()
   @IsString({ message: 'categoryId must be a string' })
   categoryId?: string;
 
   @IsOptional()
-  @IsString({ message: 'specialyId must be a string' })
-  specialyId?: string;
+  @IsString({ message: 'specialtyId must be a string' })
+  specialtyId?: string;
 
   @IsOptional()
   @IsIn(['DRAFT', 'PUBLISHED', 'ARCHIVED'], {
