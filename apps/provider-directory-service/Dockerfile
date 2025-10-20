@@ -42,8 +42,8 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 # Copy Prisma schema files for provider directory service only
 COPY --from=builder /app/apps/provider-directory-service/prisma ./apps/provider-directory-service/prisma
 
-# Generate Prisma client in production stage
-RUN cd apps/provider-directory-service && npx prisma generate && cd ../..
+# Copy generated Prisma client from builder stage (avoid regenerating)
+COPY --from=builder /app/apps/provider-directory-service/prisma/generated ./apps/provider-directory-service/prisma/generated
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/provider-directory-service ./dist/apps/provider-directory-service

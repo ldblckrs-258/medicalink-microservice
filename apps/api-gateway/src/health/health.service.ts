@@ -42,6 +42,8 @@ export class HealthService {
     @Inject('CONTENT_SERVICE') private readonly contentClient: ClientProxy,
     @Inject('NOTIFICATION_SERVICE')
     private readonly notificationClient: ClientProxy,
+    @Inject('ORCHESTRATOR_SERVICE')
+    private readonly orchestratorClient: ClientProxy,
   ) {
     this.redisClient = new Redis({
       host: this.configService.get<string>('REDIS_HOST', {
@@ -74,6 +76,7 @@ export class HealthService {
       this.checkService('booking-service', this.bookingClient),
       this.checkService('content-service', this.contentClient),
       this.checkService('notification-service', this.notificationClient),
+      this.checkService('orchestrator-service', this.orchestratorClient),
     ]);
 
     const redisCheck = await this.checkRedis();

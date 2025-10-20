@@ -42,8 +42,8 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 # Copy Prisma schema files for accounts service only
 COPY --from=builder /app/apps/accounts-service/prisma ./apps/accounts-service/prisma
 
-# Generate Prisma client in production stage
-RUN cd apps/accounts-service && npx prisma generate && cd ../..
+# Copy generated Prisma client from builder stage (avoid regenerating)
+COPY --from=builder /app/apps/accounts-service/prisma/generated ./apps/accounts-service/prisma/generated
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/accounts-service ./dist/apps/accounts-service

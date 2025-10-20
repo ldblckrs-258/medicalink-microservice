@@ -17,6 +17,7 @@ export class CreateAccountDto {
   fullName: string;
 
   @IsEmail({}, { message: 'Please provide a valid email address' })
+  @Transform(({ value }) => value.toLowerCase())
   email: string;
 
   @IsString({ message: 'Password must be a string' })

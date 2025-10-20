@@ -42,8 +42,8 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 # Copy Prisma schema files for notification service only
 COPY --from=builder /app/apps/notification-service/prisma ./apps/notification-service/prisma
 
-# Generate Prisma client in production stage
-RUN cd apps/notification-service && npx prisma generate && cd ../..
+# Copy generated Prisma client from builder stage (avoid regenerating)
+COPY --from=builder /app/apps/notification-service/prisma/generated ./apps/notification-service/prisma/generated
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/notification-service ./dist/apps/notification-service

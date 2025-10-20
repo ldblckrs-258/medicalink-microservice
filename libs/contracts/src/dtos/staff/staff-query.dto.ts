@@ -37,6 +37,7 @@ export class StaffQueryDto {
 
   @IsOptional()
   @IsString({ message: 'Email must be a string' })
+  @Transform(({ value }) => value.toLowerCase())
   email?: string;
 
   @IsOptional()

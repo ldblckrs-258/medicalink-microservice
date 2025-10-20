@@ -42,8 +42,8 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 # Copy Prisma schema files for content service only
 COPY --from=builder /app/apps/content-service/prisma ./apps/content-service/prisma
 
-# Generate Prisma client in production stage
-RUN cd apps/content-service && npx prisma generate && cd ../..
+# Copy generated Prisma client from builder stage (avoid regenerating)
+COPY --from=builder /app/apps/content-service/prisma/generated ./apps/content-service/prisma/generated
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist/apps/content-service ./dist/apps/content-service

@@ -137,29 +137,12 @@ case $COMMAND in
     
     update)
         print_header "Updating" $SERVICE
-        echo -e "${YELLOW} Building application...${NC}"
+        echo -e "${YELLOW} Installing dependencies...${NC}"
         cd "$PROJECT_ROOT"
         pnpm install
         
-        # Handle different service types
-        if [ "$SERVICE" = "infrastructure" ]; then
-            echo -e "${YELLOW}  Infrastructure service doesn't require code build${NC}"
-        elif [ "$SERVICE" = "gateway" ] || [ "$SERVICE" = "orchestrator" ]; then
-            echo -e "${YELLOW}  Building $SERVICE (no Prisma needed)...${NC}"
-            pnpm run "build:$SERVICE"
-        elif [ "$SERVICE" != "all" ]; then
-            echo -e "${YELLOW} Generating Prisma for $SERVICE...${NC}"
-            pnpm run "prisma:generate:$SERVICE"
-            echo -e "${YELLOW}  Building $SERVICE...${NC}"
-            pnpm run "build:$SERVICE"
-        else
-            echo -e "${YELLOW} Generating Prisma for all services...${NC}"
-            pnpm run prisma:generate
-            echo -e "${YELLOW}  Building all services...${NC}"
-            pnpm run build
-        fi
-        
-        echo -e "${YELLOW} Building Docker images...${NC}"
+        # Skip host build - let Docker handle everything
+        echo -e "${YELLOW} Building Docker images (includes Prisma generation and NestJS build)...${NC}"
         docker compose -f "$COMPOSE_FILE" build --no-cache
         
         echo -e "${YELLOW} Restarting services...${NC}"
