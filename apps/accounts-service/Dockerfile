@@ -59,9 +59,9 @@ USER medicalink
 # Expose port for accounts service
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/apps/accounts-service/main.js --health-check || exit 1
+# Health check - Check if the Node.js process is running
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD pgrep -f "node.*accounts-service" > /dev/null || exit 1
 
 # Start accounts service
 CMD ["node", "dist/apps/accounts-service/main.js"]

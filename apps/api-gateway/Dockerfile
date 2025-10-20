@@ -50,9 +50,12 @@ USER medicalink
 # Expose port for API gateway
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/apps/api-gateway/main.js --health-check || exit 1
+# Install wget for health check
+RUN apk add --no-cache wget
+
+# Health check - API Gateway has HTTP server, so we can use wget
+HEALTHCHECK --interval=120s --timeout=10s --start-period=20s --retries=2 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Start API gateway
 CMD ["node", "dist/apps/api-gateway/main.js"]

@@ -59,9 +59,9 @@ USER medicalink
 # Expose port for content service
 EXPOSE 3004
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/apps/content-service/main.js --health-check || exit 1
+# Health check - Check if the Node.js process is running
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD pgrep -f "node.*content-service" > /dev/null || exit 1
 
 # Start content service
 CMD ["node", "dist/apps/content-service/main.js"]
