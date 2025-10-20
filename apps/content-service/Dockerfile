@@ -16,7 +16,7 @@ COPY package.json pnpm-lock.yaml ./
 # Install dependencies with BuildKit cache mount
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     --mount=type=cache,target=/root/.cache/pnpm \
-    pnpm install
+    pnpm install --frozen-lockfile
 
 # Stage 2: Build stage
 FROM node:20-alpine AS builder
@@ -55,13 +55,19 @@ RUN addgroup -g 1001 -S nodejs && \
 # Set working directory with proper ownership
 WORKDIR /app
 
-# Copy package files with correct ownership
+# Copy package files temporarily for pruning
 COPY --chown=medicalink:nodejs package.json pnpm-lock.yaml ./
 
-# Install only production dependencies with BuildKit cache
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    --mount=type=cache,target=/root/.cache/pnpm \
-    pnpm install --prod --ignore-scripts
+# Copy node_modules from deps stage and prune to production-only
+COPY --from=deps --chown=medicalink:nodejs /app/node_modules ./node_modules
+
+# Create production package.json without prepare script to avoid husky
+RUN node -e "const pkg = require('./package.json'); delete pkg.scripts.prepare; delete pkg.devDependencies; delete pkg['lint-staged']; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
+
+RUN pnpm prune --prod --ignore-scripts
+
+# Remove package files after pruning to reduce image size
+RUN rm -f package.json pnpm-lock.yaml
 
 # Copy only necessary files from builder stage with correct ownership
 COPY --from=builder --chown=medicalink:nodejs /app/apps/content-service/prisma ./apps/content-service/prisma
