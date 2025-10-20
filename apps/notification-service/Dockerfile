@@ -1,6 +1,24 @@
-# Notification Service Dockerfile
+# Notification Service Dockerfile - Optimized for I/O performance
+# Build from project root: docker build -f apps/notification-service/Dockerfile -t medicalink-notification .
 
-# Stage 1: Build stage
+# Stage 1: Dependencies stage with BuildKit cache
+FROM node:20-alpine AS deps
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy only package files for dependency installation
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies with BuildKit cache mount
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/root/.cache/pnpm \
+    pnpm install
+
+# Stage 2: Build stage
 FROM node:20-alpine AS builder
 
 # Install pnpm globally
@@ -9,14 +27,14 @@ RUN npm install -g pnpm
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json /app/pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
-COPY . .
+# Copy only necessary source files for building
+COPY libs/ ./libs/
+COPY apps/notification-service/ ./apps/notification-service/
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 
 # Generate Prisma client for notification service only
 RUN cd apps/notification-service && npx prisma generate && cd ../..
@@ -24,36 +42,37 @@ RUN cd apps/notification-service && npx prisma generate && cd ../..
 # Build notification service only
 RUN npx nest build notification-service
 
-# Stage 2: Production stage
+# Stage 3: Production stage
 FROM node:20-alpine AS production
 
 # Install pnpm globally
 RUN npm install -g pnpm
 
-# Create app directory
+# Create non-root user first
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S medicalink -u 1001
+
+# Set working directory with proper ownership
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy package files with correct ownership
+COPY --chown=medicalink:nodejs package.json pnpm-lock.yaml ./
 
-# Install only production dependencies (ignore scripts to avoid husky error)
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+# Install only production dependencies with BuildKit cache
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/root/.cache/pnpm \
+    pnpm install --prod --ignore-scripts
 
-# Copy Prisma schema files for notification service only
-COPY --from=builder /app/apps/notification-service/prisma ./apps/notification-service/prisma
+# Copy Prisma schema files for notification service only with correct ownership
+COPY --from=builder --chown=medicalink:nodejs /app/apps/notification-service/prisma ./apps/notification-service/prisma
 
-# Copy generated Prisma client from builder stage (avoid regenerating)
-COPY --from=builder /app/apps/notification-service/prisma/generated ./apps/notification-service/prisma/generated
+# Copy generated Prisma client from builder stage with correct ownership
+COPY --from=builder --chown=medicalink:nodejs /app/apps/notification-service/prisma/generated ./apps/notification-service/prisma/generated
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist/apps/notification-service ./dist/apps/notification-service
+# Copy built application from builder stage with correct ownership
+COPY --from=builder --chown=medicalink:nodejs /app/dist/apps/notification-service ./dist/apps/notification-service
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S medicalink -u 1001
-
-# Change ownership of the app directory
-RUN chown -R medicalink:nodejs /app
+# Switch to non-root user
 USER medicalink
 
 # Expose port for notification service

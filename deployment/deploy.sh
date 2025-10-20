@@ -31,11 +31,42 @@ print_warning() {
     echo -e "${YELLOW}  $1${NC}"
 }
 
+show_help() {
+    echo "MedicaLink Deployment Script"
+    echo "Usage: $0 <command> [service] [options]"
+    echo ""
+    echo "Commands:"
+    echo "  start [service]    - Start service(s)"
+    echo "  stop [service]     - Stop service(s)"
+    echo "  restart [service]  - Restart service(s)"
+    echo "  logs [service]     - Show logs for service(s)"
+    echo "  build [service]    - Build service(s)"
+    echo "  status [service]   - Show status of service(s)"
+    echo "  update [service]   - Update and restart service(s)"
+    echo "  force-rebuild [service] - Force complete rebuild and recreation"
+    echo ""
+    echo "Services:"
+    echo "  all                - All services"
+    echo "  infrastructure     - Database, Redis, RabbitMQ"
+    echo "  accounts           - Accounts service"
+    echo "  api-gateway        - API Gateway"
+    echo "  booking            - Booking service"
+    echo "  content            - Content service"
+    echo "  notification       - Notification service"
+    echo "  orchestrator       - Orchestrator service"
+    echo "  provider           - Provider Directory service"
+    echo ""
+    echo "Examples:"
+    echo "  $0 start all"
+    echo "  $0 restart api-gateway"
+    echo "  $0 logs booking"
+    echo "  $0 update accounts"
+    echo "  $0 force-rebuild booking"
+}
+
 # Validate arguments
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 [command] [service]"
-    echo "Commands: start, stop, restart, logs, build, status, update"
-    echo "Services: all, infrastructure, gateway, accounts, provider, booking, content, notification, orchestrator"
+    show_help
     exit 1
 fi
 
@@ -126,7 +157,17 @@ case $COMMAND in
     
     build)
         print_header "Building" $SERVICE
-        docker compose -f "$COMPOSE_FILE" build --no-cache
+        # Use limited parallelism to prevent resource exhaustion
+        case $SERVICE in
+            all|infrastructure)
+                # Infrastructure services can use more parallelism
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=2
+                ;;
+            *)
+                # Individual services use limited parallelism
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1
+                ;;
+        esac
         print_success "$SERVICE built successfully"
         ;;
     
@@ -137,18 +178,136 @@ case $COMMAND in
     
     update)
         print_header "Updating" $SERVICE
+        
+        # Check available memory before proceeding
+        AVAILABLE_MEM=$(free -m | awk 'NR==2{printf "%.0f", $7}')
+        if [ "$AVAILABLE_MEM" -lt 512 ]; then
+            print_warning "Low available memory (${AVAILABLE_MEM}MB). Using conservative build settings."
+        fi
+        
         echo -e "${YELLOW} Installing dependencies...${NC}"
         cd "$PROJECT_ROOT"
-        pnpm install
+        timeout 300 pnpm install || {
+            print_error "Dependency installation timed out"
+            exit 1
+        }
         
-        # Skip host build - let Docker handle everything
-        echo -e "${YELLOW} Building Docker images (includes Prisma generation and NestJS build)...${NC}"
-        docker compose -f "$COMPOSE_FILE" build --no-cache
+        # Gracefully stop existing service first
+        echo -e "${YELLOW} Stopping existing service...${NC}"
+        docker compose -f "$COMPOSE_FILE" down --timeout 30 || true
         
-        echo -e "${YELLOW} Restarting services...${NC}"
+        # Clean up Docker resources to free memory
+        echo -e "${YELLOW} Cleaning up Docker resources...${NC}"
+        docker system prune -f || true
+        
+        # Remove existing images to force complete rebuild
+        echo -e "${YELLOW} Removing existing images to force rebuild...${NC}"
+        case $SERVICE in
+            all)
+                docker images | grep -E "(medicalink-|medicalink_)" | awk '{print $3}' | xargs -r docker rmi -f || true
+                ;;
+            infrastructure)
+                # Infrastructure services don't need image removal
+                ;;
+            *)
+                docker images | grep "medicalink.*$SERVICE" | awk '{print $3}' | xargs -r docker rmi -f || true
+                ;;
+        esac
+        
+        # Build with specific parallelism limits to prevent resource exhaustion
+        echo -e "${YELLOW} Building Docker images with forced rebuild (includes Prisma generation and NestJS build)...${NC}"
+        case $SERVICE in
+            all)
+                # Build all services with very limited parallelism
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1
+                ;;
+            infrastructure)
+                # Infrastructure services can use slightly more parallelism
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=2
+                ;;
+            content|booking|notification|provider)
+                # Services with Prisma need extra care
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1
+                ;;
+            *)
+                # Other services use limited parallelism
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1
+                ;;
+        esac
+        
+        echo -e "${YELLOW} Starting services with forced recreation...${NC}"
         docker compose -f "$COMPOSE_FILE" up -d --force-recreate
         
-        print_success "$SERVICE updated successfully"
+        # Wait for service to be ready
+        echo -e "${YELLOW} Waiting for service to be ready...${NC}"
+        sleep 15
+        
+        # Verify service health
+        echo -e "${YELLOW} Verifying service health...${NC}"
+        docker compose -f "$COMPOSE_FILE" ps
+        
+        print_success "$SERVICE updated successfully with forced rebuild"
+        ;;
+    
+    force-rebuild)
+        print_header "Force rebuilding" $SERVICE
+        
+        echo -e "${YELLOW} Installing dependencies...${NC}"
+        cd "$PROJECT_ROOT"
+        timeout 300 pnpm install || {
+            print_error "Dependency installation timed out"
+            exit 1
+        }
+        
+        # Stop and remove all containers, networks, and volumes
+        echo -e "${YELLOW} Stopping and removing all containers, networks, and volumes...${NC}"
+        docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans --timeout 30 || true
+        
+        # Remove all related images
+        echo -e "${YELLOW} Removing all related Docker images...${NC}"
+        case $SERVICE in
+            all)
+                docker images | grep -E "(medicalink-|medicalink_)" | awk '{print $3}' | xargs -r docker rmi -f || true
+                ;;
+            infrastructure)
+                docker images | grep -E "(postgres|redis|rabbitmq)" | awk '{print $3}' | xargs -r docker rmi -f || true
+                ;;
+            *)
+                docker images | grep "medicalink.*$SERVICE" | awk '{print $3}' | xargs -r docker rmi -f || true
+                ;;
+        esac
+        
+        # Clean up all Docker resources
+        echo -e "${YELLOW} Cleaning up all Docker resources...${NC}"
+        docker system prune -af --volumes || true
+        
+        # Build from scratch with no cache
+        echo -e "${YELLOW} Building from scratch with no cache...${NC}"
+        case $SERVICE in
+            all)
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1 --pull
+                ;;
+            infrastructure)
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=2 --pull
+                ;;
+            *)
+                docker compose -f "$COMPOSE_FILE" build --no-cache --parallel=1 --pull
+                ;;
+        esac
+        
+        # Start with complete recreation
+        echo -e "${YELLOW} Starting services with complete recreation...${NC}"
+        docker compose -f "$COMPOSE_FILE" up -d --force-recreate --renew-anon-volumes
+        
+        # Extended wait for complete initialization
+        echo -e "${YELLOW} Waiting for services to fully initialize...${NC}"
+        sleep 30
+        
+        # Verify service health
+        echo -e "${YELLOW} Verifying service health...${NC}"
+        docker compose -f "$COMPOSE_FILE" ps
+        
+        print_success "$SERVICE force rebuilt successfully from scratch"
         ;;
 esac
 

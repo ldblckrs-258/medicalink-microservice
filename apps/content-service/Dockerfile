@@ -1,6 +1,24 @@
-# Content Service Dockerfile
+# Content Service Dockerfile - Optimized for I/O performance
+# Build from project root: docker build -f apps/content-service/Dockerfile -t medicalink-content .
 
-# Stage 1: Build stage
+# Stage 1: Dependencies stage with BuildKit cache
+FROM node:20-alpine AS deps
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy only package files for dependency installation
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies with BuildKit cache mount
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/root/.cache/pnpm \
+    pnpm install
+
+# Stage 2: Build stage
 FROM node:20-alpine AS builder
 
 # Install pnpm globally
@@ -9,51 +27,47 @@ RUN npm install -g pnpm
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json /app/pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
-COPY . .
+# Copy only necessary source files for building
+COPY libs/ ./libs/
+COPY apps/content-service/ ./apps/content-service/
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 
 # Generate Prisma client for content service only
-RUN cd apps/content-service && npx prisma generate && cd ../..
+RUN cd apps/content-service && npx prisma generate
 
 # Build content service only
 RUN npx nest build content-service
 
-# Stage 2: Production stage
+# Stage 3: Production stage
 FROM node:20-alpine AS production
 
 # Install pnpm globally
 RUN npm install -g pnpm
 
-# Create app directory
+# Create non-root user first
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S medicalink -u 1001
+
+# Set working directory with proper ownership
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy package files with correct ownership
+COPY --chown=medicalink:nodejs package.json pnpm-lock.yaml ./
 
-# Install only production dependencies (ignore scripts to avoid husky error)
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+# Install only production dependencies with BuildKit cache
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,target=/root/.cache/pnpm \
+    pnpm install --prod --ignore-scripts
 
-# Copy Prisma schema files for content service only
-COPY --from=builder /app/apps/content-service/prisma ./apps/content-service/prisma
+# Copy only necessary files from builder stage with correct ownership
+COPY --from=builder --chown=medicalink:nodejs /app/apps/content-service/prisma ./apps/content-service/prisma
+COPY --from=builder --chown=medicalink:nodejs /app/dist/apps/content-service ./dist/apps/content-service
 
-# Copy generated Prisma client from builder stage (avoid regenerating)
-COPY --from=builder /app/apps/content-service/prisma/generated ./apps/content-service/prisma/generated
-
-# Copy built application from builder stage
-COPY --from=builder /app/dist/apps/content-service ./dist/apps/content-service
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S medicalink -u 1001
-
-# Change ownership of the app directory
-RUN chown -R medicalink:nodejs /app
+# Switch to non-root user
 USER medicalink
 
 # Expose port for content service
