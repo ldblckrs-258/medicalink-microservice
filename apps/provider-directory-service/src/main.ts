@@ -6,6 +6,7 @@ import { RpcDomainErrorFilter } from '@app/error-adapters';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { RabbitMQConfig, QUEUE_NAMES } from '@app/rabbitmq';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
 dotenv.config();
 
@@ -28,6 +29,10 @@ async function bootstrap() {
     ),
     { inheritAppConfig: true },
   );
+
+  // Enable Prisma shutdown hooks
+  const prisma = app.get(PrismaService);
+  prisma.enableShutdownHooks(app);
 
   await app.startAllMicroservices();
   await app.init();

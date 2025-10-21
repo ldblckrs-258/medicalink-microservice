@@ -196,21 +196,42 @@ case $COMMAND in
         echo -e "${YELLOW} Stopping existing service...${NC}"
         docker compose -f "$COMPOSE_FILE" down --timeout 30 || true
         
-        # Clean up Docker resources to free memory
+        # Clean up Docker resources to free memory (with timeout and safer approach)
         echo -e "${YELLOW} Cleaning up Docker resources...${NC}"
-        docker system prune -f || true
         
-        # Remove existing images to force complete rebuild
+        # Clean up containers first
+        echo -e "${YELLOW}   Removing stopped containers...${NC}"
+        timeout 60 docker container prune -f || true
+        
+        # Clean up networks (skip if in use)
+        echo -e "${YELLOW}   Removing unused networks...${NC}"
+        timeout 30 docker network prune -f || true
+        
+        # Clean up volumes (be more careful)
+        echo -e "${YELLOW}   Removing unused volumes...${NC}"
+        timeout 30 docker volume prune -f || true
+        
+        # Skip full system prune to avoid hanging
+        echo -e "${YELLOW}   Skipping full system prune to prevent hanging...${NC}"
+        
+        # Remove existing images to force complete rebuild (with timeout)
         echo -e "${YELLOW} Removing existing images to force rebuild...${NC}"
         case $SERVICE in
             all)
-                docker images | grep -E "(medicalink-|medicalink_)" | awk '{print $3}' | xargs -r docker rmi -f || true
+                echo -e "${YELLOW}   Removing all medicalink images...${NC}"
+                timeout 120 bash -c 'docker images | grep -E "(medicalink-|medicalink_)" | awk "{print \$3}" | xargs -r docker rmi -f' || {
+                    echo -e "${YELLOW}   Some images could not be removed (may be in use)${NC}"
+                }
                 ;;
             infrastructure)
                 # Infrastructure services don't need image removal
+                echo -e "${YELLOW}   Skipping image removal for infrastructure services${NC}"
                 ;;
             *)
-                docker images | grep "medicalink.*$SERVICE" | awk '{print $3}' | xargs -r docker rmi -f || true
+                echo -e "${YELLOW}   Removing images for $SERVICE...${NC}"
+                timeout 60 bash -c "docker images | grep \"medicalink.*$SERVICE\" | awk '{print \$3}' | xargs -r docker rmi -f" || {
+                    echo -e "${YELLOW}   Some $SERVICE images could not be removed (may be in use)${NC}"
+                }
                 ;;
         esac
         

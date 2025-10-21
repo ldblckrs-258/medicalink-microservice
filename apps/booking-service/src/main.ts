@@ -5,6 +5,7 @@ import { RabbitMQConfig, QUEUE_NAMES } from '@app/rabbitmq';
 import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { RpcDomainErrorFilter } from '@app/error-adapters';
+import { PrismaService } from '../prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(BookingServiceModule);
@@ -22,6 +23,10 @@ async function bootstrap() {
     RabbitMQConfig.createServerConfig(configService, QUEUE_NAMES.BOOKING_QUEUE),
     { inheritAppConfig: true },
   );
+
+  // Enable Prisma shutdown hooks
+  const prisma = app.get(PrismaService);
+  prisma.enableShutdownHooks(app);
 
   await app.startAllMicroservices();
   await app.init();

@@ -3,11 +3,15 @@ import {
   Injectable,
   Logger,
   OnModuleInit,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { PrismaClient } from './generated/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -20,16 +24,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async onModuleInit() {
     await this.$connect();
-    this.logger.log('Prisma Client Connected');
+    this.logger.log('Provider Directory Service - Prisma Client Connected');
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log('Provider Directory Service - Prisma Client Disconnected');
   }
 
   enableShutdownHooks(app: INestApplication) {
     process.on('beforeExit', () => {
-      (async () => {
-        await app.close();
-      })().catch((e) => {
-        this.logger.error('Error during app shutdown', e);
-      });
+      this.logger.log(
+        'Provider Directory Service - Prisma received beforeExit event',
+      );
+      void app.close();
     });
   }
 }

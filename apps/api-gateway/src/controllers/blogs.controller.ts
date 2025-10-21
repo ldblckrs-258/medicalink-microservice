@@ -25,11 +25,7 @@ import {
   CreateBlogCategoryDto,
   UpdateBlogCategoryDto,
 } from '@app/contracts';
-import {
-  BlogPublicQueryDto,
-  BlogQueryDto,
-  UpdateBlogStatusDto,
-} from '@app/contracts/dtos/content';
+import { BlogPublicQueryDto, BlogQueryDto } from '@app/contracts/dtos/content';
 import { MicroserviceService } from '../utils/microservice.service';
 import { DeleteBlogCategoryQueryDto } from '@app/contracts/dtos/content/delete-blog-category-query.dto';
 

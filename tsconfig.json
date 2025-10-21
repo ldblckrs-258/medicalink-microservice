@@ -23,30 +23,14 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/contracts": [
-        "libs/contracts/src"
-      ],
-      "@app/contracts/*": [
-        "libs/contracts/src/*"
-      ],
-      "@app/repositories": [
-        "libs/repositories/src"
-      ],
-      "@app/redis": [
-        "libs/redis/src"
-      ],
-      "@app/domain-errors": [
-        "libs/domain-errors/src"
-      ],
-      "@app/error-adapters": [
-        "libs/error-adapters/src"
-      ],
-      "@app/rabbitmq": [
-        "libs/rabbitmq/src"
-      ],
-      "@app/rabbitmq/*": [
-        "libs/rabbitmq/src/*"
-      ]
+      "@app/contracts": ["libs/contracts/src"],
+      "@app/contracts/*": ["libs/contracts/src/*"],
+      "@app/repositories": ["libs/repositories/src"],
+      "@app/redis": ["libs/redis/src"],
+      "@app/domain-errors": ["libs/domain-errors/src"],
+      "@app/error-adapters": ["libs/error-adapters/src"],
+      "@app/rabbitmq": ["libs/rabbitmq/src"],
+      "@app/rabbitmq/*": ["libs/rabbitmq/src/*"]
     }
   }
 }
