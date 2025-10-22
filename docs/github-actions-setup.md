@@ -111,6 +111,37 @@ docker network create medicalink-network
 4. Chọn force rebuild nếu cần
 5. Click "Run workflow"
 
+### 3. Manual Deploy All (manual-deploy-all.yml)
+
+**Trigger**: Manual qua GitHub UI
+
+**Tính năng**:
+- Deploy tất cả services hoặc danh sách tùy chỉnh
+- Force rebuild option
+- Input image tag
+
+**Cách sử dụng**:
+1. Vào Actions → Manual Deploy All Services → Run workflow
+2. Nhập image tag (optional)
+3. Chọn force rebuild (default: true)
+4. Nhập services tùy chỉnh (optional, để trống = all)
+5. Click "Run workflow"
+
+### 4. Deploy Existing Images (deploy-existing-images.yml)
+
+**Trigger**: Manual qua GitHub UI
+
+**Tính năng**:
+- Deploy từ images đã có sẵn trên GHCR
+- Không build, chỉ deploy
+- Hữu ích cho rollback hoặc deploy lại
+
+**Cách sử dụng**:
+1. Vào Actions → Deploy Existing Images → Run workflow
+2. Nhập image tag (required, ví dụ: staging-abc123)
+3. Nhập services tùy chỉnh (optional)
+4. Click "Run workflow"
+
 ## Service Detection Logic
 
 Script `scripts/detect-changes.sh` detect services cần rebuild dựa trên:
