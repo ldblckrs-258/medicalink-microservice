@@ -183,20 +183,23 @@ OVERRIDE_CONTENT="services:
     image: $FULL_IMAGE_NAME
     pull_policy: always"
 
-# Remove old override file if exists
-ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.yml"
+# Create unique override file for this service to avoid conflicts
+OVERRIDE_FILE="docker-compose.override.${SERVICE_NAME}.yml"
+
+# Remove old override files for this service
+ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.*.yml"
 
 # Write override file to VM using echo instead of heredoc
-ssh_exec "cd $PROJECT_DIR && echo 'services:' > docker-compose.override.yml"
-ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> docker-compose.override.yml"
-ssh_exec "cd $PROJECT_DIR && echo '    image: $FULL_IMAGE_NAME' >> docker-compose.override.yml"
-ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> docker-compose.override.yml"
+ssh_exec "cd $PROJECT_DIR && echo 'services:' > $OVERRIDE_FILE"
+ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> $OVERRIDE_FILE"
+ssh_exec "cd $PROJECT_DIR && echo '    image: $FULL_IMAGE_NAME' >> $OVERRIDE_FILE"
+ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> $OVERRIDE_FILE"
 
 print_success "Override file created"
 
 # Debug: Show override file content
 print_header "Override file content:"
-ssh_exec "cd $PROJECT_DIR && cat docker-compose.override.yml"
+ssh_exec "cd $PROJECT_DIR && cat $OVERRIDE_FILE"
 
 # Stop and restart only the specific service
 print_header "Updating service with new image..."
@@ -212,7 +215,7 @@ fi
 
 # Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
-ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f docker-compose.override.yml up -d --no-deps $COMPOSE_SERVICE_NAME"
+ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f $OVERRIDE_FILE up -d --no-deps $COMPOSE_SERVICE_NAME"
 
 print_success "Service started"
 
