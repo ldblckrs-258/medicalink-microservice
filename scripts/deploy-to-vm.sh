@@ -146,31 +146,31 @@ print_header "Debug: Input service name: $SERVICE_NAME"
 # Map service name to docker-compose service name and container name
 case $SERVICE_NAME in
     accounts-service)
-        COMPOSE_SERVICE_NAME="accounts"
+        COMPOSE_SERVICE_NAME="accounts-service"
         CONTAINER_NAME="medicalink-accounts"
         ;;
     api-gateway)
-        COMPOSE_SERVICE_NAME="gateway"
+        COMPOSE_SERVICE_NAME="api-gateway"
         CONTAINER_NAME="medicalink-gateway"
         ;;
     booking-service)
-        COMPOSE_SERVICE_NAME="booking"
+        COMPOSE_SERVICE_NAME="booking-service"
         CONTAINER_NAME="medicalink-booking"
         ;;
     content-service)
-        COMPOSE_SERVICE_NAME="content"
+        COMPOSE_SERVICE_NAME="content-service"
         CONTAINER_NAME="medicalink-content"
         ;;
     notification-service)
-        COMPOSE_SERVICE_NAME="notification"
+        COMPOSE_SERVICE_NAME="notification-service"
         CONTAINER_NAME="medicalink-notification"
         ;;
     orchestrator-service)
-        COMPOSE_SERVICE_NAME="orchestrator"
+        COMPOSE_SERVICE_NAME="orchestrator-service"
         CONTAINER_NAME="medicalink-orchestrator"
         ;;
     provider-service)
-        COMPOSE_SERVICE_NAME="provider"
+        COMPOSE_SERVICE_NAME="provider-service"
         CONTAINER_NAME="medicalink-provider"
         ;;
 esac
@@ -182,6 +182,9 @@ OVERRIDE_CONTENT="services:
   $COMPOSE_SERVICE_NAME:
     image: $FULL_IMAGE_NAME
     pull_policy: always"
+
+# Remove old override file if exists
+ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.yml"
 
 # Write override file to VM
 ssh_exec "cd $PROJECT_DIR && cat > docker-compose.override.yml << 'EOF'
