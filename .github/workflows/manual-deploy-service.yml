@@ -53,6 +53,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/detect-changes.sh
+          chmod +x scripts/deploy-to-vm.sh
+
       - name: Validate service name
         run: |
           case "${{ github.event.inputs.service }}" in

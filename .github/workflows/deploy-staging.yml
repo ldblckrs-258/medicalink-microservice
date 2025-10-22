@@ -28,6 +28,11 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/detect-changes.sh
+          chmod +x scripts/deploy-to-vm.sh
+
       - name: Detect changed services
         id: detect
         run: |
