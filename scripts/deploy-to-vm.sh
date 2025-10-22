@@ -152,15 +152,53 @@ EOF"
 
 print_success "Override file created"
 
-# Stop existing service
-print_header "Stopping existing service..."
-ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE down --timeout 30 || true"
+# Debug: Show override file content
+print_header "Override file content:"
+ssh_exec "cd $PROJECT_DIR && cat docker-compose.override.yml"
+
+# Stop and restart only the specific service
+print_header "Updating service with new image..."
+
+# Map service name to container name for direct control
+case $SERVICE_NAME in
+    accounts-service)
+        CONTAINER_NAME="medicalink-accounts"
+        SERVICE_COMPOSE_NAME="accounts"
+        ;;
+    api-gateway)
+        CONTAINER_NAME="medicalink-gateway"
+        SERVICE_COMPOSE_NAME="gateway"
+        ;;
+    booking-service)
+        CONTAINER_NAME="medicalink-booking"
+        SERVICE_COMPOSE_NAME="booking"
+        ;;
+    content-service)
+        CONTAINER_NAME="medicalink-content"
+        SERVICE_COMPOSE_NAME="content"
+        ;;
+    notification-service)
+        CONTAINER_NAME="medicalink-notification"
+        SERVICE_COMPOSE_NAME="notification"
+        ;;
+    orchestrator-service)
+        CONTAINER_NAME="medicalink-orchestrator"
+        SERVICE_COMPOSE_NAME="orchestrator"
+        ;;
+    provider-service)
+        CONTAINER_NAME="medicalink-provider"
+        SERVICE_COMPOSE_NAME="provider"
+        ;;
+esac
+
+# Stop the specific container
+ssh_exec "cd $PROJECT_DIR && docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
 
 print_success "Service stopped"
 
-# Start service with new image
+# Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
-ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE up -d"
+ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f docker-compose.override.yml up -d --no-deps $SERVICE_COMPOSE_NAME"
 
 print_success "Service started"
 
