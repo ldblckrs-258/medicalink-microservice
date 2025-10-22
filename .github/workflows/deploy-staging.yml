@@ -41,7 +41,7 @@ jobs:
             SERVICES="accounts-service api-gateway booking-service content-service notification-service orchestrator-service provider-service"
           else
             echo "Detecting changes..."
-            SERVICES=$(./scripts/detect-changes.sh)
+            SERVICES=$(./scripts/detect-changes.sh 2>/dev/null)
           fi
           
           if [ -z "$SERVICES" ]; then
