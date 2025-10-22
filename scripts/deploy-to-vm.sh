@@ -140,8 +140,33 @@ case $SERVICE_NAME in
 esac
 
 # Create override file content
+# Map service name to docker-compose service name
+case $SERVICE_NAME in
+    accounts-service)
+        COMPOSE_SERVICE_NAME="accounts"
+        ;;
+    api-gateway)
+        COMPOSE_SERVICE_NAME="gateway"
+        ;;
+    booking-service)
+        COMPOSE_SERVICE_NAME="booking"
+        ;;
+    content-service)
+        COMPOSE_SERVICE_NAME="content"
+        ;;
+    notification-service)
+        COMPOSE_SERVICE_NAME="notification"
+        ;;
+    orchestrator-service)
+        COMPOSE_SERVICE_NAME="orchestrator"
+        ;;
+    provider-service)
+        COMPOSE_SERVICE_NAME="provider"
+        ;;
+esac
+
 OVERRIDE_CONTENT="services:
-  $(echo $SERVICE_NAME | sed 's/-service$//' | sed 's/provider-directory/provider/' | sed 's/api-gateway/gateway/'):
+  $COMPOSE_SERVICE_NAME:
     image: $FULL_IMAGE_NAME
     pull_policy: always"
 
@@ -163,31 +188,24 @@ print_header "Updating service with new image..."
 case $SERVICE_NAME in
     accounts-service)
         CONTAINER_NAME="medicalink-accounts"
-        SERVICE_COMPOSE_NAME="accounts"
         ;;
     api-gateway)
         CONTAINER_NAME="medicalink-gateway"
-        SERVICE_COMPOSE_NAME="gateway"
         ;;
     booking-service)
         CONTAINER_NAME="medicalink-booking"
-        SERVICE_COMPOSE_NAME="booking"
         ;;
     content-service)
         CONTAINER_NAME="medicalink-content"
-        SERVICE_COMPOSE_NAME="content"
         ;;
     notification-service)
         CONTAINER_NAME="medicalink-notification"
-        SERVICE_COMPOSE_NAME="notification"
         ;;
     orchestrator-service)
         CONTAINER_NAME="medicalink-orchestrator"
-        SERVICE_COMPOSE_NAME="orchestrator"
         ;;
     provider-service)
         CONTAINER_NAME="medicalink-provider"
-        SERVICE_COMPOSE_NAME="provider"
         ;;
 esac
 
@@ -198,7 +216,7 @@ print_success "Service stopped"
 
 # Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
-ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f docker-compose.override.yml up -d --no-deps $SERVICE_COMPOSE_NAME"
+ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f docker-compose.override.yml up -d --no-deps $COMPOSE_SERVICE_NAME"
 
 print_success "Service started"
 
