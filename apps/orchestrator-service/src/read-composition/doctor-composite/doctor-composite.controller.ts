@@ -2,7 +2,7 @@ import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DoctorCompositeService } from './doctor-composite.service';
 import { DoctorCompositeQueryDto } from './dto';
-import { ORCHESTRATOR_PATTERNS } from '../../common/constants';
+import { ORCHESTRATOR_PATTERNS } from '@app/contracts/patterns';
 import { StaffQueryDto } from '@app/contracts';
 
 /**

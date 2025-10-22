@@ -7,28 +7,29 @@ import {
   CreateAnswerDto,
   UpdateAnswerDto,
 } from '@app/contracts';
+import { QUESTIONS_PATTERNS, ANSWERS_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) {}
 
-  @MessagePattern('create_question')
+  @MessagePattern(QUESTIONS_PATTERNS.CREATE)
   create(@Payload() createQuestionDto: CreateQuestionDto) {
     return this.questionsService.createQuestion(createQuestionDto);
   }
 
-  @MessagePattern('get_questions')
+  @MessagePattern(QUESTIONS_PATTERNS.GET_LIST)
   findAll(@Payload() data: { page?: number; limit?: number }) {
     const { page = 1, limit = 10 } = data || {};
     return this.questionsService.getQuestions({ page, limit });
   }
 
-  @MessagePattern('get_question_by_id')
+  @MessagePattern(QUESTIONS_PATTERNS.GET_BY_ID)
   findOne(@Payload() data: { id: string }) {
     return this.questionsService.getQuestionById(data.id);
   }
 
-  @MessagePattern('update_question')
+  @MessagePattern(QUESTIONS_PATTERNS.UPDATE)
   update(
     @Payload()
     data: {
@@ -46,7 +47,7 @@ export class QuestionsController {
     );
   }
 
-  @MessagePattern('delete_question')
+  @MessagePattern(QUESTIONS_PATTERNS.DELETE)
   remove(
     @Payload() data: { id: string; authorEmail: string; isAdmin?: boolean },
   ) {
@@ -57,12 +58,12 @@ export class QuestionsController {
     );
   }
 
-  @MessagePattern('create_answer')
+  @MessagePattern(ANSWERS_PATTERNS.CREATE)
   createAnswer(@Payload() createAnswerDto: CreateAnswerDto) {
     return this.questionsService.createAnswer(createAnswerDto);
   }
 
-  @MessagePattern('get_answers')
+  @MessagePattern(ANSWERS_PATTERNS.GET_LIST)
   getAnswers(
     @Payload()
     data: {
@@ -81,12 +82,12 @@ export class QuestionsController {
     });
   }
 
-  @MessagePattern('get_answer_by_id')
+  @MessagePattern(ANSWERS_PATTERNS.GET_BY_ID)
   getAnswerById(@Payload() data: { id: string }) {
     return this.questionsService.getAnswerById(data.id);
   }
 
-  @MessagePattern('update_answer')
+  @MessagePattern(ANSWERS_PATTERNS.UPDATE)
   updateAnswer(
     @Payload()
     data: {
@@ -102,7 +103,7 @@ export class QuestionsController {
     );
   }
 
-  @MessagePattern('delete_answer')
+  @MessagePattern(ANSWERS_PATTERNS.DELETE)
   deleteAnswer(
     @Payload() data: { id: string; authorId: string; isAdmin?: boolean },
   ) {

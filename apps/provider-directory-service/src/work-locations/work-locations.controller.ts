@@ -8,43 +8,44 @@ import {
   WorkLocationResponseDto,
   WorkLocationPaginatedResponseDto,
 } from '@app/contracts';
+import { WORK_LOCATIONS_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class WorkLocationsController {
   constructor(private readonly workLocationsService: WorkLocationsService) {}
 
-  @MessagePattern('work-locations.findAll')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.FIND_ALL)
   async findAll(
     @Payload() query: WorkLocationQueryDto,
   ): Promise<WorkLocationPaginatedResponseDto> {
     return this.workLocationsService.findAll(query);
   }
 
-  @MessagePattern('work-locations.findOne')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.FIND_ONE)
   async findOne(@Payload() id: string): Promise<WorkLocationResponseDto> {
     return this.workLocationsService.findOne(id);
   }
 
-  @MessagePattern('work-locations.create')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.CREATE)
   async create(
     @Payload() createWorkLocationDto: CreateWorkLocationDto,
   ): Promise<WorkLocationResponseDto> {
     return this.workLocationsService.create(createWorkLocationDto);
   }
 
-  @MessagePattern('work-locations.update')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.UPDATE)
   async update(
     @Payload() payload: { id: string; data: UpdateWorkLocationDto },
   ): Promise<WorkLocationResponseDto> {
     return this.workLocationsService.update(payload.id, payload.data);
   }
 
-  @MessagePattern('work-locations.remove')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.REMOVE)
   async remove(@Payload() id: string): Promise<WorkLocationResponseDto> {
     return this.workLocationsService.remove(id);
   }
 
-  @MessagePattern('work-locations.stats')
+  @MessagePattern(WORK_LOCATIONS_PATTERNS.GET_STATS)
   async getStats(): Promise<{
     total: number;
     active: number;

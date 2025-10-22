@@ -12,6 +12,7 @@ import {
   PaginatedResponse,
 } from '@app/contracts';
 import { RabbitMQService } from '@app/rabbitmq';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 
 @Injectable()
 export class DoctorAccountsService {
@@ -128,13 +129,16 @@ export class DoctorAccountsService {
 
     // Emit staff account updated event for cache invalidation
     try {
-      this.rabbitMQService.emitEvent('staff.account.updated', {
-        id: doctor.id,
-        role: doctor.role,
-      });
+      this.rabbitMQService.emitEvent(
+        ORCHESTRATOR_EVENTS.STAFF_ACCOUNT_UPDATED,
+        {
+          id: doctor.id,
+          role: doctor.role,
+        },
+      );
     } catch (error) {
       this.logger.error(
-        `Failed to emit staff.account.updated event for doctor ${doctor.id}:`,
+        `Failed to emit ${ORCHESTRATOR_EVENTS.STAFF_ACCOUNT_UPDATED} event for doctor ${doctor.id}:`,
         error,
       );
     }

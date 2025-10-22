@@ -17,6 +17,7 @@ import {
   CurrentUser,
 } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
+import { AUTH_PATTERNS } from '@app/contracts/patterns';
 
 @Controller('auth')
 export class AuthController {
@@ -30,7 +31,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
     return this.microserviceService.sendWithTimeout<LoginResponseDto>(
       this.accountsClient,
-      'auth.login',
+      AUTH_PATTERNS.LOGIN,
       loginDto,
     );
   }
@@ -42,7 +43,7 @@ export class AuthController {
   ): Promise<RefreshTokenResponseDto> {
     return this.microserviceService.sendWithTimeout<RefreshTokenResponseDto>(
       this.accountsClient,
-      'auth.refresh',
+      AUTH_PATTERNS.REFRESH,
       refreshTokenDto,
     );
   }
@@ -51,7 +52,7 @@ export class AuthController {
   async getProfile(@CurrentUser() user: JwtPayloadDto): Promise<IStaffAccount> {
     return this.microserviceService.sendWithTimeout<IStaffAccount>(
       this.accountsClient,
-      'auth.profile',
+      AUTH_PATTERNS.PROFILE,
       { userId: user.sub },
     );
   }
@@ -63,7 +64,7 @@ export class AuthController {
   ): Promise<ChangePasswordResponseDto> {
     return this.microserviceService.sendWithTimeout<ChangePasswordResponseDto>(
       this.accountsClient,
-      'auth.change-password',
+      AUTH_PATTERNS.CHANGE_PASSWORD,
       {
         staffId: user.sub,
         changePasswordDto,
@@ -79,7 +80,7 @@ export class AuthController {
   ): Promise<PostResponseDto> {
     return this.microserviceService.sendWithTimeout<PostResponseDto>(
       this.accountsClient,
-      'auth.verify-password',
+      AUTH_PATTERNS.VERIFY_PASSWORD,
       {
         email: user.email,
         password: verifyPasswordDto.password,

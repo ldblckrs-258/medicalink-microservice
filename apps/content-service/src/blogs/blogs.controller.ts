@@ -8,34 +8,38 @@ import {
   UpdateBlogCategoryDto,
 } from '@app/contracts';
 import { BlogQueryDto } from '@app/contracts';
+import {
+  BLOGS_PATTERNS,
+  BLOG_CATEGORIES_PATTERNS,
+} from '@app/contracts/patterns';
 
 @Controller('blogs')
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
 
-  @MessagePattern('create_blog')
+  @MessagePattern(BLOGS_PATTERNS.CREATE)
   async createBlog(@Payload() createBlogDto: CreateBlogDto) {
     return this.blogsService.createBlog(createBlogDto);
   }
 
-  @MessagePattern('get_blogs')
+  @MessagePattern(BLOGS_PATTERNS.GET_LIST)
   async getBlogs(@Payload() query: BlogQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     return this.blogsService.getBlogs({ ...query, page, limit });
   }
 
-  @MessagePattern('get_published_blog')
+  @MessagePattern(BLOGS_PATTERNS.GET_PUBLISHED)
   async getPublishedBlog(@Payload() payload: { slug: string }) {
     return this.blogsService.getPublishedBlog(payload.slug);
   }
 
-  @MessagePattern('get_blog_by_id')
+  @MessagePattern(BLOGS_PATTERNS.GET_BY_ID)
   async getBlogById(@Payload() payload: { id: string }) {
     return this.blogsService.getBlogById(payload.id);
   }
 
-  @MessagePattern('update_blog')
+  @MessagePattern(BLOGS_PATTERNS.UPDATE)
   async updateBlog(
     @Payload()
     payload: {
@@ -47,30 +51,30 @@ export class BlogsController {
     return this.blogsService.updateBlog(id, data);
   }
 
-  @MessagePattern('delete_blog')
+  @MessagePattern(BLOGS_PATTERNS.DELETE)
   async deleteBlog(@Payload() payload: { id: string }) {
     const { id } = payload;
     return this.blogsService.deleteBlog(id);
   }
 
-  @MessagePattern('get_blog_categories')
+  @MessagePattern(BLOG_CATEGORIES_PATTERNS.GET_LIST)
   async getBlogCategories() {
     return this.blogsService.getBlogCategories();
   }
 
-  @MessagePattern('create_blog_category')
+  @MessagePattern(BLOG_CATEGORIES_PATTERNS.CREATE)
   async createBlogCategory(
     @Payload() createBlogCategoryDto: CreateBlogCategoryDto,
   ) {
     return this.blogsService.createBlogCategory(createBlogCategoryDto);
   }
 
-  @MessagePattern('get_blog_category_by_id')
+  @MessagePattern(BLOG_CATEGORIES_PATTERNS.GET_BY_ID)
   async getBlogCategoryById(@Payload() payload: { id: string }) {
     return this.blogsService.getBlogCategoryById(payload.id);
   }
 
-  @MessagePattern('update_blog_category')
+  @MessagePattern(BLOG_CATEGORIES_PATTERNS.UPDATE)
   async updateBlogCategory(
     @Payload()
     payload: {
@@ -82,7 +86,7 @@ export class BlogsController {
     return this.blogsService.updateBlogCategory(id, data);
   }
 
-  @MessagePattern('delete_blog_category')
+  @MessagePattern(BLOG_CATEGORIES_PATTERNS.DELETE)
   async deleteBlogCategory(
     @Payload() payload: { id: string; forceBulkDelete?: boolean },
   ) {

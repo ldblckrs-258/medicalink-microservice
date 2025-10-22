@@ -1,6 +1,6 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { ORCHESTRATOR_EVENTS } from '../common/constants';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 import { CacheService } from '../cache';
 
 interface AssetEventPayload {

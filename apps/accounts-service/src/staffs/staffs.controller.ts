@@ -6,43 +6,44 @@ import {
   UpdateStaffDto,
   StaffQueryDto,
 } from '@app/contracts';
+import { STAFFS_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class StaffsController {
   constructor(private readonly staffsService: StaffsService) {}
 
-  @MessagePattern('staffs.findAll')
+  @MessagePattern(STAFFS_PATTERNS.FIND_ALL)
   async findAll(@Payload() query: StaffQueryDto) {
     return this.staffsService.findAll(query);
   }
 
-  @MessagePattern('staffs.findOne')
+  @MessagePattern(STAFFS_PATTERNS.FIND_ONE)
   async findOne(@Payload() id: string) {
     return this.staffsService.findOne(id);
   }
 
-  @MessagePattern('staffs.create')
+  @MessagePattern(STAFFS_PATTERNS.CREATE)
   async create(@Payload() createAccountDto: CreateAccountDto) {
     return this.staffsService.create(createAccountDto);
   }
 
-  @MessagePattern('staffs.update')
+  @MessagePattern(STAFFS_PATTERNS.UPDATE)
   async update(@Payload() payload: { id: string; data: UpdateStaffDto }) {
     return this.staffsService.update(payload.id, payload.data);
   }
 
-  @MessagePattern('staffs.remove')
+  @MessagePattern(STAFFS_PATTERNS.REMOVE)
   async remove(@Payload() id: string) {
     await this.staffsService.remove(id);
     return { success: true, message: 'Staff member removed successfully' };
   }
 
-  @MessagePattern('staffs.stats')
+  @MessagePattern(STAFFS_PATTERNS.STATS)
   async getStats() {
     return this.staffsService.getStats();
   }
 
-  @MessagePattern('staffs.assignPermissions')
+  @MessagePattern(STAFFS_PATTERNS.ASSIGN_PERMISSIONS)
   async assignPermissions(
     @Payload() payload: { userId: string; role?: string },
   ) {

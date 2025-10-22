@@ -2,7 +2,10 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { SagaOrchestratorService, SagaStep } from '../../saga';
 import { MicroserviceClientHelper } from '../../clients';
-import { SERVICE_PATTERNS } from '../../common/constants';
+import {
+  DOCTOR_ACCOUNTS_PATTERNS,
+  DOCTOR_PROFILES_PATTERNS,
+} from '@app/contracts';
 import { CreateDoctorCommandDto, DoctorCreationResultDto } from './dto';
 import { IStaffAccount } from '@app/contracts/interfaces';
 import { SagaOrchestrationError } from '../../common/errors';
@@ -48,7 +51,7 @@ export class DoctorOrchestratorService {
             input;
           const account = await this.clientHelper.send<IStaffAccount>(
             this.accountsClient,
-            SERVICE_PATTERNS.ACCOUNTS.DOCTOR_CREATE,
+            DOCTOR_ACCOUNTS_PATTERNS.CREATE,
             accountData,
             { timeoutMs: 12000 },
           );
@@ -58,7 +61,7 @@ export class DoctorOrchestratorService {
           try {
             await this.clientHelper.send(
               this.accountsClient,
-              SERVICE_PATTERNS.ACCOUNTS.DOCTOR_DELETE,
+              DOCTOR_ACCOUNTS_PATTERNS.REMOVE,
               output.account.id,
               { timeoutMs: 8000 },
             );
@@ -75,7 +78,7 @@ export class DoctorOrchestratorService {
         execute: async (input) => {
           const profile = await this.clientHelper.send<{ id: string }>(
             this.providerClient,
-            SERVICE_PATTERNS.PROVIDER.PROFILE_CREATE_EMPTY,
+            DOCTOR_PROFILES_PATTERNS.CREATE_EMPTY,
             { staffAccountId: input.account.id },
             { timeoutMs: 12000 },
           );
@@ -87,7 +90,7 @@ export class DoctorOrchestratorService {
           try {
             await this.clientHelper.send(
               this.providerClient,
-              SERVICE_PATTERNS.PROVIDER.PROFILE_DELETE,
+              DOCTOR_ACCOUNTS_PATTERNS.REMOVE,
               output.profile.id,
               { timeoutMs: 8000 },
             );

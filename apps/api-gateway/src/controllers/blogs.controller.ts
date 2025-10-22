@@ -28,6 +28,10 @@ import {
 import { BlogPublicQueryDto, BlogQueryDto } from '@app/contracts/dtos/content';
 import { MicroserviceService } from '../utils/microservice.service';
 import { DeleteBlogCategoryQueryDto } from '@app/contracts/dtos/content/delete-blog-category-query.dto';
+import {
+  BLOGS_PATTERNS,
+  BLOG_CATEGORIES_PATTERNS,
+} from '@app/contracts/patterns';
 
 @Controller('blogs')
 export class BlogsController {
@@ -42,7 +46,7 @@ export class BlogsController {
   async listCategories(@Query() query: any) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_blog_categories',
+      BLOG_CATEGORIES_PATTERNS.GET_LIST,
       query,
     );
   }
@@ -53,7 +57,7 @@ export class BlogsController {
   async getCategory(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_blog_category_by_id',
+      BLOG_CATEGORIES_PATTERNS.GET_BY_ID,
       { id },
     );
   }
@@ -64,7 +68,7 @@ export class BlogsController {
   async createCategory(@Body() dto: CreateBlogCategoryDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'create_blog_category',
+      BLOG_CATEGORIES_PATTERNS.CREATE,
       dto,
     );
   }
@@ -78,7 +82,7 @@ export class BlogsController {
   ) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'update_blog_category',
+      BLOG_CATEGORIES_PATTERNS.UPDATE,
       { id, data: dto },
     );
   }
@@ -92,7 +96,7 @@ export class BlogsController {
   ) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'delete_blog_category',
+      BLOG_CATEGORIES_PATTERNS.DELETE,
       { id, forceBulkDelete: query.forceBulkDelete },
     );
   }
@@ -103,18 +107,18 @@ export class BlogsController {
   async findPublic(@Query() query: BlogPublicQueryDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_blogs',
+      BLOGS_PATTERNS.GET_LIST,
       { ...query, status: 'PUBLISHED' },
     );
   }
 
-  // Public - get blog by id (published only)
+  // Public - get blog by slug (published only)
   @Public()
   @Get('/public/:slug')
   async findOnePublic(@Param('slug') slug: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_published_blog',
+      BLOGS_PATTERNS.GET_PUBLISHED,
       { slug },
     );
   }
@@ -124,7 +128,7 @@ export class BlogsController {
   async findOne(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_blog_by_id',
+      BLOGS_PATTERNS.GET_BY_ID,
       { id },
     );
   }
@@ -135,7 +139,7 @@ export class BlogsController {
   async create(@Body() dto: CreateBlogDto, @CurrentUser() user: JwtPayloadDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'create_blog',
+      BLOGS_PATTERNS.CREATE,
       { ...dto, authorId: user.sub },
     );
   }
@@ -146,7 +150,7 @@ export class BlogsController {
   async findAllManager(@Query() query: BlogQueryDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_blogs',
+      BLOGS_PATTERNS.GET_LIST,
       query,
     );
   }
@@ -157,7 +161,7 @@ export class BlogsController {
   async update(@Param('id') id: string, @Body() dto: UpdateBlogDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'update_blog',
+      BLOGS_PATTERNS.UPDATE,
       { id, data: dto },
     );
   }
@@ -168,7 +172,7 @@ export class BlogsController {
   async remove(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'delete_blog',
+      BLOGS_PATTERNS.DELETE,
       { id },
     );
   }

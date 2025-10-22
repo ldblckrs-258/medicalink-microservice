@@ -1,7 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { DoctorCompositeService } from '../read-composition';
-import { ORCHESTRATOR_EVENTS } from '../common/constants';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 
 /**
  * Event handler for staff account events

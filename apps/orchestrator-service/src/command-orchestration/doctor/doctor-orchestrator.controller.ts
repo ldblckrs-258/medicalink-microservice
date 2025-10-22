@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { DoctorOrchestratorService } from './doctor-orchestrator.service';
 import { CreateDoctorCommandDto, DoctorCreationResultDto } from './dto';
-import { ORCHESTRATOR_PATTERNS } from '../../common/constants';
+import { ORCHESTRATOR_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class DoctorOrchestratorController {

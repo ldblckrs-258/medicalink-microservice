@@ -24,6 +24,7 @@ import {
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
+import { DOCTOR_PROFILES_PATTERNS } from '@app/contracts/patterns';
 
 @Controller('doctors/profile')
 export class DoctorProfileController {
@@ -70,7 +71,7 @@ export class DoctorProfileController {
   getMyProfile(@CurrentUser() user: JwtPayloadDto) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.getByAccountId',
+      DOCTOR_PROFILES_PATTERNS.GET_BY_ACCOUNT_ID,
       { staffAccountId: user.sub },
       { timeoutMs: 8000 },
     );
@@ -81,7 +82,7 @@ export class DoctorProfileController {
   findOne(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.findOne',
+      DOCTOR_PROFILES_PATTERNS.FIND_ONE,
       id,
     );
   }
@@ -91,7 +92,7 @@ export class DoctorProfileController {
   create(@Body() createDto: CreateDoctorProfileDto) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.create',
+      DOCTOR_PROFILES_PATTERNS.CREATE,
       createDto,
       { timeoutMs: 12000 },
     );
@@ -105,7 +106,7 @@ export class DoctorProfileController {
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.updateSelf',
+      DOCTOR_PROFILES_PATTERNS.UPDATE_SELF,
       { staffAccountId: user.sub, data: updateDto },
       { timeoutMs: 12000 },
     );
@@ -119,7 +120,7 @@ export class DoctorProfileController {
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.update',
+      DOCTOR_PROFILES_PATTERNS.UPDATE,
       { id, ...updateDto },
       { timeoutMs: 12000 },
     );
@@ -133,7 +134,7 @@ export class DoctorProfileController {
   ) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.toggleActive',
+      DOCTOR_PROFILES_PATTERNS.TOGGLE_ACTIVE,
       { id, isActive: body?.isActive },
       { timeoutMs: 8000 },
     );
@@ -144,7 +145,7 @@ export class DoctorProfileController {
   remove(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.providerDirectoryClient,
-      'doctor-profile.remove',
+      DOCTOR_PROFILES_PATTERNS.REMOVE,
       { id },
     );
   }

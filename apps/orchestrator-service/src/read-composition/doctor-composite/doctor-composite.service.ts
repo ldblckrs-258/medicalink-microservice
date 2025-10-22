@@ -3,11 +3,11 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CacheService } from '../../cache/cache.service';
 import { MicroserviceClientHelper } from '../../clients';
+import { CACHE_PREFIXES, CACHE_TTL } from '../../common/constants';
 import {
-  SERVICE_PATTERNS,
-  CACHE_PREFIXES,
-  CACHE_TTL,
-} from '../../common/constants';
+  DOCTOR_ACCOUNTS_PATTERNS,
+  DOCTOR_PROFILES_PATTERNS,
+} from '@app/contracts';
 import {
   DoctorCompositeQueryDto,
   DoctorCompositeResultDto,
@@ -58,14 +58,14 @@ export class DoctorCompositeService extends BaseCompositeService<
       {
         source1: {
           client: this.accountsClient,
-          pattern: SERVICE_PATTERNS.ACCOUNTS.DOCTOR_GET_BY_ID,
+          pattern: DOCTOR_ACCOUNTS_PATTERNS.FIND_ONE,
           payload: staffAccountId,
           timeoutMs: 8000,
           serviceName: 'accounts-service',
         },
         source2: {
           client: this.providerClient,
-          pattern: SERVICE_PATTERNS.PROVIDER.PROFILE_GET_BY_ACCOUNT_ID,
+          pattern: DOCTOR_PROFILES_PATTERNS.GET_BY_ACCOUNT_ID,
           payload: { staffAccountId },
           timeoutMs: 8000,
           serviceName: 'provider-directory-service',
@@ -94,7 +94,7 @@ export class DoctorCompositeService extends BaseCompositeService<
       {
         primaryFetch: {
           client: this.accountsClient,
-          pattern: SERVICE_PATTERNS.ACCOUNTS.DOCTOR_SEARCH,
+          pattern: DOCTOR_ACCOUNTS_PATTERNS.FIND_ALL,
           payload: {
             search: query.search,
             page: query.page || 1,
@@ -107,7 +107,7 @@ export class DoctorCompositeService extends BaseCompositeService<
         },
         secondaryFetch: (accounts: IStaffAccount[]) => ({
           client: this.providerClient,
-          pattern: SERVICE_PATTERNS.PROVIDER.PROFILE_GET_BY_ACCOUNT_IDS,
+          pattern: DOCTOR_PROFILES_PATTERNS.GET_BY_ACCOUNT_IDS,
           payload: {
             staffAccountIds: accounts.map((acc) => acc.id),
             specialtyIds: query.specialtyIds,
@@ -171,14 +171,14 @@ export class DoctorCompositeService extends BaseCompositeService<
       {
         primaryFetch: {
           client: this.accountsClient,
-          pattern: SERVICE_PATTERNS.ACCOUNTS.DOCTOR_FIND_ALL,
+          pattern: DOCTOR_ACCOUNTS_PATTERNS.FIND_ALL,
           payload: query,
           timeoutMs: 12000,
           serviceName: 'accounts-service',
         },
         secondaryFetch: (accounts: IStaffAccount[]) => ({
           client: this.providerClient,
-          pattern: SERVICE_PATTERNS.PROVIDER.PROFILE_GET_BY_ACCOUNT_IDS,
+          pattern: DOCTOR_PROFILES_PATTERNS.GET_BY_ACCOUNT_IDS,
           payload: {
             staffAccountIds: accounts.map((acc) => acc.id),
             ...(query.isActive !== undefined && { isActive: query.isActive }),

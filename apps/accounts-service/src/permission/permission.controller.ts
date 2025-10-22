@@ -11,18 +11,22 @@ import {
   RevokeGroupPermissionDto,
   RevokeUserPermissionDto,
 } from '@app/contracts';
+import {
+  PERMISSION_PATTERNS,
+  PERMISSION_GROUP_PATTERNS,
+} from '@app/contracts/patterns';
 
 @Controller()
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
   // Permission Management
-  @MessagePattern('permissions.getAll')
+  @MessagePattern(PERMISSION_PATTERNS.GET_ALL_PERMISSIONS)
   async getAllPermissions() {
     return this.permissionService.getAllPermissions();
   }
 
-  @MessagePattern('permissions.getUserSnapshot')
+  @MessagePattern(PERMISSION_PATTERNS.GET_USER_PERMISSION_SNAPSHOT)
   async getUserPermissionSnapshot(
     @Payload() payload: { userId: string; tenantId?: string },
   ) {
@@ -32,7 +36,7 @@ export class PermissionController {
     );
   }
 
-  @MessagePattern('permissions.getUserPermissions')
+  @MessagePattern(PERMISSION_PATTERNS.GET_USER_PERMISSIONS)
   async getUserPermissions(
     @Payload() payload: { userId: string; tenantId?: string },
   ) {
@@ -42,7 +46,7 @@ export class PermissionController {
     );
   }
 
-  @MessagePattern('permissions.hasPermission')
+  @MessagePattern(PERMISSION_PATTERNS.HAS_PERMISSION)
   async hasPermission(
     @Payload()
     payload: {
@@ -63,30 +67,30 @@ export class PermissionController {
   }
 
   // User Permission Management
-  @MessagePattern('permissions.assignUserPermission')
+  @MessagePattern(PERMISSION_PATTERNS.ASSIGN_USER_PERMISSION)
   async assignUserPermission(@Payload() dto: AssignUserPermissionDto) {
     await this.permissionService.assignUserPermission(dto);
     return { success: true, message: 'User permission assigned successfully' };
   }
 
-  @MessagePattern('permissions.revokeUserPermission')
+  @MessagePattern(PERMISSION_PATTERNS.REVOKE_USER_PERMISSION)
   async revokeUserPermission(@Payload() dto: RevokeUserPermissionDto) {
     await this.permissionService.revokeUserPermission(dto);
     return { success: true, message: 'User permission revoked successfully' };
   }
 
   // Group Management
-  @MessagePattern('permissions.getAllGroups')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.GET_ALL)
   async getAllGroups(@Payload() payload: { tenantId?: string }) {
     return this.permissionService.getAllGroups(payload.tenantId);
   }
 
-  @MessagePattern('permissions.createGroup')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.CREATE)
   async createGroup(@Payload() dto: CreatePermissionGroupDto) {
     return this.permissionService.createGroup(dto);
   }
 
-  @MessagePattern('permissions.updateGroup')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.UPDATE)
   async updateGroup(@Payload() payload: UpdateGroupPayload) {
     return this.permissionService.updateGroup(
       payload.id,
@@ -97,14 +101,14 @@ export class PermissionController {
     );
   }
 
-  @MessagePattern('permissions.deleteGroup')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.DELETE)
   async deleteGroup(@Payload() payload: { groupId: string }) {
     await this.permissionService.deleteGroup(payload.groupId);
     return { success: true, message: 'Group deleted successfully' };
   }
 
   // User Group Management
-  @MessagePattern('permissions.getUserGroups')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.GET_USER_GROUPS)
   async getUserGroups(
     @Payload() payload: { userId: string; tenantId?: string },
   ) {
@@ -114,20 +118,20 @@ export class PermissionController {
     );
   }
 
-  @MessagePattern('permissions.addUserToGroup')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.ADD_USER_TO_GROUP)
   async addUserToGroup(@Payload() dto: AddUserToGroupDto) {
     await this.permissionService.addUserToGroup(dto);
     return { success: true, message: 'User added to group successfully' };
   }
 
-  @MessagePattern('permissions.removeUserFromGroup')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.REMOVE_USER_FROM_GROUP)
   async removeUserFromGroup(@Payload() dto: RemoveUserFromGroupDto) {
     await this.permissionService.removeUserFromGroup(dto);
     return { success: true, message: 'User removed from group successfully' };
   }
 
   // Group Permission Management
-  @MessagePattern('permissions.getGroupPermissions')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.GET_GROUP_PERMISSIONS)
   async getGroupPermissions(
     @Payload() payload: { groupId: string; tenantId?: string },
   ) {
@@ -137,31 +141,31 @@ export class PermissionController {
     );
   }
 
-  @MessagePattern('permissions.assignGroupPermission')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.ASSIGN_GROUP_PERMISSION)
   async assignGroupPermission(@Payload() dto: AssignGroupPermissionDto) {
     await this.permissionService.assignGroupPermission(dto);
     return { success: true, message: 'Group permission assigned successfully' };
   }
 
-  @MessagePattern('permissions.revokeGroupPermission')
+  @MessagePattern(PERMISSION_GROUP_PATTERNS.REVOKE_GROUP_PERMISSION)
   async revokeGroupPermission(@Payload() dto: RevokeGroupPermissionDto) {
     await this.permissionService.revokeGroupPermission(dto);
     return { success: true, message: 'Group permission revoked successfully' };
   }
 
   // Permission Management Stats
-  @MessagePattern('permissions.getStats')
+  @MessagePattern(PERMISSION_PATTERNS.GET_PERMISSION_STATS)
   async getPermissionStats() {
     return this.permissionService.getPermissionStats();
   }
 
   // Cache Management
-  @MessagePattern('permissions.invalidateUserCache')
+  @MessagePattern(PERMISSION_PATTERNS.INVALIDATE_USER_PERMISSION_CACHE)
   invalidateUserPermissionCache(@Payload() payload: { userId: string }) {
     return this.permissionService.invalidateUserPermissionCache(payload.userId);
   }
 
-  @MessagePattern('permissions.refreshUserSnapshot')
+  @MessagePattern(PERMISSION_PATTERNS.REFRESH_USER_PERMISSION_SNAPSHOT)
   async refreshUserPermissionSnapshot(
     @Payload() payload: { userId: string; tenantId?: string },
   ) {

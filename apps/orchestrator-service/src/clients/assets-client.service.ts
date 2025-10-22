@@ -8,7 +8,7 @@ import {
   AssetsListResponseDto,
   AssetEntityType,
 } from '@app/contracts';
-import { SERVICE_PATTERNS } from '../common/constants';
+import { ASSETS_PATTERNS } from '@app/contracts/patterns';
 import { MicroserviceClientHelper } from './microservice-client.helper';
 
 const TIMEOUTS = {
@@ -32,7 +32,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetResponseDto>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.CREATE,
+        ASSETS_PATTERNS.CREATE,
         createAssetDto,
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -69,7 +69,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetResponseDto>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.GET_BY_ID,
+        ASSETS_PATTERNS.GET_BY_ID,
         { id },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -92,7 +92,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetResponseDto>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.GET_BY_PUBLIC_ID,
+        ASSETS_PATTERNS.GET_BY_PUBLIC_ID,
         { publicId },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -115,7 +115,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetsListResponseDto>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.GET_LIST,
+        ASSETS_PATTERNS.GET_LIST,
         query,
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -141,7 +141,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetResponseDto[]>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.GET_BY_ENTITY,
+        ASSETS_PATTERNS.GET_BY_ENTITY,
         {
           entityType,
           entityId,
@@ -170,7 +170,7 @@ export class AssetsClientService {
     try {
       const result = await this.clientHelper.send<AssetResponseDto>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.UPDATE,
+        ASSETS_PATTERNS.UPDATE,
         { id, updateAssetDto },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -194,7 +194,7 @@ export class AssetsClientService {
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.DELETE,
+        ASSETS_PATTERNS.DELETE,
         { id },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -217,7 +217,7 @@ export class AssetsClientService {
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.DELETE_BY_PUBLIC_ID,
+        ASSETS_PATTERNS.DELETE_BY_PUBLIC_ID,
         {
           publicId,
         },
@@ -245,7 +245,7 @@ export class AssetsClientService {
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.DELETE_BY_ENTITY,
+        ASSETS_PATTERNS.DELETE_BY_ENTITY,
         {
           entityType,
           entityId,
@@ -271,7 +271,7 @@ export class AssetsClientService {
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.CLEANUP_ORPHANED,
+        ASSETS_PATTERNS.CLEANUP_ORPHANED,
         { publicIds },
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );
@@ -295,7 +295,7 @@ export class AssetsClientService {
     try {
       await this.clientHelper.send<void>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.RECONCILE_ENTITY,
+        ASSETS_PATTERNS.RECONCILE_ENTITY,
         {
           prevPublicIds,
           nextPublicIds,
@@ -322,7 +322,7 @@ export class AssetsClientService {
         timestamp: string;
       }>(
         this.contentClient,
-        SERVICE_PATTERNS.CONTENT_ASSETS.HEALTH_CHECK,
+        ASSETS_PATTERNS.HEALTH_CHECK,
         {},
         { timeoutMs: TIMEOUTS.SERVICE_CALL },
       );

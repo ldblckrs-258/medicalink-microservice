@@ -9,48 +9,49 @@ import {
 } from '@app/contracts/dtos/staff';
 import { PaginatedResponse } from '@app/contracts/dtos/common';
 import { StaffResponse } from '../staffs/interfaces';
+import { DOCTOR_ACCOUNTS_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class DoctorAccountsController {
   constructor(private readonly doctorAccountsService: DoctorAccountsService) {}
 
-  @MessagePattern('doctor-accounts.findAll')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.FIND_ALL)
   async findAll(
     @Payload() query: StaffQueryDto,
   ): Promise<PaginatedResponse<StaffResponse>> {
     return await this.doctorAccountsService.findAll(query);
   }
 
-  @MessagePattern('doctor-accounts.findOne')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.FIND_ONE)
   async findOne(@Payload() id: string): Promise<StaffResponse> {
     return await this.doctorAccountsService.findOne(id);
   }
 
-  @MessagePattern('doctor-accounts.create')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.CREATE)
   async create(
     @Payload() createDoctorDto: CreateAccountDto,
   ): Promise<StaffResponse> {
     return await this.doctorAccountsService.create(createDoctorDto);
   }
 
-  @MessagePattern('doctor-accounts.update')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.UPDATE)
   async update(
     @Payload() payload: { id: string; data: UpdateStaffDto },
   ): Promise<StaffResponse> {
     return await this.doctorAccountsService.update(payload.id, payload.data);
   }
 
-  @MessagePattern('doctor-accounts.remove')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.REMOVE)
   async remove(@Payload() id: string): Promise<StaffResponse> {
     return await this.doctorAccountsService.remove(id);
   }
 
-  @MessagePattern('doctor-accounts.stats')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.STATS)
   async getStats(): Promise<StaffStatsDto> {
     return await this.doctorAccountsService.getStats();
   }
 
-  @MessagePattern('doctor-accounts.assignPermissions')
+  @MessagePattern(DOCTOR_ACCOUNTS_PATTERNS.ASSIGN_PERMISSIONS)
   async assignPermissions(
     @Payload() payload: { userId: string; role?: string },
   ): Promise<{ success: boolean; message: string }> {

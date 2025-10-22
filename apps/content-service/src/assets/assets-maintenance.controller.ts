@@ -10,6 +10,7 @@ import {
 } from '@app/contracts';
 import { AssetsService } from './assets.service';
 import { AssetsMaintenanceService } from './assets-maintenance.service';
+import { ASSETS_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class AssetsMaintenanceController {
@@ -18,35 +19,35 @@ export class AssetsMaintenanceController {
     private readonly assetsMaintenanceService: AssetsMaintenanceService,
   ) {}
 
-  @MessagePattern('assets.create')
+  @MessagePattern(ASSETS_PATTERNS.CREATE)
   async createAsset(
     @Payload() createAssetDto: CreateAssetDto,
   ): Promise<AssetResponseDto> {
     return this.assetsService.createAsset(createAssetDto);
   }
 
-  @MessagePattern('assets.get_by_id')
+  @MessagePattern(ASSETS_PATTERNS.GET_BY_ID)
   async getAssetById(
     @Payload() payload: { id: string },
   ): Promise<AssetResponseDto> {
     return this.assetsService.getAssetById(payload.id);
   }
 
-  @MessagePattern('assets.get_by_public_id')
+  @MessagePattern(ASSETS_PATTERNS.GET_BY_PUBLIC_ID)
   async getAssetByPublicId(
     @Payload() payload: { publicId: string },
   ): Promise<AssetResponseDto> {
     return this.assetsService.getAssetByPublicId(payload.publicId);
   }
 
-  @MessagePattern('assets.get_list')
+  @MessagePattern(ASSETS_PATTERNS.GET_LIST)
   async getAssets(
     @Payload() query: GetAssetsQueryDto,
   ): Promise<AssetsListResponseDto> {
     return this.assetsService.getAssets(query);
   }
 
-  @MessagePattern('assets.get_by_entity')
+  @MessagePattern(ASSETS_PATTERNS.GET_BY_ENTITY)
   async getAssetsByEntity(
     @Payload() payload: { entityType: AssetEntityType; entityId: string },
   ): Promise<AssetResponseDto[]> {
@@ -56,14 +57,14 @@ export class AssetsMaintenanceController {
     );
   }
 
-  @MessagePattern('assets.update')
+  @MessagePattern(ASSETS_PATTERNS.UPDATE)
   async updateAsset(
     @Payload() payload: { id: string; updateAssetDto: UpdateAssetDto },
   ): Promise<AssetResponseDto> {
     return this.assetsService.updateAsset(payload.id, payload.updateAssetDto);
   }
 
-  @MessagePattern('assets.delete')
+  @MessagePattern(ASSETS_PATTERNS.DELETE)
   async deleteAsset(@Payload() payload: { id: string }): Promise<void> {
     const asset = await this.assetsService.getAssetById(payload.id);
 
@@ -72,7 +73,7 @@ export class AssetsMaintenanceController {
     await this.assetsMaintenanceService.cleanupEntityAssets([asset.publicId]);
   }
 
-  @MessagePattern('assets.delete_by_public_id')
+  @MessagePattern(ASSETS_PATTERNS.DELETE_BY_PUBLIC_ID)
   async deleteAssetByPublicId(
     @Payload() payload: { publicId: string },
   ): Promise<void> {
@@ -81,7 +82,7 @@ export class AssetsMaintenanceController {
     await this.assetsMaintenanceService.cleanupEntityAssets([payload.publicId]);
   }
 
-  @MessagePattern('assets.delete_by_entity')
+  @MessagePattern(ASSETS_PATTERNS.DELETE_BY_ENTITY)
   async deleteAssetsByEntity(
     @Payload() payload: { entityType: AssetEntityType; entityId: string },
   ): Promise<void> {
@@ -95,7 +96,7 @@ export class AssetsMaintenanceController {
     }
   }
 
-  @MessagePattern('assets.cleanup_orphaned')
+  @MessagePattern(ASSETS_PATTERNS.CLEANUP_ORPHANED)
   async cleanupOrphanedAssets(
     @Payload() payload: { publicIds: string[] },
   ): Promise<{ deletedDb: number; requested: number }> {
@@ -115,7 +116,7 @@ export class AssetsMaintenanceController {
     return { deletedDb, requested: publicIds.length };
   }
 
-  @MessagePattern('assets.reconcile_entity')
+  @MessagePattern(ASSETS_PATTERNS.RECONCILE_ENTITY)
   async reconcileEntityAssets(
     @Payload() payload: { prevPublicIds: string[]; nextPublicIds: string[] },
   ): Promise<void> {
@@ -125,7 +126,7 @@ export class AssetsMaintenanceController {
     );
   }
 
-  @MessagePattern('assets.health_check')
+  @MessagePattern(ASSETS_PATTERNS.HEALTH_CHECK)
   healthCheck(): { status: string; timestamp: string } {
     return {
       status: 'ok',

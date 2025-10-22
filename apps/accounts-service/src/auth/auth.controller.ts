@@ -6,12 +6,13 @@ import {
   LoginDto,
   RefreshTokenDto,
 } from '@app/contracts/dtos/auth';
+import { AUTH_PATTERNS } from '@app/contracts/patterns';
 
 @Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @MessagePattern('auth.login')
+  @MessagePattern(AUTH_PATTERNS.LOGIN)
   async login(@Payload() loginDto: LoginDto) {
     const staff = await this.authService.validateStaff(
       loginDto.email,
@@ -36,17 +37,17 @@ export class AuthController {
     };
   }
 
-  @MessagePattern('auth.refresh')
+  @MessagePattern(AUTH_PATTERNS.REFRESH)
   async refreshToken(@Payload() refreshTokenDto: RefreshTokenDto) {
     return await this.authService.refreshToken(refreshTokenDto.refresh_token);
   }
 
-  @MessagePattern('auth.profile')
+  @MessagePattern(AUTH_PATTERNS.PROFILE)
   async getProfile(@Payload() payload: { userId: string }) {
     return this.authService.getStaffProfile(payload.userId);
   }
 
-  @MessagePattern('auth.change-password')
+  @MessagePattern(AUTH_PATTERNS.CHANGE_PASSWORD)
   async changePassword(
     @Payload()
     payload: {
@@ -60,7 +61,7 @@ export class AuthController {
     );
   }
 
-  @MessagePattern('auth.verify-password')
+  @MessagePattern(AUTH_PATTERNS.VERIFY_PASSWORD)
   async verifyPassword(
     @Payload()
     payload: {

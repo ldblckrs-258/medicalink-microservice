@@ -11,6 +11,7 @@ import {
 import { NotFoundError } from '@app/domain-errors';
 import { RabbitMQService } from '@app/rabbitmq';
 import { extractPublicIdFromUrl } from '../utils/extractor';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 
 @Injectable()
 export class DoctorsService {
@@ -29,17 +30,20 @@ export class DoctorsService {
     // Emit doctor profile created event for cache invalidation and asset management
     try {
       const assets = this.extractAssetPublicIds(result);
-      this.rabbitMQService.emitEvent('doctor.profile.created', {
-        profileId: result.id,
-        staffAccountId: result.staffAccountId,
-        assets,
-      });
+      this.rabbitMQService.emitEvent(
+        ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_CREATED,
+        {
+          profileId: result.id,
+          staffAccountId: result.staffAccountId,
+          assets,
+        },
+      );
       this.logger.debug(
-        `Emitted doctor.profile.created event for doctor ${result.id} with ${assets.length} assets`,
+        `Emitted ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_CREATED} event for doctor ${result.id} with ${assets.length} assets`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to emit doctor.profile.created event: ${error.message}`,
+        `Failed to emit ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_CREATED} event: ${error.message}`,
       );
       // Don't throw error to avoid breaking the main operation
     }
@@ -138,18 +142,21 @@ export class DoctorsService {
 
     // Emit doctor profile updated event for cache invalidation and asset management
     try {
-      this.rabbitMQService.emitEvent('doctor.profile.updated', {
-        profileId: result.id,
-        staffAccountId: result.staffAccountId,
-        prevAssets,
-        nextAssets,
-      });
+      this.rabbitMQService.emitEvent(
+        ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED,
+        {
+          profileId: result.id,
+          staffAccountId: result.staffAccountId,
+          prevAssets,
+          nextAssets,
+        },
+      );
       this.logger.log(
-        `Emitted doctor.profile.updated event for doctor ${result.id} (prev: ${prevAssets.length}, next: ${nextAssets.length} assets)`,
+        `Emitted ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED} event for doctor ${result.id} (prev: ${prevAssets.length}, next: ${nextAssets.length} assets)`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to emit doctor.profile.updated event for doctor ${result.id}:`,
+        `Failed to emit ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED} event for doctor ${result.id}:`,
         error,
       );
     }
@@ -189,16 +196,19 @@ export class DoctorsService {
 
     // Emit doctor profile deleted event for asset cleanup
     try {
-      this.rabbitMQService.emitEvent('doctor.profile.deleted', {
-        profileId: id,
-        assetPublicIds,
-      });
+      this.rabbitMQService.emitEvent(
+        ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_DELETED,
+        {
+          profileId: id,
+          assetPublicIds,
+        },
+      );
       this.logger.log(
-        `Emitted doctor.profile.deleted event for doctor ${id} with ${assetPublicIds.length} assets for cleanup`,
+        `Emitted ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_DELETED} event for doctor ${id} with ${assetPublicIds.length} assets for cleanup`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to emit doctor.profile.deleted event for doctor ${id}:`,
+        `Failed to emit ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_DELETED} event for doctor ${id}:`,
         error,
       );
     }
@@ -218,16 +228,19 @@ export class DoctorsService {
 
     // Emit doctor profile updated event for cache invalidation and asset management
     try {
-      this.rabbitMQService.emitEvent('doctor.profile.updated', {
-        profileId: doctor.id,
-        staffAccountId: doctor.staffAccountId,
-      });
+      this.rabbitMQService.emitEvent(
+        ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED,
+        {
+          profileId: doctor.id,
+          staffAccountId: doctor.staffAccountId,
+        },
+      );
       this.logger.log(
-        `Emitted doctor.profile.updated event for doctor ${doctor.id}`,
+        `Emitted ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED} event for doctor ${doctor.id}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to emit doctor.profile.updated event for doctor ${doctor.id}:`,
+        `Failed to emit ${ORCHESTRATOR_EVENTS.DOCTOR_PROFILE_UPDATED} event for doctor ${doctor.id}:`,
         error,
       );
     }

@@ -3,7 +3,7 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 import { DoctorCompositeService } from '../read-composition';
 import { AssetsClientService } from '../clients';
 import { AssetCacheService } from '../cache/asset-cache.service';
-import { ORCHESTRATOR_EVENTS } from '../common/constants';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 import { AssetEntityType, CreateAssetDto } from '@app/contracts';
 
 interface RetryConfig {
