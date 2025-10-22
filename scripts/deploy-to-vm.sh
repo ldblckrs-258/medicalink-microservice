@@ -139,6 +139,9 @@ case $SERVICE_NAME in
         ;;
 esac
 
+# Debug: Show input service name
+print_header "Debug: Input service name: $SERVICE_NAME"
+
 # Create override file content
 # Map service name to docker-compose service name and container name
 case $SERVICE_NAME in
@@ -172,6 +175,9 @@ case $SERVICE_NAME in
         ;;
 esac
 
+# Debug: Show mapped service names
+print_header "Debug: COMPOSE_SERVICE_NAME=$COMPOSE_SERVICE_NAME, CONTAINER_NAME=$CONTAINER_NAME"
+
 OVERRIDE_CONTENT="services:
   $COMPOSE_SERVICE_NAME:
     image: $FULL_IMAGE_NAME
@@ -191,10 +197,14 @@ ssh_exec "cd $PROJECT_DIR && cat docker-compose.override.yml"
 # Stop and restart only the specific service
 print_header "Updating service with new image..."
 
-# Stop the specific container
-ssh_exec "cd $PROJECT_DIR && docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
-
-print_success "Service stopped"
+# Stop the specific container if it exists
+print_header "Stopping existing container..."
+if ssh_exec "cd $PROJECT_DIR && docker ps -q --filter name=$CONTAINER_NAME" | grep -q .; then
+    ssh_exec "cd $PROJECT_DIR && docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME"
+    print_success "Container stopped and removed"
+else
+    print_warning "Container $CONTAINER_NAME not found, skipping stop"
+fi
 
 # Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
