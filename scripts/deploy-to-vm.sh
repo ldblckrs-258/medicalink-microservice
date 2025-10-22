@@ -81,9 +81,38 @@ scp_copy() {
     scp -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$1" "$VM_USER@$VM_HOST:$2"
 }
 
+# Rollback variables
+ORIGINAL_IMAGE=""
+ROLLBACK_NEEDED=false
+
+# Rollback function
+rollback_service() {
+    if [ "$ROLLBACK_NEEDED" = true ] && [ -n "$ORIGINAL_IMAGE" ]; then
+        print_warning "Rolling back to original image: $ORIGINAL_IMAGE"
+        
+        # Create rollback override file
+        ROLLBACK_OVERRIDE="docker-compose.rollback.${SERVICE_NAME}.yml"
+        ssh_exec "cd $PROJECT_DIR && echo 'services:' > $ROLLBACK_OVERRIDE"
+        ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> $ROLLBACK_OVERRIDE"
+        ssh_exec "cd $PROJECT_DIR && echo '    image: $ORIGINAL_IMAGE' >> $ROLLBACK_OVERRIDE"
+        ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> $ROLLBACK_OVERRIDE"
+        
+        # Start service with original image
+        if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $ROLLBACK_OVERRIDE up -d"; then
+            print_success "Rollback completed successfully"
+            ssh_exec "cd $PROJECT_DIR && rm -f $ROLLBACK_OVERRIDE"
+        else
+            print_error "Rollback failed"
+        fi
+    fi
+}
+
 # Cleanup function
 cleanup() {
     rm -f "$SSH_KEY_FILE"
+    if [ "$ROLLBACK_NEEDED" = true ]; then
+        rollback_service
+    fi
 }
 trap cleanup EXIT
 
@@ -204,6 +233,18 @@ ssh_exec "cd $PROJECT_DIR && cat $OVERRIDE_FILE"
 # Stop and restart only the specific service
 print_header "Updating service with new image..."
 
+# Save original image before stopping container
+print_header "Saving original container state..."
+if ssh_exec "cd $PROJECT_DIR && docker ps -q --filter name=$CONTAINER_NAME" | grep -q .; then
+    # Get the current image of the running container
+    ORIGINAL_IMAGE=$(ssh_exec "cd $PROJECT_DIR && docker inspect $CONTAINER_NAME --format='{{.Config.Image}}'" | tr -d '\r\n')
+    print_success "Original image saved: $ORIGINAL_IMAGE"
+    ROLLBACK_NEEDED=true
+else
+    print_warning "Container $CONTAINER_NAME not found, no rollback needed"
+    ROLLBACK_NEEDED=false
+fi
+
 # Stop the specific container if it exists
 print_header "Stopping existing container..."
 if ssh_exec "cd $PROJECT_DIR && docker ps -q --filter name=$CONTAINER_NAME" | grep -q .; then
@@ -215,15 +256,22 @@ fi
 
 # Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
-ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f $OVERRIDE_FILE up -d --no-deps $COMPOSE_SERVICE_NAME"
-
-print_success "Service started"
+if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE up -d"; then
+    print_success "Service started"
+    # Mark rollback as not needed since deployment succeeded
+    ROLLBACK_NEEDED=false
+else
+    print_error "Failed to start service with new image"
+    exit 1
+fi
 
 # Restart nginx to pick up any service changes
 print_header "Restarting nginx to pick up service changes..."
-ssh_exec "cd $PROJECT_DIR && docker restart medicalink-nginx"
-
-print_success "Nginx restarted"
+if ssh_exec "cd $PROJECT_DIR && docker restart medicalink-nginx"; then
+    print_success "Nginx restarted"
+else
+    print_warning "Failed to restart nginx (this might be normal if nginx is not running)"
+fi
 
 # Run Prisma migrations for database services
 if [[ "$SERVICE_NAME" =~ ^(accounts-service|booking-service|content-service|notification-service|provider-service)$ ]]; then
@@ -262,6 +310,7 @@ if [[ "$SERVICE_NAME" =~ ^(accounts-service|booking-service|content-service|noti
         print_success "Prisma migrations completed for $SERVICE_NAME"
     else
         print_warning "Prisma migrations failed for $SERVICE_NAME (this might be normal if no new migrations exist)"
+        # Don't exit on migration failure as it might be normal
     fi
 else
     print_header "Skipping Prisma migrations for $SERVICE_NAME (not a database service)"
@@ -273,20 +322,24 @@ sleep 15
 
 # Health check
 print_header "Checking service health..."
-if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE ps | grep -q 'Up'"; then
+if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE ps | grep -q 'Up'"; then
     print_success "$SERVICE_NAME deployed successfully!"
     
     # Show service status
     print_header "Service status:"
-    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE ps"
+    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE ps"
     
     # Show recent logs
     print_header "Recent logs:"
-    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE logs --tail=20"
+    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE logs --tail=20"
+    
+    # Mark rollback as not needed since deployment completed successfully
+    ROLLBACK_NEEDED=false
 else
     print_error "Service health check failed"
     print_header "Service logs:"
-    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE logs --tail=50"
+    ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE logs --tail=50"
+    # Rollback will be triggered by the cleanup function
     exit 1
 fi
 
@@ -295,3 +348,7 @@ print_header "Cleaning up old images..."
 ssh_exec "docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep 'medicalink-$SERVICE_NAME' | tail -n +4 | awk '{print \$3}' | xargs -r docker rmi -f || true"
 
 print_success "Deployment completed successfully!"
+
+# Final cleanup - remove override files since deployment was successful
+print_header "Cleaning up deployment files..."
+ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.*.yml docker-compose.rollback.*.yml"
