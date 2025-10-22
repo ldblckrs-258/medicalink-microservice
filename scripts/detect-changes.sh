@@ -83,14 +83,8 @@ for file in $CHANGED_FILES; do
             add_service "provider-service"
             ;;
         .github/workflows/*)
-            # Changes in GitHub Actions workflows affect all services
-            add_service "accounts-service"
-            add_service "api-gateway"
-            add_service "booking-service"
-            add_service "content-service"
-            add_service "notification-service"
-            add_service "orchestrator-service"
-            add_service "provider-service"
+            # Changes in GitHub Actions workflows don't affect services
+            # Skip - no services need rebuilding for workflow changes
             ;;
         package.json|pnpm-lock.yaml|tsconfig*.json|nest-cli.json)
             # Changes in root config files affect all services
