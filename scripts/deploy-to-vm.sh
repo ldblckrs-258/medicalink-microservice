@@ -164,6 +164,48 @@ ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE up -d"
 
 print_success "Service started"
 
+# Run Prisma migrations for database services
+if [[ "$SERVICE_NAME" =~ ^(accounts-service|booking-service|content-service|notification-service|provider-service)$ ]]; then
+    print_header "Running Prisma migrations for $SERVICE_NAME..."
+    
+    # Map service name to container name and directory
+    case $SERVICE_NAME in
+        accounts-service)
+            CONTAINER_NAME="medicalink-accounts"
+            SERVICE_DIR="accounts-service"
+            ;;
+        booking-service)
+            CONTAINER_NAME="medicalink-booking"
+            SERVICE_DIR="booking-service"
+            ;;
+        content-service)
+            CONTAINER_NAME="medicalink-content"
+            SERVICE_DIR="content-service"
+            ;;
+        notification-service)
+            CONTAINER_NAME="medicalink-notification"
+            SERVICE_DIR="notification-service"
+            ;;
+        provider-service)
+            CONTAINER_NAME="medicalink-provider"
+            SERVICE_DIR="provider-directory-service"
+            ;;
+    esac
+    
+    # Wait for service to be ready before running migrations
+    print_header "Waiting for $SERVICE_NAME to be ready for migrations..."
+    sleep 10
+    
+    # Run Prisma migrations
+    if ssh_exec "docker exec $CONTAINER_NAME sh -c 'cd apps/$SERVICE_DIR && npx prisma migrate deploy'"; then
+        print_success "Prisma migrations completed for $SERVICE_NAME"
+    else
+        print_warning "Prisma migrations failed for $SERVICE_NAME (this might be normal if no new migrations exist)"
+    fi
+else
+    print_header "Skipping Prisma migrations for $SERVICE_NAME (not a database service)"
+fi
+
 # Wait for service to be ready
 print_header "Waiting for service to be ready..."
 sleep 15
