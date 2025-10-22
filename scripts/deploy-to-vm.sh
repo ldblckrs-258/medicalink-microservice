@@ -219,6 +219,12 @@ ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/docker-compose.yml -f 
 
 print_success "Service started"
 
+# Restart nginx to pick up any service changes
+print_header "Restarting nginx to pick up service changes..."
+ssh_exec "cd $PROJECT_DIR && docker restart medicalink-nginx"
+
+print_success "Nginx restarted"
+
 # Run Prisma migrations for database services
 if [[ "$SERVICE_NAME" =~ ^(accounts-service|booking-service|content-service|notification-service|provider-service)$ ]]; then
     print_header "Running Prisma migrations for $SERVICE_NAME..."
