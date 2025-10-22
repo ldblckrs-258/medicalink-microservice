@@ -186,10 +186,11 @@ OVERRIDE_CONTENT="services:
 # Remove old override file if exists
 ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.yml"
 
-# Write override file to VM
-ssh_exec "cd $PROJECT_DIR && cat > docker-compose.override.yml << 'EOF'
-$OVERRIDE_CONTENT
-EOF"
+# Write override file to VM using echo instead of heredoc
+ssh_exec "cd $PROJECT_DIR && echo 'services:' > docker-compose.override.yml"
+ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> docker-compose.override.yml"
+ssh_exec "cd $PROJECT_DIR && echo '    image: $FULL_IMAGE_NAME' >> docker-compose.override.yml"
+ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> docker-compose.override.yml"
 
 print_success "Override file created"
 
