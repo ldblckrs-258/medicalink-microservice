@@ -24,36 +24,19 @@ env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag || format('staging-{0}', github.sha) }}
 
 jobs:
-  prepare-services:
-    runs-on: ubuntu-latest
-    outputs:
-      services_json: ${{ steps.prepare.outputs.services_json }}
-    steps:
-      - name: Prepare services list
-        id: prepare
-        run: |
-          if [ -n "${{ github.event.inputs.services }}" ]; then
-            # Use custom services list
-            SERVICES="${{ github.event.inputs.services }}"
-          else
-            # Use all services
-            SERVICES="accounts-service api-gateway booking-service content-service notification-service orchestrator-service provider-service"
-          fi
-          
-          echo "Services to deploy: $SERVICES"
-          
-          # Convert to JSON array for matrix strategy
-          SERVICES_JSON=$(echo "$SERVICES" | tr ' ' '\n' | jq -R . | jq -s .)
-          echo "services_json=$SERVICES_JSON" >> $GITHUB_OUTPUT
-
   build-services:
-    needs: prepare-services
     if: github.event.inputs.force_rebuild == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJSON(needs.prepare-services.outputs.services_json) }}
-      fail-fast: false
+        service: 
+          - accounts-service
+          - api-gateway
+          - booking-service
+          - content-service
+          - notification-service
+          - orchestrator-service
+          - provider-service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -65,13 +48,19 @@ jobs:
           image_tag: ${{ env.IMAGE_TAG }}
 
   deploy-services:
-    needs: [prepare-services, build-services]
+    needs: build-services
     if: always() && (needs.build-services.result == 'success' || needs.build-services.result == 'skipped')
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJSON(needs.prepare-services.outputs.services_json) }}
-      fail-fast: false
+        service: 
+          - accounts-service
+          - api-gateway
+          - booking-service
+          - content-service
+          - notification-service
+          - orchestrator-service
+          - provider-service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -103,7 +92,7 @@ jobs:
           echo "**Full Image Name**: ghcr.io/${{ env.GITHUB_OWNER }}/medicalink-${{ matrix.service }}:${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
 
   notify-completion:
-    needs: [prepare-services, build-services, deploy-services]
+    needs: [build-services, deploy-services]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -124,7 +113,7 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Services**: ${{ github.event.inputs.services || 'All services' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: All services" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Tag**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Force Rebuild**: ${{ github.event.inputs.force_rebuild }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Status**: ${{ needs.build-services.result }}" >> $GITHUB_STEP_SUMMARY

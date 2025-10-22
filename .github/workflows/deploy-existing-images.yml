@@ -18,35 +18,18 @@ env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
 jobs:
-  prepare-services:
-    runs-on: ubuntu-latest
-    outputs:
-      services_json: ${{ steps.prepare.outputs.services_json }}
-    steps:
-      - name: Prepare services list
-        id: prepare
-        run: |
-          if [ -n "${{ github.event.inputs.services }}" ]; then
-            # Use custom services list
-            SERVICES="${{ github.event.inputs.services }}"
-          else
-            # Use all services
-            SERVICES="accounts-service api-gateway booking-service content-service notification-service orchestrator-service provider-service"
-          fi
-          
-          echo "Services to deploy: $SERVICES"
-          
-          # Convert to JSON array for matrix strategy
-          SERVICES_JSON=$(echo "$SERVICES" | tr ' ' '\n' | jq -R . | jq -s .)
-          echo "services_json=$SERVICES_JSON" >> $GITHUB_OUTPUT
-
   deploy-services:
-    needs: prepare-services
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJSON(needs.prepare-services.outputs.services_json) }}
-      fail-fast: false
+        service: 
+          - accounts-service
+          - api-gateway
+          - booking-service
+          - content-service
+          - notification-service
+          - orchestrator-service
+          - provider-service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -77,7 +60,7 @@ jobs:
           echo "**Full Image Name**: ghcr.io/${{ env.GITHUB_OWNER }}/medicalink-${{ matrix.service }}:${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
 
   notify-completion:
-    needs: [prepare-services, deploy-services]
+    needs: deploy-services
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -98,7 +81,7 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Services**: ${{ github.event.inputs.services || 'All services' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: All services" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Tag**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deploy Status**: ${{ needs.deploy-services.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
