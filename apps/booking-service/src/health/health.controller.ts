@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
-import { PrismaService } from 'apps/accounts-service/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { HEALTH_PATTERNS } from '@app/rabbitmq';
 
 @Controller()
