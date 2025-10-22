@@ -18,18 +18,28 @@ env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
 jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          if [ -z "${{ github.event.inputs.services }}" ]; then
+            echo "matrix={\"service\":[\"accounts-service\",\"api-gateway\",\"booking-service\",\"content-service\",\"notification-service\",\"orchestrator-service\",\"provider-service\"]}" >> $GITHUB_OUTPUT
+          else
+            services='${{ github.event.inputs.services }}'
+            # Convert comma-separated string to JSON array
+            json_array=$(echo "$services" | jq -R -s -c 'split(",") | map(select(length > 0))')
+            echo "matrix={\"service\":$json_array}" >> $GITHUB_OUTPUT
+          fi
+
   deploy-services:
+    needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        service: 
-          - accounts-service
-          - api-gateway
-          - booking-service
-          - content-service
-          - notification-service
-          - orchestrator-service
-          - provider-service
+      matrix: ${{ fromJSON(needs.setup-matrix.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,7 +61,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "## 🎯 Service Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Service Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service**: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image Tag**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
@@ -66,22 +76,22 @@ jobs:
     steps:
       - name: Final Summary
         run: |
-          echo "## 🚀 Deploy Existing Images Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Deploy Existing Images Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ needs.deploy-services.result }}" = "success" ]; then
-            echo "✅ **All Services Deployed Successfully**" >> $GITHUB_STEP_SUMMARY
+            echo "**All Services Deployed Successfully**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "All selected services have been successfully deployed using existing images." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Some Deployments Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "**Some Deployments Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Some service deployments failed. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Services**: All services" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: ${{ github.event.inputs.services || 'All services' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Tag**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deploy Status**: ${{ needs.deploy-services.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

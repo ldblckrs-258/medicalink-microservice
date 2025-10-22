@@ -117,12 +117,12 @@ jobs:
           VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🚀 Deploying ${{ matrix.service }} with image tag: ${{ env.IMAGE_TAG }}"
+          echo "Deploying ${{ matrix.service }} with image tag: ${{ env.IMAGE_TAG }}"
           ./scripts/deploy-to-vm.sh ${{ matrix.service }} ${{ env.IMAGE_TAG }}
 
       - name: Deployment Summary
         run: |
-          echo "## 🎯 Service Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Service Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service**: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image Tag**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
@@ -138,15 +138,15 @@ jobs:
     steps:
       - name: Final Summary
         run: |
-          echo "## 🚀 Manual Deploy All Services Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Manual Deploy All Services Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ needs.deploy-services.result }}" = "success" ]; then
-            echo "✅ **All Services Deployed Successfully**" >> $GITHUB_STEP_SUMMARY
+            echo "**All Services Deployed Successfully**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "All selected services have been successfully deployed to the staging environment." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Some Deployments Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "**Some Deployments Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Some service deployments failed. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           fi

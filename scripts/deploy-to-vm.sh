@@ -14,19 +14,19 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_header() {
-    echo -e "\n${CYAN}🚀 $1${NC}"
+    echo -e "\n${CYAN}[DEPLOY] $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}[SUCCESS] $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}[ERROR] $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}[WARNING]  $1${NC}"
 }
 
 # Validate arguments
@@ -215,16 +215,14 @@ OVERRIDE_CONTENT="services:
 # Create unique override file for this service to avoid conflicts
 OVERRIDE_FILE="docker-compose.override.${SERVICE_NAME}.yml"
 
-# Remove old override files for this service
-ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.*.yml"
+# Remove old override files for this specific service only
+ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.${SERVICE_NAME}.yml docker-compose.rollback.${SERVICE_NAME}.yml"
 
 # Write override file to VM using echo instead of heredoc
 ssh_exec "cd $PROJECT_DIR && echo 'services:' > $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '    image: $FULL_IMAGE_NAME' >> $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> $OVERRIDE_FILE"
-
-print_success "Override file created"
 
 # Debug: Show override file content
 print_header "Override file content:"
@@ -351,4 +349,4 @@ print_success "Deployment completed successfully!"
 
 # Final cleanup - remove override files since deployment was successful
 print_header "Cleaning up deployment files..."
-ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.*.yml docker-compose.rollback.*.yml"
+ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.${SERVICE_NAME}.yml docker-compose.rollback.${SERVICE_NAME}.yml"
