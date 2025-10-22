@@ -140,28 +140,35 @@ case $SERVICE_NAME in
 esac
 
 # Create override file content
-# Map service name to docker-compose service name
+# Map service name to docker-compose service name and container name
 case $SERVICE_NAME in
     accounts-service)
         COMPOSE_SERVICE_NAME="accounts"
+        CONTAINER_NAME="medicalink-accounts"
         ;;
     api-gateway)
         COMPOSE_SERVICE_NAME="gateway"
+        CONTAINER_NAME="medicalink-gateway"
         ;;
     booking-service)
         COMPOSE_SERVICE_NAME="booking"
+        CONTAINER_NAME="medicalink-booking"
         ;;
     content-service)
         COMPOSE_SERVICE_NAME="content"
+        CONTAINER_NAME="medicalink-content"
         ;;
     notification-service)
         COMPOSE_SERVICE_NAME="notification"
+        CONTAINER_NAME="medicalink-notification"
         ;;
     orchestrator-service)
         COMPOSE_SERVICE_NAME="orchestrator"
+        CONTAINER_NAME="medicalink-orchestrator"
         ;;
     provider-service)
         COMPOSE_SERVICE_NAME="provider"
+        CONTAINER_NAME="medicalink-provider"
         ;;
 esac
 
@@ -183,31 +190,6 @@ ssh_exec "cd $PROJECT_DIR && cat docker-compose.override.yml"
 
 # Stop and restart only the specific service
 print_header "Updating service with new image..."
-
-# Map service name to container name for direct control
-case $SERVICE_NAME in
-    accounts-service)
-        CONTAINER_NAME="medicalink-accounts"
-        ;;
-    api-gateway)
-        CONTAINER_NAME="medicalink-gateway"
-        ;;
-    booking-service)
-        CONTAINER_NAME="medicalink-booking"
-        ;;
-    content-service)
-        CONTAINER_NAME="medicalink-content"
-        ;;
-    notification-service)
-        CONTAINER_NAME="medicalink-notification"
-        ;;
-    orchestrator-service)
-        CONTAINER_NAME="medicalink-orchestrator"
-        ;;
-    provider-service)
-        CONTAINER_NAME="medicalink-provider"
-        ;;
-esac
 
 # Stop the specific container
 ssh_exec "cd $PROJECT_DIR && docker stop $CONTAINER_NAME || true && docker rm $CONTAINER_NAME || true"
