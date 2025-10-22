@@ -118,4 +118,4 @@ fi
 echo -e "${GREEN}Services to build: ${SERVICES_TO_BUILD[*]}${NC}" >&2
 
 # Output as space-separated string for GitHub Actions (stdout only)
-printf '%s\n' "${SERVICES_TO_BUILD[@]}"
+echo "${SERVICES_TO_BUILD[*]}"
