@@ -14,18 +14,18 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Detecting changes between $BASE_COMMIT and $HEAD_COMMIT...${NC}"
+echo -e "${YELLOW}Detecting changes between $BASE_COMMIT and $HEAD_COMMIT...${NC}" >&2
 
 # Get list of changed files
 CHANGED_FILES=$(git diff --name-only $BASE_COMMIT $HEAD_COMMIT)
 
 if [ -z "$CHANGED_FILES" ]; then
-    echo -e "${YELLOW}No changes detected.${NC}"
+    echo -e "${YELLOW}No changes detected.${NC}" >&2
     exit 0
 fi
 
-echo -e "${YELLOW}Changed files:${NC}"
-echo "$CHANGED_FILES"
+echo -e "${YELLOW}Changed files:${NC}" >&2
+echo "$CHANGED_FILES" >&2
 
 # Initialize array to store services that need rebuilding
 SERVICES_TO_BUILD=()
@@ -82,6 +82,16 @@ for file in $CHANGED_FILES; do
             add_service "orchestrator-service"
             add_service "provider-service"
             ;;
+        .github/workflows/*)
+            # Changes in GitHub Actions workflows affect all services
+            add_service "accounts-service"
+            add_service "api-gateway"
+            add_service "booking-service"
+            add_service "content-service"
+            add_service "notification-service"
+            add_service "orchestrator-service"
+            add_service "provider-service"
+            ;;
         package.json|pnpm-lock.yaml|tsconfig*.json|nest-cli.json)
             # Changes in root config files affect all services
             add_service "accounts-service"
@@ -101,11 +111,11 @@ done
 
 # Output the services that need to be built
 if [ ${#SERVICES_TO_BUILD[@]} -eq 0 ]; then
-    echo -e "${YELLOW}No services need rebuilding.${NC}"
+    echo -e "${YELLOW}No services need rebuilding.${NC}" >&2
     exit 0
 fi
 
-echo -e "${GREEN}Services to build: ${SERVICES_TO_BUILD[*]}${NC}"
+echo -e "${GREEN}Services to build: ${SERVICES_TO_BUILD[*]}${NC}" >&2
 
-# Output as space-separated string for GitHub Actions
+# Output as space-separated string for GitHub Actions (stdout only)
 printf '%s\n' "${SERVICES_TO_BUILD[@]}"
