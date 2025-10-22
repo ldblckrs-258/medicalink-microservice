@@ -67,6 +67,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.services != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         service: 
@@ -115,12 +118,25 @@ jobs:
             type=raw,value=${{ env.IMAGE_TAG }}
             type=raw,value=${{ env.IMAGE_TAG }}-{{sha}}
 
+      - name: Get service directory
+        if: steps.check-service.outputs.needs_build == 'true'
+        id: service-dir
+        run: |
+          case "${{ matrix.service }}" in
+            provider-service)
+              echo "service_dir=provider-directory-service" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "service_dir=${{ matrix.service }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
       - name: Build and push Docker image
         if: steps.check-service.outputs.needs_build == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/${{ matrix.service }}/Dockerfile
+          file: apps/${{ steps.service-dir.outputs.service_dir }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

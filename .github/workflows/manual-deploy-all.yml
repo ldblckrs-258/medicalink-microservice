@@ -27,6 +27,9 @@ jobs:
   build-services:
     if: github.event.inputs.force_rebuild == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         service: 
