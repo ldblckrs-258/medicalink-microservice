@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaModule } from '../prisma/prisma.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { SpecialtiesModule } from './specialties/specialties.module';
 import { WorkLocationsModule } from './work-locations/work-locations.module';
@@ -13,11 +13,11 @@ import { RabbitMQModule } from '@app/rabbitmq';
       isGlobal: true,
     }),
     RabbitMQModule,
+    PrismaModule,
     SpecialtiesModule,
     WorkLocationsModule,
     DoctorsModule,
   ],
   controllers: [HealthController],
-  providers: [PrismaService],
 })
 export class ProviderDirectoryServiceModule {}

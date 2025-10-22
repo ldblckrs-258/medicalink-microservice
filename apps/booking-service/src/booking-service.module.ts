@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@app/redis';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { PatientsModule } from './patients/patients.module';
-import { PrismaModule } from 'apps/accounts-service/prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
