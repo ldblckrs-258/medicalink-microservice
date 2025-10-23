@@ -244,7 +244,7 @@ fi
 
 # Start the specific service with new image using docker-compose
 print_header "Starting service with new image..."
-if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE up -d"; then
+if ssh_exec "cd $PROJECT_DIR && docker compose -f deployment/$COMPOSE_FILE -f $OVERRIDE_FILE up -d --force-recreate"; then
     print_success "Service started"
     # Mark rollback as not needed since deployment succeeded
     ROLLBACK_NEEDED=false
