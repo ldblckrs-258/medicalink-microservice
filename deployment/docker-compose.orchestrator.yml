@@ -15,19 +15,13 @@ services:
       - medicalink-network
     command: ["node", "dist/apps/orchestrator-service/main.js"]
     restart: unless-stopped
-    
-    # Logging Configuration - GCP Cloud Logging
     logging:
       driver: gcplogs
       options:
         gcp-project: "medicalink-06"
         gcp-log-cmd: "true"
-        gcp-meta-zone: "asia-southeast1-a"
-        gcp-meta-name: "medicalink-orchestrator"
-        labels: |
-          service=orchestrator-service
-          environment=production
-          component=microservice
+        labels: "service,environment,component"
+        env: "NODE_ENV,APP_NAME"
 
 networks:
   medicalink-network:

@@ -31,19 +31,13 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    
-    # Logging Configuration - GCP Cloud Logging
     logging:
       driver: gcplogs
       options:
         gcp-project: "medicalink-06"
         gcp-log-cmd: "true"
-        gcp-meta-zone: "asia-southeast1-a"
-        gcp-meta-name: "medicalink-content"
-        labels: |
-          service=content-service
-          environment=production
-          component=microservice
+        labels: "service,environment,component"
+        env: "NODE_ENV,APP_NAME"
 
 networks:
   medicalink-network:

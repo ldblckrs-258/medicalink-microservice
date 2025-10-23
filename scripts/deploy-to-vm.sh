@@ -168,9 +168,6 @@ case $SERVICE_NAME in
         ;;
 esac
 
-# Debug: Show input service name
-print_header "Debug: Input service name: $SERVICE_NAME"
-
 # Create override file content
 # Map service name to docker-compose service name and container name
 case $SERVICE_NAME in
@@ -204,9 +201,6 @@ case $SERVICE_NAME in
         ;;
 esac
 
-# Debug: Show mapped service names
-print_header "Debug: COMPOSE_SERVICE_NAME=$COMPOSE_SERVICE_NAME, CONTAINER_NAME=$CONTAINER_NAME"
-
 OVERRIDE_CONTENT="services:
   $COMPOSE_SERVICE_NAME:
     image: $FULL_IMAGE_NAME
@@ -223,10 +217,6 @@ ssh_exec "cd $PROJECT_DIR && echo 'services:' > $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '  $COMPOSE_SERVICE_NAME:' >> $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '    image: $FULL_IMAGE_NAME' >> $OVERRIDE_FILE"
 ssh_exec "cd $PROJECT_DIR && echo '    pull_policy: always' >> $OVERRIDE_FILE"
-
-# Debug: Show override file content
-print_header "Override file content:"
-ssh_exec "cd $PROJECT_DIR && cat $OVERRIDE_FILE"
 
 # Stop and restart only the specific service
 print_header "Updating service with new image..."
@@ -263,12 +253,16 @@ else
     exit 1
 fi
 
-# Restart nginx to pick up any service changes
-print_header "Restarting nginx to pick up service changes..."
-if ssh_exec "cd $PROJECT_DIR && docker restart medicalink-nginx"; then
-    print_success "Nginx restarted"
+# Restart nginx only if deploying api-gateway
+if [ "$SERVICE_NAME" = "api-gateway" ]; then
+    print_header "Restarting nginx to pick up gateway changes..."
+    if ssh_exec "cd $PROJECT_DIR && docker restart medicalink-nginx"; then
+        print_success "Nginx restarted"
+    else
+        print_warning "Failed to restart nginx (this might be normal if nginx is not running)"
+    fi
 else
-    print_warning "Failed to restart nginx (this might be normal if nginx is not running)"
+    print_header "Skipping nginx restart (only needed for api-gateway deployments)"
 fi
 
 # Run Prisma migrations for database services
@@ -343,10 +337,12 @@ fi
 
 # Clean up old images (keep last 3 versions)
 print_header "Cleaning up old images..."
-ssh_exec "docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep 'medicalink-$SERVICE_NAME' | tail -n +4 | awk '{print \$3}' | xargs -r docker rmi -f || true"
+IMAGE_REPO="ghcr.io/${GITHUB_OWNER}/medicalink-${SERVICE_NAME}"
+
+ssh_exec "docker images --format '{{.ID}} {{.CreatedAt}}' --filter reference='${IMAGE_REPO}' | sort -k2 -r | tail -n +4 | awk '{print \$1}' | xargs -r docker rmi -f || true"
+
+ssh_exec "docker images --filter dangling=true --filter reference='${IMAGE_REPO}' -q | xargs -r docker rmi -f || true"
 
 print_success "Deployment completed successfully!"
 
-# Final cleanup - remove override files since deployment was successful
-print_header "Cleaning up deployment files..."
 ssh_exec "cd $PROJECT_DIR && rm -f docker-compose.override.${SERVICE_NAME}.yml docker-compose.rollback.${SERVICE_NAME}.yml"
