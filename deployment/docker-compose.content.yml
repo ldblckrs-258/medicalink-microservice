@@ -11,7 +11,6 @@ services:
     environment:
       - NODE_ENV=production
       - CONTENT_SERVICE_PORT=3004
-      - DEBUG=prisma:client,prisma:engine
     networks:
       - medicalink-network
     command: ["node", "dist/apps/content-service/main.js"]
@@ -32,6 +31,19 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-content"
+        labels: |
+          service=content-service
+          environment=production
+          component=microservice
 
 networks:
   medicalink-network:

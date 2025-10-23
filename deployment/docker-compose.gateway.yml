@@ -17,6 +17,19 @@ services:
       - medicalink-network
     command: ["node", "dist/apps/api-gateway/main.js"]
     restart: unless-stopped
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-gateway"
+        labels: |
+          service=api-gateway
+          environment=production
+          component=microservice
 
 networks:
   medicalink-network:

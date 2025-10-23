@@ -29,6 +29,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-postgres"
+        labels: |
+          service=postgres
+          environment=production
+          component=database
 
   # Redis Cache
   redis:
@@ -45,6 +58,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-redis"
+        labels: |
+          service=redis
+          environment=production
+          component=cache
 
   # RabbitMQ Message Broker
   rabbitmq:
@@ -65,6 +91,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-rabbitmq"
+        labels: |
+          service=rabbitmq
+          environment=production
+          component=message-broker
 
   # Nginx Load Balancer
   nginx:
@@ -79,6 +118,19 @@ services:
     networks:
       - medicalink-network
     restart: unless-stopped
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-nginx"
+        labels: |
+          service=nginx
+          environment=production
+          component=load-balancer
 
 networks:
   medicalink-network:

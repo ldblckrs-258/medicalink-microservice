@@ -11,11 +11,23 @@ services:
     environment:
       - NODE_ENV=production
       - BOOKING_SERVICE_PORT=3003
-      - DEBUG=prisma:client,prisma:engine
     networks:
       - medicalink-network
     command: ["node", "dist/apps/booking-service/main.js"]
     restart: unless-stopped
+    
+    # Logging Configuration - GCP Cloud Logging
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: "medicalink-06"
+        gcp-log-cmd: "true"
+        gcp-meta-zone: "asia-southeast1-a"
+        gcp-meta-name: "medicalink-booking"
+        labels: |
+          service=booking-service
+          environment=production
+          component=microservice
 
 networks:
   medicalink-network:
