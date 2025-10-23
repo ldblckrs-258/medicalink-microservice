@@ -9,4 +9,8 @@ export class CreateSpecialtyDto {
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Icon URL must be a string' })
+  iconUrl?: string;
 }

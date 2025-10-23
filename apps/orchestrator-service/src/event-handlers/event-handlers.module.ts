@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DoctorEventHandler } from './doctor-event.handler';
 import { AccountEventHandler } from './account-event.handler';
 import { AssetsEventHandler } from './assets-event.handler';
+import { SpecialtyEventHandler } from './specialty-event.handler';
 import { DoctorCompositeModule } from '../read-composition';
 import { CacheModule } from '../cache';
 import { ClientsModule } from '../clients';
@@ -11,6 +12,11 @@ import { ClientsModule } from '../clients';
  */
 @Module({
   imports: [DoctorCompositeModule, CacheModule, ClientsModule],
-  controllers: [DoctorEventHandler, AccountEventHandler, AssetsEventHandler],
+  controllers: [
+    DoctorEventHandler,
+    AccountEventHandler,
+    AssetsEventHandler,
+    SpecialtyEventHandler,
+  ],
 })
 export class EventHandlersModule {}

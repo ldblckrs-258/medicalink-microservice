@@ -51,6 +51,7 @@ export class WorkLocationRepository {
           address: true,
           phone: true,
           timezone: true,
+          googleMapUrl: true,
           // Exclude isActive, createdAt, updatedAt when includeMetadata is false
         };
 
@@ -86,19 +87,33 @@ export class WorkLocationRepository {
         name: data.name,
         address: data.address,
         phone: data.phone,
-        timezone: data.timezone || 'Asia/Ho_Chi_Minh',
+        timezone: data.timezone,
+        googleMapUrl: data.googleMapUrl,
+        isActive: true,
       },
     });
   }
 
   async update(id: string, data: UpdateWorkLocationDto): Promise<WorkLocation> {
-    const updateData: Prisma.WorkLocationUpdateInput = {
-      name: data.name,
-      address: data.address,
-      phone: data.phone,
-      timezone: data.timezone,
-      isActive: data.isActive,
-    };
+    const updateData: any = {};
+    if (data.name) {
+      updateData.name = data.name;
+    }
+    if (data.address) {
+      updateData.address = data.address;
+    }
+    if (data.phone) {
+      updateData.phone = data.phone;
+    }
+    if (data.timezone) {
+      updateData.timezone = data.timezone;
+    }
+    if (data.googleMapUrl !== undefined) {
+      updateData.googleMapUrl = data.googleMapUrl;
+    }
+    if (data.isActive !== undefined) {
+      updateData.isActive = data.isActive;
+    }
 
     return this.prisma.workLocation.update({
       where: { id },

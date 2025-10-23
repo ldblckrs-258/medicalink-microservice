@@ -3,4 +3,5 @@ export enum AssetEntityType {
   QUESTION = 'QUESTION',
   REVIEW = 'REVIEW',
   DOCTOR = 'DOCTOR',
+  SPECIALTY = 'SPECIALTY',
 }

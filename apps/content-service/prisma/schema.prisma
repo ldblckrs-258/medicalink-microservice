@@ -42,6 +42,7 @@ model Blog {
   specialtyIds String[]   @map("specialty_ids") @db.VarChar(27)
   authorId     String     @map("author_id") @db.VarChar(27)
   status       PostStatus @default(DRAFT)
+  thumbnailUrl String?    @map("thumbnail_url") @db.VarChar(255)
   publishedAt  DateTime?  @map("published_at") @db.Timestamptz(6)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -105,6 +106,7 @@ enum AssetEntityType {
   QUESTION
   REVIEW
   DOCTOR
+  SPECIALTY
 }
 
 model Asset {

@@ -121,6 +121,35 @@ export class AssetCacheService {
   }
 
   /**
+   * Invalidate all specialty-related asset caches
+   */
+  async invalidateSpecialtyAssetCaches(specialtyId: string): Promise<void> {
+    await this.invalidateAllEntityAssetCaches(
+      AssetEntityType.SPECIALTY,
+      specialtyId,
+    );
+  }
+
+  /**
+   * Comprehensive cache invalidation for specialty asset operations
+   */
+  async invalidateSpecialtyAssetCachesComprehensive(
+    specialtyId: string,
+    assetPublicIds?: string[],
+  ): Promise<void> {
+    // Invalidate specialty-specific asset caches
+    await this.invalidateSpecialtyAssetCaches(specialtyId);
+
+    // Invalidate specific asset caches if provided
+    if (assetPublicIds && assetPublicIds.length > 0) {
+      await this.invalidateAssetCachesByPublicIds(assetPublicIds);
+    }
+
+    // Invalidate specialty asset list caches
+    await this.invalidateAssetListCaches(AssetEntityType.SPECIALTY);
+  }
+
+  /**
    * Invalidate cache entries matching a pattern
    */
   async invalidatePattern(pattern: string): Promise<void> {

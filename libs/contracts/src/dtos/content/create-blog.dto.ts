@@ -33,6 +33,10 @@ export class CreateBlogDto {
   @IsOptional()
   imageUrl?: string;
 
+  @IsString({ message: 'Thumbnail URL must be a string' })
+  @IsOptional()
+  thumbnailUrl?: string;
+
   @IsArray({ message: 'publicIds must be an array of strings' })
   @IsString({ each: true, message: 'Each publicId must be a string' })
   @IsOptional()

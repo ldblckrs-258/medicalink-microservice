@@ -3,6 +3,7 @@ export interface WorkLocationResponseDto {
   name: string;
   address?: string;
   phone?: string;
+  googleMapUrl?: string;
   timezone: string;
   isActive: boolean;
   createdAt: Date;

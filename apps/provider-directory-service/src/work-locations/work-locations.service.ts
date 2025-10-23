@@ -124,6 +124,7 @@ export class WorkLocationsService {
       address: workLocation.address,
       phone: workLocation.phone,
       timezone: workLocation.timezone,
+      googleMapUrl: workLocation.googleMapUrl,
       isActive: workLocation.isActive,
       createdAt: workLocation.createdAt,
       updatedAt: workLocation.updatedAt,

@@ -13,6 +13,7 @@ model Specialty {
   name        String   @unique @db.VarChar(120)
   slug        String   @unique @db.VarChar(140)
   description String?  @db.Text
+  iconUrl     String?  @map("icon_url") @db.VarChar(255)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -38,14 +39,15 @@ model SpecialtyInfoSection {
 }
 
 model WorkLocation {
-  id        String   @id @default(cuid())
-  name      String   @db.VarChar(160)
-  address   String?  @db.VarChar(255)
-  phone     String?  @db.VarChar(32)
-  timezone  String   @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(160)
+  address      String?  @db.VarChar(255)
+  phone        String?  @db.VarChar(32)
+  timezone     String   @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  googleMapUrl String?  @map("google_map_url") @db.VarChar(500)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   doctorWorkLocations DoctorWorkLocation[]
   schedules           Schedule[]

@@ -31,4 +31,8 @@ export class UpdateWorkLocationDto {
   @IsOptional()
   @IsBoolean({ message: 'IsActive must be a boolean' })
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Google Map URL must be a string' })
+  googleMapUrl?: string;
 }
