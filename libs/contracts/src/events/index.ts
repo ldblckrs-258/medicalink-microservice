@@ -73,6 +73,34 @@ export interface DoctorProfileDeleted extends BaseEvent {
   };
 }
 
+// Specialty Events with Asset Management
+export interface SpecialtyCreated extends BaseEvent {
+  event: 'SpecialtyCreated';
+  data: {
+    specialtyId: string;
+    name: string;
+    iconAssets: string[]; // Array of Cloudinary public IDs for icon
+  };
+}
+
+export interface SpecialtyUpdated extends BaseEvent {
+  event: 'SpecialtyUpdated';
+  data: {
+    specialtyId: string;
+    name: string;
+    prevIconAssets: string[]; // Previous icon asset public IDs
+    nextIconAssets: string[]; // New icon asset public IDs
+  };
+}
+
+export interface SpecialtyDeleted extends BaseEvent {
+  event: 'SpecialtyDeleted';
+  data: {
+    specialtyId: string;
+    assetPublicIds: string[]; // Assets to be cleaned up
+  };
+}
+
 // Provider Events
 export interface ScheduleSlotCreated extends BaseEvent {
   event: 'ScheduleSlotCreated';
@@ -212,6 +240,9 @@ export type AllEvents =
   | DoctorProfileCreated
   | DoctorProfileUpdated
   | DoctorProfileDeleted
+  | SpecialtyCreated
+  | SpecialtyUpdated
+  | SpecialtyDeleted
   | ScheduleSlotCreated
   | ScheduleSlotUpdated
   | ScheduleSlotDeleted

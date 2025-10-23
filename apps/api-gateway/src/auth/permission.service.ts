@@ -1,7 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { RedisService } from '@app/redis';
-import { JwtPayloadDto } from '@app/contracts';
+import { JwtPayloadDto, PERMISSION_PATTERNS } from '@app/contracts';
 
 export interface PermissionContext {
   userId?: string;
@@ -164,7 +164,7 @@ export class PermissionService {
   ): Promise<CachedPermissionSnapshot | null> {
     try {
       const result = await this.accountsClient
-        .send('permissions.getUserSnapshot', {
+        .send(PERMISSION_PATTERNS.GET_USER_PERMISSION_SNAPSHOT, {
           userId: user.sub,
           tenantId: user.tenant,
         })
@@ -196,7 +196,7 @@ export class PermissionService {
   ): Promise<boolean> {
     try {
       const result = await this.accountsClient
-        .send('permissions.hasPermission', {
+        .send(PERMISSION_PATTERNS.HAS_PERMISSION, {
           userId,
           resource,
           action,

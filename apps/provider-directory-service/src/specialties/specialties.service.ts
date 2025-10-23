@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SpecialtyRepository } from './specialty.repository';
 import { SpecialtyInfoSectionRepository } from './specialty-info-section.repository';
 import {
@@ -15,12 +15,18 @@ import {
   SpecialtyInfoSectionResponseDto,
 } from '@app/contracts';
 import { NotFoundError, ConflictError } from '@app/domain-errors';
+import { RabbitMQService } from '@app/rabbitmq';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
+import { extractPublicIdFromUrl } from '@app/commons/utils';
 
 @Injectable()
 export class SpecialtiesService {
+  private readonly logger = new Logger(SpecialtiesService.name);
+
   constructor(
     private readonly specialtyRepository: SpecialtyRepository,
     private readonly specialtyInfoSectionRepository: SpecialtyInfoSectionRepository,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async findAllPublic(
@@ -95,10 +101,31 @@ export class SpecialtiesService {
     }
 
     const specialty = await this.specialtyRepository.create(createSpecialtyDto);
-    return this.mapToSpecialtyResponseDto({
+    const specialtyResponse = this.mapToSpecialtyResponseDto({
       ...specialty,
       infoSectionsCount: 0,
     });
+
+    // Emit SPECIALTY_CREATED event for asset management
+    try {
+      const iconAssets = this.extractAssetPublicIds(specialtyResponse);
+
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.SPECIALTY_CREATED, {
+        specialtyId: specialtyResponse.id,
+        iconAssets,
+        assetPublicIds: iconAssets,
+      });
+
+      this.logger.log(
+        `Emitted SPECIALTY_CREATED event for specialty ${specialtyResponse.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit SPECIALTY_CREATED event: ${error.message}`,
+      );
+    }
+
+    return specialtyResponse;
   }
 
   async update(
@@ -111,6 +138,13 @@ export class SpecialtiesService {
     if (!existingSpecialty) {
       throw new NotFoundError('Specialty not found');
     }
+
+    // Get previous asset public IDs for comparison
+    const prevSpecialtyResponse = this.mapToSpecialtyResponseDto({
+      ...existingSpecialty,
+      infoSectionsCount: 0,
+    });
+    const prevIconAssets = this.extractAssetPublicIds(prevSpecialtyResponse);
 
     // Check if name is being updated and already exists
     if (
@@ -129,10 +163,33 @@ export class SpecialtiesService {
     await this.specialtyRepository.update(id, updateSpecialtyDto);
     const specialtyWithCount =
       await this.specialtyRepository.findByIdWithInfoSectionsCount(id);
-    return this.mapToSpecialtyResponseDto({
+    const specialtyResponse = this.mapToSpecialtyResponseDto({
       ...specialtyWithCount,
       infoSectionsCount: specialtyWithCount!._count.infoSections,
     });
+
+    // Emit SPECIALTY_UPDATED event for asset management
+    try {
+      const nextIconAssets = this.extractAssetPublicIds(specialtyResponse);
+
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.SPECIALTY_UPDATED, {
+        specialtyId: specialtyResponse.id,
+        iconAssets: nextIconAssets,
+        prevIconAssets,
+        nextIconAssets,
+        assetPublicIds: nextIconAssets,
+      });
+
+      this.logger.log(
+        `Emitted SPECIALTY_UPDATED event for specialty ${specialtyResponse.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit SPECIALTY_UPDATED event: ${error.message}`,
+      );
+    }
+
+    return specialtyResponse;
   }
 
   async remove(id: string): Promise<SpecialtyResponseDto> {
@@ -143,11 +200,37 @@ export class SpecialtiesService {
       throw new NotFoundError('Specialty not found');
     }
 
+    // Get asset public IDs before deletion
+    const specialtyResponse = this.mapToSpecialtyResponseDto({
+      ...existingSpecialty,
+      infoSectionsCount: 0,
+    });
+    const iconAssets = this.extractAssetPublicIds(specialtyResponse);
+
     const specialty = await this.specialtyRepository.delete(id);
-    return this.mapToSpecialtyResponseDto({
+    const deletedSpecialtyResponse = this.mapToSpecialtyResponseDto({
       ...specialty,
       infoSectionsCount: 0,
     });
+
+    // Emit SPECIALTY_DELETED event for asset management
+    try {
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.SPECIALTY_DELETED, {
+        specialtyId: deletedSpecialtyResponse.id,
+        iconAssets,
+        assetPublicIds: iconAssets,
+      });
+
+      this.logger.log(
+        `Emitted SPECIALTY_DELETED event for specialty ${deletedSpecialtyResponse.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit SPECIALTY_DELETED event: ${error.message}`,
+      );
+    }
+
+    return deletedSpecialtyResponse;
   }
 
   async getStats(): Promise<{
@@ -163,6 +246,7 @@ export class SpecialtiesService {
       name: specialty.name,
       slug: specialty.slug,
       description: specialty.description,
+      iconUrl: specialty.iconUrl,
       isActive: specialty.isActive,
       infoSectionsCount: specialty.infoSectionsCount || 0,
     };
@@ -192,6 +276,7 @@ export class SpecialtiesService {
       name: specialty.name,
       slug: specialty.slug,
       description: specialty.description,
+      iconUrl: specialty.iconUrl,
     };
   }
 
@@ -315,5 +400,21 @@ export class SpecialtiesService {
       createdAt: infoSection.createdAt,
       updatedAt: infoSection.updatedAt,
     };
+  }
+
+  /**
+   * Extract asset public IDs from specialty data
+   */
+  private extractAssetPublicIds(specialty: SpecialtyResponseDto): string[] {
+    const assets: string[] = [];
+
+    if (specialty.iconUrl) {
+      const publicId = extractPublicIdFromUrl(specialty.iconUrl);
+      if (publicId && typeof publicId === 'string') {
+        assets.push(publicId);
+      }
+    }
+
+    return assets;
   }
 }

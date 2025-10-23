@@ -7,6 +7,7 @@ import {
 } from '@app/contracts';
 import { PostStatus, Prisma } from '../../prisma/generated/client';
 import { BlogQueryDto } from '@app/contracts';
+import { slugify } from '@app/commons/utils';
 
 @Injectable()
 export class BlogRepository {
@@ -17,16 +18,18 @@ export class BlogRepository {
     content: string;
     authorId: string;
     categoryId: string;
+    thumbnailUrl?: string;
     publicIds?: string[];
   }): Promise<BlogResponseDto> {
     const blog = await this.prisma.blog.create({
       data: {
         title: data.title,
         content: data.content,
-        slug: this.generateSlug(data.title),
+        slug: slugify(data.title),
         status: PostStatus.DRAFT,
         authorId: data.authorId,
         categoryId: data.categoryId,
+        thumbnailUrl: data.thumbnailUrl,
       },
       include: {
         category: true,
@@ -80,6 +83,7 @@ export class BlogRepository {
       id: true,
       title: true,
       slug: true,
+      thumbnailUrl: true,
       authorId: true,
       categoryId: true,
       status: true,
@@ -182,13 +186,16 @@ export class BlogRepository {
     const updateData: any = {};
     if (data.title) {
       updateData.title = data.title;
-      updateData.slug = this.generateSlug(data.title);
+      updateData.slug = slugify(data.title);
     }
     if (data.content) {
       updateData.content = data.content;
     }
     if (data.categoryId) {
       updateData.categoryId = data.categoryId;
+    }
+    if (data.thumbnailUrl !== undefined) {
+      updateData.thumbnailUrl = data.thumbnailUrl;
     }
     if ((data as any).status) {
       updateData.status = (data as any).status;
@@ -235,7 +242,7 @@ export class BlogRepository {
       data: {
         name: data.name,
         description: data.description,
-        slug: this.generateSlug(data.name),
+        slug: slugify(data.name),
       },
     });
 
@@ -272,7 +279,7 @@ export class BlogRepository {
     const updateData: any = {};
     if (data.name) {
       updateData.name = data.name;
-      updateData.slug = this.generateSlug(data.name);
+      updateData.slug = slugify(data.name);
     }
 
     if (data.description) {
@@ -315,14 +322,6 @@ export class BlogRepository {
     });
   }
 
-  private generateSlug(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
-      .slice(0, 220);
-  }
-
   private transformBlogResponse(
     blog: any,
     publicIds?: string[],
@@ -332,8 +331,8 @@ export class BlogRepository {
       title: blog.title,
       slug: blog.slug,
       content: blog.content,
+      thumbnailUrl: blog.thumbnailUrl,
       authorId: blog.authorId,
-      categoryId: blog.categoryId,
       category: blog.category
         ? {
             id: blog.category.id,
@@ -354,8 +353,8 @@ export class BlogRepository {
       id: blog.id,
       title: blog.title,
       slug: blog.slug,
+      thumbnailUrl: blog.thumbnailUrl,
       authorId: blog.authorId,
-      categoryId: blog.categoryId,
       category: blog.category
         ? {
             id: blog.category.id,

@@ -6,7 +6,7 @@ import {
   UpdateSpecialtyDto,
   SpecialtyQueryDto,
 } from '@app/contracts';
-import { slugify } from '../utils/slugify';
+import { slugify } from '@app/commons/utils';
 
 @Injectable()
 export class SpecialtyRepository {
@@ -106,18 +106,22 @@ export class SpecialtyRepository {
         name: data.name,
         slug,
         description: data.description,
+        iconUrl: data.iconUrl,
       },
     });
   }
 
   async update(id: string, data: UpdateSpecialtyDto): Promise<Specialty> {
-    const updateData: Prisma.SpecialtyUpdateInput = {
-      name: data.name,
-      description: data.description,
-    };
-
+    const updateData: any = {};
     if (data.name) {
+      updateData.name = data.name;
       updateData.slug = slugify(data.name);
+    }
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+    if (data.iconUrl !== undefined) {
+      updateData.iconUrl = data.iconUrl;
     }
 
     return this.prisma.specialty.update({

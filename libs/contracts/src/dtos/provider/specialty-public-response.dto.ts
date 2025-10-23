@@ -3,4 +3,5 @@ export interface SpecialtyPublicResponseDto {
   name: string;
   slug: string;
   description?: string;
+  iconUrl?: string;
 }

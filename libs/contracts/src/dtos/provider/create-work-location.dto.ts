@@ -20,4 +20,8 @@ export class CreateWorkLocationDto {
   @IsString({ message: 'Timezone must be a string' })
   @MaxLength(64, { message: 'Timezone must not exceed 64 characters' })
   timezone?: string = 'Asia/Ho_Chi_Minh';
+
+  @IsOptional()
+  @IsString({ message: 'Google Map URL must be a string' })
+  googleMapUrl?: string;
 }

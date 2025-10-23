@@ -15,6 +15,12 @@ import {
   UnauthorizedError,
 } from '@app/domain-errors';
 import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
+import {
+  createPlaceholderImageUrl,
+  FontOptions,
+  IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
+} from '@app/commons/utils';
+import { shortenText } from '@app/commons/utils/sorten-text';
 
 @Injectable()
 export class BlogsService {
@@ -42,11 +48,19 @@ export class BlogsService {
       }
     }
 
+    const thumbnailUrl =
+      createBlogDto.thumbnailUrl ||
+      createPlaceholderImageUrl({
+        ...IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
+        text: shortenText(createBlogDto.title, 30),
+      });
+
     return this.blogRepository.createBlog({
       title: createBlogDto.title,
       content: createBlogDto.content,
       authorId: createBlogDto.authorId,
       categoryId: createBlogDto.categoryId,
+      thumbnailUrl: thumbnailUrl,
       publicIds: createBlogDto.publicIds,
     });
   }

@@ -10,7 +10,7 @@ import {
 } from '@app/contracts';
 import { NotFoundError } from '@app/domain-errors';
 import { RabbitMQService } from '@app/rabbitmq';
-import { extractPublicIdFromUrl } from '../utils/extractor';
+import { extractPublicIdFromUrl } from '@app/commons/utils';
 import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 
 @Injectable()
@@ -309,12 +309,12 @@ export class DoctorsService {
 
     if (doctor.avatarUrl) {
       const publicId = extractPublicIdFromUrl(doctor.avatarUrl);
-      if (publicId) publicIds.push(publicId);
+      if (publicId && typeof publicId === 'string') publicIds.push(publicId);
     }
 
     if (doctor.portrait) {
       const publicId = extractPublicIdFromUrl(doctor.portrait);
-      if (publicId) publicIds.push(publicId);
+      if (publicId && typeof publicId === 'string') publicIds.push(publicId);
     }
 
     return publicIds;

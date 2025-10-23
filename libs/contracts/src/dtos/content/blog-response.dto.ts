@@ -4,6 +4,7 @@ export interface BlogResponseDto {
   slug: string;
   content: string;
   imageUrl?: string;
+  thumbnailUrl?: string;
   publicIds?: string[];
   authorId: string;
   categoryId?: string;

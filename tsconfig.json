@@ -30,7 +30,9 @@
       "@app/domain-errors": ["libs/domain-errors/src"],
       "@app/error-adapters": ["libs/error-adapters/src"],
       "@app/rabbitmq": ["libs/rabbitmq/src"],
-      "@app/rabbitmq/*": ["libs/rabbitmq/src/*"]
+      "@app/rabbitmq/*": ["libs/rabbitmq/src/*"],
+      "@app/commons": ["libs/commons/src"],
+      "@app/commons/*": ["libs/commons/src/*"]
     }
   }
 }

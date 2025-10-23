@@ -4,6 +4,11 @@ export const ORCHESTRATOR_EVENTS = {
   DOCTOR_PROFILE_UPDATED: 'doctor.profile.updated',
   DOCTOR_PROFILE_DELETED: 'doctor.profile.deleted',
 
+  // Specialty events
+  SPECIALTY_CREATED: 'specialty.created',
+  SPECIALTY_UPDATED: 'specialty.updated',
+  SPECIALTY_DELETED: 'specialty.deleted',
+
   // Account events
   STAFF_ACCOUNT_CREATED: 'staff.account.created',
   STAFF_ACCOUNT_UPDATED: 'staff.account.updated',
