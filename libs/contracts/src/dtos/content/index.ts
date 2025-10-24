@@ -11,6 +11,7 @@ export * from './create-review.dto';
 
 // Update DTOs
 export * from './update-blog.dto';
+export * from './update-blog-doctor.dto';
 export * from './update-blog-category.dto';
 export * from './update-question.dto';
 export * from './update-answer.dto';

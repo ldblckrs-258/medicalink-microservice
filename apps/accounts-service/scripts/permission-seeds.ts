@@ -288,54 +288,89 @@ const DEFAULT_GROUPS = [
 
 // Role-based permission mapping
 const ROLE_PERMISSION_MAPPING = {
-  SUPER_ADMIN: [
-    'system:admin',
-    'permissions:manage',
-    'groups:manage',
-    'staff:manage',
-    'doctors:manage',
-    'patients:manage',
-    'appointments:manage',
-    'doctors:manage',
-    'specialties:manage',
-    'work-locations:manage',
-    'schedules:manage',
-    'blogs:manage',
-    'questions:manage',
-    'notifications:manage',
-  ],
-  ADMIN: [
-    'staff:read',
-    'doctors:manage',
-    'patients:manage',
-    'appointments:manage',
-    'doctors:manage',
-    'specialties:read',
-    'specialties:update',
-    'work-locations:manage',
-    'schedules:manage',
-    'blogs:manage',
-    'questions:manage',
-    'notifications:send',
-    'notifications:read',
-  ],
-  DOCTOR: [
-    'profile:read',
-    'profile:update',
-    'doctors:read',
-    // 'doctors:update' removed from role-level permissions to enforce self-update via conditional userPermission
-    'patients:read',
-    'patients:update',
-    'appointments:read',
-    'appointments:update',
-    'doctors:read',
-    'schedules:read',
-    'schedules:update',
-    'blogs:read',
-    'questions:read',
-    'questions:answer',
-    'notifications:read',
-  ],
+  SUPER_ADMIN: {
+    regular: [
+      'system:admin',
+      'permissions:manage',
+      'groups:manage',
+      'staff:manage',
+      'doctors:manage',
+      'patients:manage',
+      'appointments:manage',
+      'doctors:manage',
+      'specialties:manage',
+      'work-locations:manage',
+      'schedules:manage',
+      'blogs:manage',
+      'questions:manage',
+      'notifications:manage',
+    ],
+    conditional: [
+      {
+        permission: 'profile:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+    ],
+  },
+  ADMIN: {
+    regular: [
+      'staff:read',
+      'doctors:manage',
+      'patients:manage',
+      'appointments:manage',
+      'doctors:manage',
+      'specialties:read',
+      'specialties:update',
+      'work-locations:manage',
+      'schedules:manage',
+      'blogs:manage',
+      'questions:manage',
+      'notifications:send',
+      'notifications:read',
+    ],
+    conditional: [
+      {
+        permission: 'staff:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+      {
+        permission: 'profile:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+    ],
+  },
+  DOCTOR: {
+    regular: [
+      'profile:read',
+      'doctors:read',
+      'patients:read',
+      'patients:update',
+      'appointments:read',
+      'appointments:update',
+      'doctors:read',
+      'schedules:read',
+      'schedules:update',
+      'blogs:read',
+      'blogs:create',
+      'questions:read',
+      'questions:answer',
+      'notifications:read',
+    ],
+    conditional: [
+      {
+        permission: 'doctors:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+      {
+        permission: 'blogs:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+      {
+        permission: 'profile:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+    ],
+  },
 };
 
 export async function seedPermissions() {
@@ -406,7 +441,7 @@ export async function seedPermissions() {
 
     // 3. Assign permissions to groups
     Logger.log('Assigning permissions to groups...');
-    for (const [roleName, permissions] of Object.entries(
+    for (const [roleName, permissionConfig] of Object.entries(
       ROLE_PERMISSION_MAPPING,
     )) {
       const groupName = roleName.toLowerCase();
@@ -414,7 +449,8 @@ export async function seedPermissions() {
 
       if (!group) continue;
 
-      for (const permissionPattern of permissions) {
+      // Handle regular permissions
+      for (const permissionPattern of permissionConfig.regular) {
         const [resource, action] = permissionPattern.split(':');
 
         // Assign specific permission (no more wildcard support)
@@ -441,6 +477,44 @@ export async function seedPermissions() {
           });
         } else {
           Logger.warn(`Permission not found: ${resource}:${action}`);
+        }
+      }
+
+      // Handle conditional permissions
+      for (const conditionalPerm of permissionConfig.conditional) {
+        const [resource, action] = conditionalPerm.permission.split(':');
+
+        const permission = await prisma.permission.findUnique({
+          where: {
+            resource_action: { resource, action },
+          },
+        });
+
+        if (permission) {
+          await prisma.groupPermission.upsert({
+            where: {
+              groupId_permissionId: {
+                groupId: group.id,
+                permissionId: permission.id,
+              },
+            },
+            update: {
+              conditions: conditionalPerm.conditions,
+            },
+            create: {
+              groupId: group.id,
+              permissionId: permission.id,
+              effect: 'ALLOW',
+              conditions: conditionalPerm.conditions,
+            },
+          });
+          Logger.log(
+            `Added conditional permission ${conditionalPerm.permission} for ${roleName} group with condition: ${JSON.stringify(conditionalPerm.conditions)}`,
+          );
+        } else {
+          Logger.warn(
+            `Conditional permission not found: ${resource}:${action}`,
+          );
         }
       }
     }
@@ -510,94 +584,11 @@ export async function migrateExistingUsers() {
           },
         });
 
-        // If the staff is a DOCTOR, ensure they have a user-level conditional permission
-        // that allows them to update their own doctor profile (isSelfUpdate = true).
-        try {
-          if (staff.role === 'DOCTOR') {
-            const permission = await prisma.permission.findUnique({
-              where: {
-                resource_action: { resource: 'doctors', action: 'update' },
-              },
-            });
-
-            if (permission) {
-              await prisma.userPermission.upsert({
-                where: {
-                  userId_permissionId_tenantId: {
-                    userId: staff.id,
-                    permissionId: permission.id,
-                    tenantId: 'global',
-                  },
-                },
-                update: {},
-                create: {
-                  userId: staff.id,
-                  permissionId: permission.id,
-                  tenantId: 'global',
-                  effect: 'ALLOW',
-                  // Conditions stored as JSON: enforce self-update semantics
-                  conditions: [
-                    {
-                      field: 'isSelfUpdate',
-                      operator: 'eq',
-                      value: true,
-                    },
-                  ],
-                },
-              });
-            } else {
-              Logger.warn(
-                'Permission doctors:update not found while seeding userPermissions for existing doctors',
-              );
-            }
-          }
-        } catch (err) {
-          Logger.error(
-            'Failed to assign conditional doctors:update to existing doctor',
-            err?.message || err,
-          );
-        }
         Logger.log(
           `Migrated ${staff.email} (${staff.role}) to group ${groupName}`,
         );
       } else {
         Logger.warn(`  Group not found for role: ${staff.role}`);
-      }
-
-      // 3. Add self-update permission for all users (they can update their own profile)
-      const profileUpdatePermission = await prisma.permission.findUnique({
-        where: {
-          resource_action: {
-            resource: 'profile',
-            action: 'update',
-          },
-        },
-      });
-
-      if (profileUpdatePermission) {
-        await prisma.userPermission.upsert({
-          where: {
-            userId_permissionId_tenantId: {
-              userId: staff.id,
-              permissionId: profileUpdatePermission.id,
-              tenantId: 'global',
-            },
-          },
-          update: {},
-          create: {
-            userId: staff.id,
-            permissionId: profileUpdatePermission.id,
-            tenantId: 'global',
-            effect: 'ALLOW',
-            conditions: [
-              {
-                field: 'isSelfUpdate',
-                operator: 'eq',
-                value: true,
-              },
-            ] as any,
-          },
-        });
       }
     }
 
@@ -609,85 +600,12 @@ export async function migrateExistingUsers() {
 }
 
 // Function to seed context-based permissions for self-updates
-export async function seedSelfUpdatePermissions() {
-  Logger.log('Seeding self-update permissions...');
-
-  try {
-    // Get staff update permission
-    const staffUpdatePermission = await prisma.permission.findUnique({
-      where: {
-        resource_action: {
-          resource: 'staff',
-          action: 'update',
-        },
-      },
-    });
-
-    if (!staffUpdatePermission) {
-      Logger.warn('> Staff update permission not found, skipping...');
-      return;
-    }
-
-    // Get all admin users (ADMIN role, not SUPER_ADMIN)
-    const adminUsers = await prisma.staffAccount.findMany({
-      where: {
-        role: 'ADMIN',
-        deletedAt: null,
-      },
-    });
-
-    Logger.log(`> Found ${adminUsers.length} admin users`);
-
-    // Give each admin permission to update only their own account
-    for (const admin of adminUsers) {
-      await prisma.userPermission.upsert({
-        where: {
-          userId_permissionId_tenantId: {
-            userId: admin.id,
-            permissionId: staffUpdatePermission.id,
-            tenantId: 'global',
-          },
-        },
-        update: {
-          conditions: [
-            {
-              field: 'targetUserId',
-              operator: 'eq',
-              value: admin.id, // Only allow updating their own account
-            },
-          ] as any,
-        },
-        create: {
-          userId: admin.id,
-          permissionId: staffUpdatePermission.id,
-          tenantId: 'global',
-          effect: 'ALLOW',
-          conditions: [
-            {
-              field: 'targetUserId',
-              operator: 'eq',
-              value: admin.id, // Only allow updating their own account
-            },
-          ] as any,
-        },
-      });
-
-      Logger.log(`Added self-update permission for admin: ${admin.email}`);
-    }
-
-    Logger.log('> Self-update permissions seeded successfully!');
-  } catch (error) {
-    Logger.error('> Error seeding self-update permissions:', error);
-    throw error;
-  }
-}
 
 // Main seed function
 export async function main() {
   try {
     await seedPermissions();
     await migrateExistingUsers();
-    await seedSelfUpdatePermissions();
   } catch (error) {
     Logger.error('Error in seed script:', error);
     process.exit(1);

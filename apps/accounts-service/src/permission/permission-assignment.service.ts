@@ -44,27 +44,14 @@ export class PermissionAssignmentService {
         // 1. Create/update auth version
         await this.createAuthVersion(tx, userId);
 
-        // 2. Assign to role-based group
+        // 2. Assign to role-based group (user will inherit all group permissions automatically)
         const groupId = await this.assignToRoleGroup(tx, userId, role);
         if (groupId) {
           result.assignedGroupId = groupId;
+          result.assignedPermissions.push(
+            `Assigned to group: ${role.toLowerCase()}`,
+          );
         }
-
-        // 3. Assign basic permissions
-        const basicPermissions = await this.assignBasicPermissions(
-          tx,
-          userId,
-          role,
-        );
-        result.assignedPermissions.push(...basicPermissions);
-
-        // 4. Assign role-specific permissions
-        const rolePermissions = await this.assignRoleSpecificPermissions(
-          tx,
-          userId,
-          role,
-        );
-        result.assignedPermissions.push(...rolePermissions);
       });
 
       result.success = true;
@@ -137,158 +124,6 @@ export class PermissionAssignmentService {
 
     this.logger.log(`Assigned user ${userId} to group ${groupName}`);
     return group.id;
-  }
-
-  /**
-   * Assigns basic permissions that all users should have
-   */
-  private async assignBasicPermissions(
-    tx: any,
-    userId: string,
-    _role: StaffRole,
-  ): Promise<string[]> {
-    const assignedPermissions: string[] = [];
-
-    // Profile self-update permission
-    const profilePermission = await this.assignPermissionWithCondition(
-      tx,
-      userId,
-      'profile',
-      'update',
-      [
-        {
-          field: 'isSelfUpdate',
-          operator: 'eq',
-          value: true,
-        },
-      ],
-    );
-
-    if (profilePermission) {
-      assignedPermissions.push('profile:update');
-    }
-
-    return assignedPermissions;
-  }
-
-  /**
-   * Assigns role-specific permissions
-   */
-  private async assignRoleSpecificPermissions(
-    tx: any,
-    userId: string,
-    role: StaffRole,
-  ): Promise<string[]> {
-    const assignedPermissions: string[] = [];
-
-    switch (role) {
-      case 'ADMIN': {
-        // Admin can update their own staff record
-        const adminSelfUpdate = await this.assignPermissionWithCondition(
-          tx,
-          userId,
-          'staff',
-          'update',
-          [
-            {
-              field: 'targetUserId',
-              operator: 'eq',
-              value: userId,
-            },
-          ],
-        );
-        if (adminSelfUpdate) {
-          assignedPermissions.push('staff:update(self)');
-        }
-        break;
-      }
-
-      case 'DOCTOR': {
-        // Doctors get additional permissions: allow self-update on doctors
-        const doctorSelfUpdate = await this.assignPermissionWithCondition(
-          tx,
-          userId,
-          'doctors',
-          'update',
-          [
-            {
-              field: 'isSelfUpdate',
-              operator: 'eq',
-              value: true,
-            },
-          ],
-        );
-
-        if (doctorSelfUpdate) {
-          assignedPermissions.push('doctors:update(self)');
-        }
-        // Doctors get additional permissions through groups
-        // No other individual permissions needed here
-        break;
-      }
-
-      case 'SUPER_ADMIN': {
-        // Super admins get all permissions through groups
-        // No individual permissions needed here
-        break;
-      }
-    }
-
-    return assignedPermissions;
-  }
-
-  /**
-   * Helper method to assign a permission with conditions
-   */
-  private async assignPermissionWithCondition(
-    tx: any,
-    userId: string,
-    resource: string,
-    action: string,
-    conditions?: Array<{
-      field: string;
-      operator: string;
-      value: any;
-    }>,
-  ): Promise<boolean> {
-    try {
-      const permission = await tx.permission.findUnique({
-        where: {
-          resource_action: { resource, action },
-        },
-      });
-
-      if (!permission) {
-        this.logger.warn(`Permission not found: ${resource}:${action}`);
-        return false;
-      }
-
-      await tx.userPermission.upsert({
-        where: {
-          userId_permissionId_tenantId: {
-            userId,
-            permissionId: permission.id,
-            tenantId: this.DEFAULT_TENANT,
-          },
-        },
-        update: {},
-        create: {
-          userId,
-          permissionId: permission.id,
-          tenantId: this.DEFAULT_TENANT,
-          effect: 'ALLOW',
-          conditions: conditions as any,
-        },
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Failed to assign permission ${resource}:${action} to user ${userId}`,
-        error,
-      );
-      return false;
-    }
   }
 
   async removeAllUserPermissions(userId: string): Promise<void> {

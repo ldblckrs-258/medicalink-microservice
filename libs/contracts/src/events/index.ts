@@ -9,9 +9,6 @@ export interface PatientProfileUpdated extends BaseEvent {
   event: 'PatientProfileUpdated';
   data: {
     patientId: string;
-    fullName: string;
-    email?: string;
-    phone?: string;
   };
 }
 
@@ -19,9 +16,6 @@ export interface StaffCreated extends BaseEvent {
   event: 'StaffCreated';
   data: {
     staffId: string;
-    email: string;
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'DOCTOR';
-    fullName: string;
   };
 }
 
@@ -29,9 +23,6 @@ export interface StaffUpdated extends BaseEvent {
   event: 'StaffUpdated';
   data: {
     staffId: string;
-    email: string;
-    role: 'SUPER_ADMIN' | 'ADMIN' | 'DOCTOR';
-    fullName: string;
   };
 }
 
@@ -39,8 +30,6 @@ export interface StaffRoleChanged extends BaseEvent {
   event: 'StaffRoleChanged';
   data: {
     staffId: string;
-    oldRole: 'SUPER_ADMIN' | 'ADMIN' | 'DOCTOR';
-    newRole: 'SUPER_ADMIN' | 'ADMIN' | 'DOCTOR';
   };
 }
 
@@ -78,7 +67,6 @@ export interface SpecialtyCreated extends BaseEvent {
   event: 'SpecialtyCreated';
   data: {
     specialtyId: string;
-    name: string;
     iconAssets: string[]; // Array of Cloudinary public IDs for icon
   };
 }
@@ -87,7 +75,6 @@ export interface SpecialtyUpdated extends BaseEvent {
   event: 'SpecialtyUpdated';
   data: {
     specialtyId: string;
-    name: string;
     prevIconAssets: string[]; // Previous icon asset public IDs
     nextIconAssets: string[]; // New icon asset public IDs
   };
@@ -108,10 +95,6 @@ export interface ScheduleSlotCreated extends BaseEvent {
     scheduleId: string;
     doctorId: string;
     locationId: string;
-    serviceDate: string;
-    timeStart: string;
-    timeEnd: string;
-    capacity: number;
   };
 }
 
@@ -121,10 +104,6 @@ export interface ScheduleSlotUpdated extends BaseEvent {
     scheduleId: string;
     doctorId: string;
     locationId: string;
-    serviceDate: string;
-    timeStart: string;
-    timeEnd: string;
-    capacity: number;
   };
 }
 
@@ -134,7 +113,6 @@ export interface ScheduleSlotDeleted extends BaseEvent {
     scheduleId: string;
     doctorId: string;
     locationId: string;
-    serviceDate: string;
   };
 }
 
@@ -147,10 +125,6 @@ export interface AppointmentBooked extends BaseEvent {
     doctorId: string;
     scheduleId: string;
     locationId: string;
-    serviceDate: string;
-    timeStart: string;
-    timeEnd: string;
-    reason?: string;
   };
 }
 
@@ -160,9 +134,6 @@ export interface AppointmentConfirmed extends BaseEvent {
     appointmentId: string;
     patientId: string;
     doctorId: string;
-    serviceDate: string;
-    timeStart: string;
-    timeEnd: string;
   };
 }
 
@@ -174,12 +145,6 @@ export interface AppointmentRescheduled extends BaseEvent {
     doctorId: string;
     oldScheduleId: string;
     newScheduleId: string;
-    oldServiceDate: string;
-    newServiceDate: string;
-    oldTimeStart: string;
-    newTimeStart: string;
-    oldTimeEnd: string;
-    newTimeEnd: string;
   };
 }
 
@@ -189,22 +154,35 @@ export interface AppointmentCancelled extends BaseEvent {
     appointmentId: string;
     patientId: string;
     doctorId: string;
-    serviceDate: string;
-    timeStart: string;
-    timeEnd: string;
-    cancelledBy: 'PATIENT' | 'STAFF';
-    reason?: string;
   };
 }
 
 // Content Events
+export interface BlogCreated extends BaseEvent {
+  event: 'BlogCreated';
+  data: {
+    blogId: string;
+  };
+}
+
+export interface BlogUpdated extends BaseEvent {
+  event: 'BlogUpdated';
+  data: {
+    blogId: string;
+  };
+}
+
+export interface BlogDeleted extends BaseEvent {
+  event: 'BlogDeleted';
+  data: {
+    blogId: string;
+  };
+}
+
 export interface QuestionCreated extends BaseEvent {
   event: 'QuestionCreated';
   data: {
     questionId: string;
-    patientId: string;
-    title: string;
-    body: string;
   };
 }
 
@@ -213,9 +191,6 @@ export interface AnswerPosted extends BaseEvent {
   data: {
     answerId: string;
     questionId: string;
-    doctorId: string;
-    body: string;
-    patientId: string;
   };
 }
 
@@ -224,10 +199,6 @@ export interface ReviewCreated extends BaseEvent {
   data: {
     reviewId: string;
     doctorId: string;
-    patientId: string;
-    rating: number;
-    title?: string;
-    body?: string;
   };
 }
 
@@ -250,6 +221,9 @@ export type AllEvents =
   | AppointmentConfirmed
   | AppointmentRescheduled
   | AppointmentCancelled
+  | BlogCreated
+  | BlogUpdated
+  | BlogDeleted
   | QuestionCreated
   | AnswerPosted
   | ReviewCreated;

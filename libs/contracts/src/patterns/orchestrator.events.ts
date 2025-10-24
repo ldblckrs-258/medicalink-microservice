@@ -14,6 +14,11 @@ export const ORCHESTRATOR_EVENTS = {
   STAFF_ACCOUNT_UPDATED: 'staff.account.updated',
   STAFF_ACCOUNT_DELETED: 'staff.account.deleted',
 
+  // Blog events
+  BLOG_CREATED: 'blog.created',
+  BLOG_UPDATED: 'blog.updated',
+  BLOG_DELETED: 'blog.deleted',
+
   // Appointment events (future)
   APPOINTMENT_CREATED: 'appointment.created',
   APPOINTMENT_UPDATED: 'appointment.updated',

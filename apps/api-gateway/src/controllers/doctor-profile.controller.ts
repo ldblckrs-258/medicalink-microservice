@@ -66,7 +66,7 @@ export class DoctorProfileController {
   }
 
   // Get self profile using account id from JWT
-  @RequirePermission('doctors', 'read', { isSelfUpdate: true })
+  @RequirePermission('doctors', 'read', { isSelf: true })
   @Get('me')
   getMyProfile(@CurrentUser() user: JwtPayloadDto) {
     return this.microserviceService.sendWithTimeout(
@@ -98,7 +98,7 @@ export class DoctorProfileController {
     );
   }
 
-  @RequirePermission('doctors', 'update', { isSelfUpdate: true })
+  @RequirePermission('doctors', 'update', { isSelf: true })
   @Patch('me')
   updateMyProfile(
     @Body() updateDto: Omit<UpdateDoctorProfileDto, 'id' | 'staffAccountId'>,

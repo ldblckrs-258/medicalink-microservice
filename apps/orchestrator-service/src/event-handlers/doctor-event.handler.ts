@@ -1,6 +1,6 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { DoctorCompositeService } from '../read-composition';
+import { DoctorCompositeService } from '../read-composition/doctor-composite/doctor-composite.service';
 import { AssetsClientService } from '../clients';
 import { AssetCacheService } from '../cache/asset-cache.service';
 import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';

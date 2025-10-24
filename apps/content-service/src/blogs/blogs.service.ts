@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { BlogRepository } from './blog.repository';
 import {
   CreateBlogDto,
   UpdateBlogDto,
+  UpdateBlogDoctorDto,
   CreateBlogCategoryDto,
   UpdateBlogCategoryDto,
   BlogResponseDto,
@@ -17,16 +18,20 @@ import {
 import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
 import {
   createPlaceholderImageUrl,
-  FontOptions,
   IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
 } from '@app/commons/utils';
 import { shortenText } from '@app/commons/utils/sorten-text';
+import { RabbitMQService } from '@app/rabbitmq';
+import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 
 @Injectable()
 export class BlogsService {
+  private readonly logger = new Logger(BlogsService.name);
+
   constructor(
     private readonly blogRepository: BlogRepository,
     private readonly assetsMaintenance: AssetsMaintenanceService,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async createBlog(createBlogDto: CreateBlogDto): Promise<BlogResponseDto> {
@@ -55,7 +60,7 @@ export class BlogsService {
         text: shortenText(createBlogDto.title, 30),
       });
 
-    return this.blogRepository.createBlog({
+    const result = await this.blogRepository.createBlog({
       title: createBlogDto.title,
       content: createBlogDto.content,
       authorId: createBlogDto.authorId,
@@ -63,6 +68,23 @@ export class BlogsService {
       thumbnailUrl: thumbnailUrl,
       publicIds: createBlogDto.publicIds,
     });
+
+    // Emit blog created event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.BLOG_CREATED, {
+        blogId: result.id,
+      });
+      this.logger.debug(
+        `Emitted ${ORCHESTRATOR_EVENTS.BLOG_CREATED} event for blog ${result.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit ${ORCHESTRATOR_EVENTS.BLOG_CREATED} event: ${error.message}`,
+      );
+      // Don't throw error to avoid breaking the main operation
+    }
+
+    return result;
   }
 
   async getBlogs(params: BlogQueryDto & { authorId?: string }) {
@@ -124,7 +146,57 @@ export class BlogsService {
       nextPublicIds,
     );
 
-    return this.blogRepository.updateBlog(id, data);
+    const result = await this.blogRepository.updateBlog(id, data);
+
+    // Emit blog updated event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.BLOG_UPDATED, {
+        blogId: result.id,
+      });
+      this.logger.debug(
+        `Emitted ${ORCHESTRATOR_EVENTS.BLOG_UPDATED} event for blog ${result.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit ${ORCHESTRATOR_EVENTS.BLOG_UPDATED} event: ${error.message}`,
+      );
+      // Don't throw error to avoid breaking the main operation
+    }
+
+    return result;
+  }
+
+  async updateBlogByDoctor(
+    id: string,
+    data: UpdateBlogDoctorDto,
+    authorId: string,
+  ): Promise<BlogResponseDto> {
+    const blog = await this.getBlogById(id);
+
+    // Check if the doctor is the author of the blog
+    if (blog.authorId !== authorId) {
+      throw new UnauthorizedError('You can only update your own blogs');
+    }
+
+    // Only allow updating title and content (status is not included in UpdateBlogDoctorDto)
+    const result = await this.blogRepository.updateBlog(id, data);
+
+    // Emit blog updated event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.BLOG_UPDATED, {
+        blogId: result.id,
+      });
+      this.logger.debug(
+        `Emitted ${ORCHESTRATOR_EVENTS.BLOG_UPDATED} event for blog ${result.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit ${ORCHESTRATOR_EVENTS.BLOG_UPDATED} event: ${error.message}`,
+      );
+      // Don't throw error to avoid breaking the main operation
+    }
+
+    return result;
   }
 
   async deleteBlog(id: string): Promise<void> {
@@ -137,6 +209,21 @@ export class BlogsService {
     await this.assetsMaintenance.cleanupEntityAssets(publicIds);
 
     await this.blogRepository.deleteBlog(id);
+
+    // Emit blog deleted event for cache invalidation
+    try {
+      this.rabbitMQService.emitEvent(ORCHESTRATOR_EVENTS.BLOG_DELETED, {
+        blogId: id,
+      });
+      this.logger.debug(
+        `Emitted ${ORCHESTRATOR_EVENTS.BLOG_DELETED} event for blog ${id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit ${ORCHESTRATOR_EVENTS.BLOG_DELETED} event: ${error.message}`,
+      );
+      // Don't throw error to avoid breaking the main operation
+    }
   }
 
   async getBlogCategories(): Promise<BlogCategoryResponseDto[]> {

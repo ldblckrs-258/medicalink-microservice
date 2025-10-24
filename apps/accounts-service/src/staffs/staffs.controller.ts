@@ -22,6 +22,11 @@ export class StaffsController {
     return this.staffsService.findOne(id);
   }
 
+  @MessagePattern(STAFFS_PATTERNS.FIND_BY_IDS)
+  async findByIds(@Payload() payload: { staffIds: string[] }) {
+    return this.staffsService.findByIds(payload.staffIds);
+  }
+
   @MessagePattern(STAFFS_PATTERNS.CREATE)
   async create(@Payload() createAccountDto: CreateAccountDto) {
     return this.staffsService.create(createAccountDto);

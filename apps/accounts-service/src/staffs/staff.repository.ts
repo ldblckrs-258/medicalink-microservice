@@ -95,6 +95,19 @@ export class StaffRepository {
     });
   }
 
+  async findByIds(ids: string[]): Promise<{ id: string; fullName: string }[]> {
+    return this.prisma.staffAccount.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        fullName: true,
+      },
+    });
+  }
+
   async create(data: CreateAccountDto): Promise<StaffAccount> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 

@@ -21,7 +21,7 @@ export interface PermissionContext {
   appointmentId?: string;
   targetUserId?: string;
   targetRole?: string;
-  isSelfUpdate?: boolean;
+  isSelf?: boolean;
   resourceId?: string;
   patientId?: string;
   [key: string]: any;
@@ -127,7 +127,7 @@ export class PermissionGuard implements CanActivate {
       }
       if (params.userId) {
         context.targetUserId = params.userId;
-        context.isSelfUpdate = params.userId === user.sub;
+        context.isSelf = params.userId === user.sub;
       }
       if (params.doctorId) {
         context.doctorId = params.doctorId;
@@ -191,7 +191,7 @@ export class PermissionGuard implements CanActivate {
     if (
       possibleSelfIds.some((id) => typeof id === 'string' && id === user.sub)
     ) {
-      context.isSelfUpdate = true;
+      context.isSelf = true;
     }
 
     return context;

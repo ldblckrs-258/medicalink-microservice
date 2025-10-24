@@ -71,8 +71,6 @@ export class AssetsEventHandler {
   @EventPattern(ORCHESTRATOR_EVENTS.ASSET_UPDATED)
   async handleAssetUpdated(@Payload() payload: any) {
     const unwrappedPayload = this.unwrapPayload<AssetEventPayload>(payload);
-    this.logger.log(`Asset updated: ${JSON.stringify(unwrappedPayload)}`);
-
     try {
       const { id, entityType, entityId } = unwrappedPayload;
 
@@ -106,7 +104,6 @@ export class AssetsEventHandler {
   @EventPattern(ORCHESTRATOR_EVENTS.ASSET_DELETED)
   async handleAssetDeleted(@Payload() payload: any) {
     const unwrappedPayload = this.unwrapPayload<AssetEventPayload>(payload);
-    this.logger.log(`Asset deleted: ${JSON.stringify(unwrappedPayload)}`);
 
     try {
       const { id, entityType, entityId } = unwrappedPayload;
@@ -141,7 +138,6 @@ export class AssetsEventHandler {
   @EventPattern(ORCHESTRATOR_EVENTS.ASSETS_BULK_DELETED)
   async handleAssetsBulkDeleted(@Payload() payload: any) {
     const unwrappedPayload = this.unwrapPayload<AssetEventPayload>(payload);
-    this.logger.log(`Assets bulk deleted: ${JSON.stringify(unwrappedPayload)}`);
 
     try {
       const { entityType, entityId, assetIds } = unwrappedPayload;
@@ -162,8 +158,6 @@ export class AssetsEventHandler {
 
       // Invalidate general assets list cache
       await this.cacheService.invalidatePattern('assets:list:*');
-
-      this.logger.log('Assets bulk deleted cache invalidation completed');
     } catch (error) {
       this.logger.error(
         'Failed to invalidate cache after bulk asset deletion:',

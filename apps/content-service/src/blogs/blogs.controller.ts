@@ -4,6 +4,7 @@ import { BlogsService } from './blogs.service';
 import {
   CreateBlogDto,
   UpdateBlogDto,
+  UpdateBlogDoctorDto,
   CreateBlogCategoryDto,
   UpdateBlogCategoryDto,
 } from '@app/contracts';
@@ -49,6 +50,19 @@ export class BlogsController {
   ) {
     const { id, data } = payload;
     return this.blogsService.updateBlog(id, data);
+  }
+
+  @MessagePattern(BLOGS_PATTERNS.UPDATE_BY_DOCTOR)
+  async updateBlogByDoctor(
+    @Payload()
+    payload: {
+      id: string;
+      data: UpdateBlogDoctorDto;
+      authorId: string;
+    },
+  ) {
+    const { id, data, authorId } = payload;
+    return this.blogsService.updateBlogByDoctor(id, data, authorId);
   }
 
   @MessagePattern(BLOGS_PATTERNS.DELETE)

@@ -61,6 +61,12 @@ export class StaffsService {
     return result;
   }
 
+  async findByIds(
+    staffIds: string[],
+  ): Promise<{ id: string; fullName: string }[]> {
+    return this.staffRepository.findByIds(staffIds);
+  }
+
   async create(createAccountDto: CreateAccountDto): Promise<StaffResponse> {
     // Check if email already exists
     const existingStaff = await this.staffRepository.findByEmail(

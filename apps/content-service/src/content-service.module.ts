@@ -6,12 +6,14 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { AssetsModule } from './assets/assets.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { RabbitMQModule } from '@app/rabbitmq';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    RabbitMQModule,
     PrismaModule,
     BlogsModule,
     QuestionsModule,

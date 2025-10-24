@@ -22,6 +22,7 @@ import {
 import {
   CreateBlogDto,
   UpdateBlogDto,
+  UpdateBlogDoctorDto,
   CreateBlogCategoryDto,
   UpdateBlogCategoryDto,
 } from '@app/contracts';
@@ -31,12 +32,15 @@ import { DeleteBlogCategoryQueryDto } from '@app/contracts/dtos/content/delete-b
 import {
   BLOGS_PATTERNS,
   BLOG_CATEGORIES_PATTERNS,
+  ORCHESTRATOR_PATTERNS,
 } from '@app/contracts/patterns';
 
 @Controller('blogs')
 export class BlogsController {
   constructor(
     @Inject('CONTENT_SERVICE') private readonly contentClient: ClientProxy,
+    @Inject('ORCHESTRATOR_SERVICE')
+    private readonly orchestratorClient: ClientProxy,
     private readonly microserviceService: MicroserviceService,
   ) {}
 
@@ -101,24 +105,24 @@ export class BlogsController {
     );
   }
 
-  // Public - list published blogs (minimal fields)
+  // Public - list published blogs with author info
   @Public()
   @Get('public')
   async findPublic(@Query() query: BlogPublicQueryDto) {
     return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      BLOGS_PATTERNS.GET_LIST,
-      { ...query, status: 'PUBLISHED' },
+      this.orchestratorClient,
+      ORCHESTRATOR_PATTERNS.BLOG_PUBLIC_LIST_COMPOSITE,
+      query,
     );
   }
 
-  // Public - get blog by slug (published only)
+  // Public - get blog by slug with author info (published only)
   @Public()
   @Get('/public/:slug')
   async findOnePublic(@Param('slug') slug: string) {
     return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      BLOGS_PATTERNS.GET_PUBLISHED,
+      this.orchestratorClient,
+      ORCHESTRATOR_PATTERNS.BLOG_PUBLIC_GET_COMPOSITE,
       { slug },
     );
   }
@@ -127,8 +131,8 @@ export class BlogsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      BLOGS_PATTERNS.GET_BY_ID,
+      this.orchestratorClient,
+      ORCHESTRATOR_PATTERNS.BLOG_GET_COMPOSITE,
       { id },
     );
   }
@@ -144,19 +148,34 @@ export class BlogsController {
     );
   }
 
-  // Admin - list all blogs (manager view)
+  // Admin - list all blogs with author info (manager view)
   @RequireReadPermission('blogs')
   @Get()
   async findAllManager(@Query() query: BlogQueryDto) {
     return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      BLOGS_PATTERNS.GET_LIST,
+      this.orchestratorClient,
+      ORCHESTRATOR_PATTERNS.BLOG_LIST_COMPOSITE,
       query,
     );
   }
 
-  // Admin - update blog
-  @RequireUpdatePermission('blogs')
+  // Doctor - update own blog (limited fields)
+  @RequirePermission('blogs', 'update', { isSelf: true })
+  @Patch(':id/doctor')
+  async updateByDoctor(
+    @Param('id') id: string,
+    @Body() dto: UpdateBlogDoctorDto,
+    @CurrentUser() user: JwtPayloadDto,
+  ) {
+    return this.microserviceService.sendWithTimeout(
+      this.contentClient,
+      BLOGS_PATTERNS.UPDATE_BY_DOCTOR,
+      { id, data: dto, authorId: user.sub },
+    );
+  }
+
+  // Admin - update blog (including status changes)
+  @RequirePermission('blogs', 'manage')
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateBlogDto) {
     return this.microserviceService.sendWithTimeout(

@@ -4,6 +4,7 @@ export const BLOGS_PATTERNS = {
   GET_PUBLISHED: 'blogs.getPublished',
   GET_BY_ID: 'blogs.getById',
   UPDATE: 'blogs.update',
+  UPDATE_BY_DOCTOR: 'blogs.updateByDoctor',
   DELETE: 'blogs.delete',
 };
 

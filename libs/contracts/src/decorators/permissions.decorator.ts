@@ -23,6 +23,11 @@ export const RequireReadPermission = (
   context?: Record<string, any>,
 ) => RequirePermission(resource, 'read', context);
 
+export const RequireCreatePermission = (
+  resource: string,
+  context?: Record<string, any>,
+) => RequirePermission(resource, 'create', context);
+
 export const RequireUpdatePermission = (
   resource: string,
   context?: Record<string, any>,

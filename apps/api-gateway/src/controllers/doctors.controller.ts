@@ -20,6 +20,7 @@ import {
   RequireUpdatePermission,
   RequireDeletePermission,
   CurrentUser,
+  RequireCreatePermission,
 } from '@app/contracts';
 import type { JwtPayloadDto } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
@@ -122,7 +123,7 @@ export class DoctorsController {
    * Create a complete doctor (account + profile)
    * Uses orchestrator for multi-step saga orchestration
    */
-  @RequireUpdatePermission('doctors')
+  @RequireCreatePermission('doctors')
   @Post()
   async create(
     @Body() createDoctorDto: CreateAccountDto,
