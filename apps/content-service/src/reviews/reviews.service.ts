@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ReviewRepository } from './review.repository';
 import { CreateReviewDto, ReviewResponseDto } from '@app/contracts';
 import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
-import { NotFoundError, ForbiddenError } from '@app/domain-errors';
+import { NotFoundError } from '@app/domain-errors';
 
 @Injectable()
 export class ReviewsService {
@@ -63,12 +63,8 @@ export class ReviewsService {
     return review;
   }
 
-  async deleteReview(id: string, isAdmin: boolean = false): Promise<void> {
+  async deleteReview(id: string): Promise<void> {
     const review = await this.getReviewById(id);
-
-    if (!isAdmin) {
-      throw new ForbiddenError('You can only delete your own reviews');
-    }
 
     // Cleanup assets
     const publicIds: string[] = Array.isArray(review.publicIds)

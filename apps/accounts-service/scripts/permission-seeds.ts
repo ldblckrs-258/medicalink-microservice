@@ -212,7 +212,7 @@ const CORE_PERMISSIONS = [
     action: 'manage',
     description: 'Full blog management access',
   },
-
+  // Q&A management
   {
     resource: 'questions',
     action: 'create',
@@ -235,7 +235,23 @@ const CORE_PERMISSIONS = [
     action: 'manage',
     description: 'Full Q&A management access',
   },
-
+  // Reviews
+  { resource: 'reviews', action: 'read', description: 'View reviews' },
+  {
+    resource: 'reviews',
+    action: 'update',
+    description: 'Update reviews',
+  },
+  {
+    resource: 'reviews',
+    action: 'delete',
+    description: 'Delete reviews',
+  },
+  {
+    resource: 'reviews',
+    action: 'manage',
+    description: 'Full reviews management access',
+  },
   // Notifications
   {
     resource: 'notifications',
@@ -303,6 +319,7 @@ const ROLE_PERMISSION_MAPPING = {
       'schedules:manage',
       'blogs:manage',
       'questions:manage',
+      'reviews:manage',
       'notifications:manage',
     ],
     conditional: [
@@ -325,6 +342,7 @@ const ROLE_PERMISSION_MAPPING = {
       'schedules:manage',
       'blogs:manage',
       'questions:manage',
+      'reviews:manage',
       'notifications:send',
       'notifications:read',
     ],
@@ -599,13 +617,38 @@ export async function migrateExistingUsers() {
   }
 }
 
-// Function to seed context-based permissions for self-updates
+// Function to invalidate all user permission caches
+async function invalidateAllUserCaches() {
+  Logger.log('Invalidating permission caches for all users...');
+
+  try {
+    // Get all users with auth versions
+    const authVersions = await prisma.authVersion.findMany();
+
+    // Increment auth version for each user to invalidate their cache
+    for (const authVersion of authVersions) {
+      await prisma.authVersion.update({
+        where: { userId: authVersion.userId },
+        data: {
+          version: authVersion.version + 1,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    Logger.log('All user permission caches invalidated successfully!');
+  } catch (error) {
+    Logger.error('Error invalidating user caches:', error);
+    throw error;
+  }
+}
 
 // Main seed function
 export async function main() {
   try {
     await seedPermissions();
     await migrateExistingUsers();
+    await invalidateAllUserCaches();
   } catch (error) {
     Logger.error('Error in seed script:', error);
     process.exit(1);

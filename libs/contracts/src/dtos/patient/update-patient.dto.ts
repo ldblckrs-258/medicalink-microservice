@@ -5,13 +5,13 @@ import {
   IsBoolean,
   IsDateString,
   Length,
-  IsUUID,
   Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsCuid } from '@app/contracts/decorators';
 
 export class UpdatePatientDto {
-  @IsUUID('4', { message: 'ID must be a valid UUID' })
+  @IsCuid({ message: 'ID must be a valid CUID' })
   id: string;
 
   @IsOptional()

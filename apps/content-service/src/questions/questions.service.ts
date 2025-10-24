@@ -52,40 +52,15 @@ export class QuestionsService {
   async updateQuestion(
     id: string,
     updateQuestionDto: UpdateQuestionDto,
-    authorEmail: string,
-    isAdmin: boolean = false,
   ): Promise<QuestionResponseDto> {
-    const question = await this.getQuestionById(id);
-
-    if (!isAdmin && question.authorEmail !== authorEmail) {
-      throw new ForbiddenError('You can only update your own questions');
-    }
-
-    // Reconcile assets
-    const prevPublicIds: string[] = Array.isArray(question.publicIds)
-      ? question.publicIds
-      : [];
-    const nextPublicIds: string[] = Array.isArray(updateQuestionDto.publicIds)
-      ? updateQuestionDto.publicIds
-      : prevPublicIds;
-    await this.assetsMaintenance.reconcileEntityAssets(
-      prevPublicIds,
-      nextPublicIds,
-    );
+    // Kiểm tra question có tồn tại không
+    await this.getQuestionById(id);
 
     return this.questionRepository.updateQuestion(id, updateQuestionDto);
   }
 
-  async deleteQuestion(
-    id: string,
-    authorEmail: string,
-    isAdmin: boolean = false,
-  ): Promise<void> {
+  async deleteQuestion(id: string): Promise<void> {
     const question = await this.getQuestionById(id);
-
-    if (!isAdmin && question.authorEmail !== authorEmail) {
-      throw new ForbiddenError('You can only delete your own questions');
-    }
 
     // Cleanup assets
     const publicIds: string[] = Array.isArray(question.publicIds)
@@ -140,31 +115,20 @@ export class QuestionsService {
   async updateAnswer(
     id: string,
     updateAnswerDto: UpdateAnswerDto,
-    authorId: string,
   ): Promise<AnswerResponseDto> {
     const existing = await this.questionRepository.findAnswerById(id);
     if (!existing) {
       throw new NotFoundError('Answer not found');
-    }
-    if (existing.authorId !== authorId) {
-      throw new ForbiddenError('You can only update your own answers');
     }
     return this.questionRepository.updateAnswer(id, {
       body: updateAnswerDto.body,
     });
   }
 
-  async deleteAnswer(
-    id: string,
-    authorId: string,
-    isAdmin: boolean = false,
-  ): Promise<void> {
+  async deleteAnswer(id: string): Promise<void> {
     const existing = await this.questionRepository.findAnswerById(id);
     if (!existing) {
       throw new NotFoundError('Answer not found');
-    }
-    if (!isAdmin && existing.authorId !== authorId) {
-      throw new ForbiddenError('You can only delete your own answers');
     }
     await this.questionRepository.deleteAnswer(id);
   }

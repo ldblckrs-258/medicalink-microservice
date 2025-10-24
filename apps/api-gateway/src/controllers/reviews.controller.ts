@@ -9,9 +9,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Public, RequireDeletePermission } from '@app/contracts';
-import { CreateReviewDto } from '@app/contracts';
-import { GetReviewsQueryDto } from '@app/contracts/dtos/content';
+import { PaginationDto, Public, RequireDeletePermission } from '@app/contracts';
+import { CreateReviewDto, REVIEWS_PATTERNS } from '@app/contracts';
 import { MicroserviceService } from '../utils/microservice.service';
 import { PublicCreateThrottle } from '../utils/custom-throttle.decorator';
 
@@ -29,32 +28,21 @@ export class ReviewsController {
   async create(@Body() dto: CreateReviewDto) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'create_review',
+      REVIEWS_PATTERNS.CREATE,
       dto,
-    );
-  }
-
-  // Public - list reviews
-  @Public()
-  @Get()
-  async findAll(@Query() query: GetReviewsQueryDto) {
-    return this.microserviceService.sendWithTimeout(
-      this.contentClient,
-      'get_reviews',
-      query,
     );
   }
 
   // Public - list reviews by doctor
   @Public()
-  @Get('doctors/:doctorId')
+  @Get('/doctor/:doctorId')
   async getByDoctor(
     @Param('doctorId') doctorId: string,
-    @Query() query: GetReviewsQueryDto,
+    @Query() query: PaginationDto,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_reviews_by_doctor',
+      REVIEWS_PATTERNS.GET_BY_DOCTOR,
       { doctorId, ...query },
     );
   }
@@ -65,7 +53,7 @@ export class ReviewsController {
   async findOne(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'get_review_by_id',
+      REVIEWS_PATTERNS.GET_BY_ID,
       { id },
     );
   }
@@ -76,7 +64,7 @@ export class ReviewsController {
   async remove(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
-      'delete_review',
+      REVIEWS_PATTERNS.DELETE,
       { id },
     );
   }

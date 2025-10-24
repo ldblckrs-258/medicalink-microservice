@@ -35,27 +35,17 @@ export class QuestionsController {
     data: {
       id: string;
       updateQuestionDto: UpdateQuestionDto;
-      authorEmail: string;
-      isAdmin?: boolean;
     },
   ) {
     return this.questionsService.updateQuestion(
       data.id,
       data.updateQuestionDto,
-      data.authorEmail,
-      data.isAdmin,
     );
   }
 
   @MessagePattern(QUESTIONS_PATTERNS.DELETE)
-  remove(
-    @Payload() data: { id: string; authorEmail: string; isAdmin?: boolean },
-  ) {
-    return this.questionsService.deleteQuestion(
-      data.id,
-      data.authorEmail,
-      data.isAdmin,
-    );
+  remove(@Payload() data: { id: string }) {
+    return this.questionsService.deleteQuestion(data.id);
   }
 
   @MessagePattern(ANSWERS_PATTERNS.CREATE)
@@ -93,24 +83,13 @@ export class QuestionsController {
     data: {
       id: string;
       updateAnswerDto: UpdateAnswerDto;
-      authorId: string;
     },
   ) {
-    return this.questionsService.updateAnswer(
-      data.id,
-      data.updateAnswerDto,
-      data.authorId,
-    );
+    return this.questionsService.updateAnswer(data.id, data.updateAnswerDto);
   }
 
   @MessagePattern(ANSWERS_PATTERNS.DELETE)
-  deleteAnswer(
-    @Payload() data: { id: string; authorId: string; isAdmin?: boolean },
-  ) {
-    return this.questionsService.deleteAnswer(
-      data.id,
-      data.authorId,
-      data.isAdmin,
-    );
+  deleteAnswer(@Payload() data: { id: string }) {
+    return this.questionsService.deleteAnswer(data.id);
   }
 }

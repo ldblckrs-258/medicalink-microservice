@@ -1,11 +1,13 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateQuestionDto } from './create-question.dto';
 import { IsString, IsOptional, IsIn } from 'class-validator';
 import { IsCuid } from '@app/contracts/decorators';
 
-export class UpdateQuestionDto extends PartialType(CreateQuestionDto) {
+export class UpdateQuestionDto {
   @IsCuid({ message: 'Question ID must be a valid CUID' })
   id: string;
+
+  @IsCuid({ message: 'specialtyId must be a valid CUID' })
+  @IsOptional()
+  specialtyId?: string;
 
   @IsString({ message: 'status must be a string' })
   @IsOptional()

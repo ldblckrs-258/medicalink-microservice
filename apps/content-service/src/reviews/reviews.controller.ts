@@ -33,8 +33,7 @@ export class ReviewsController {
   }
 
   @MessagePattern(REVIEWS_PATTERNS.DELETE)
-  async deleteReview(@Payload() payload: { id: string; isAdmin?: boolean }) {
-    const { id, isAdmin = false } = payload;
-    return this.reviewsService.deleteReview(id, isAdmin);
+  async deleteReview(@Payload() payload: { id: string }) {
+    return this.reviewsService.deleteReview(payload.id);
   }
 }

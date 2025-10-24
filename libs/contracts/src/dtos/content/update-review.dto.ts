@@ -1,8 +1,8 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateReviewDto } from './create-review.dto';
-import { IsUUID } from 'class-validator';
+import { IsCuid } from '@app/contracts/decorators';
 
 export class UpdateReviewDto extends PartialType(CreateReviewDto) {
-  @IsUUID()
+  @IsCuid({ message: 'Review ID must be a valid CUID' })
   id: string;
 }

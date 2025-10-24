@@ -1,13 +1,11 @@
+import { IsCuid } from '@app/contracts/decorators';
 import {
   IsNumber,
   IsString,
   IsOptional,
-  IsUUID,
-  IsBoolean,
   IsEmail,
   Min,
   Max,
-  IsArray,
 } from 'class-validator';
 
 export class CreateReviewDto {
@@ -24,11 +22,6 @@ export class CreateReviewDto {
   @IsOptional()
   body?: string;
 
-  @IsArray({ message: 'publicIds must be an array of strings' })
-  @IsString({ each: true, message: 'Each publicId must be a string' })
-  @IsOptional()
-  publicIds?: string[];
-
   @IsString({ message: 'Author name must be a string' })
   @IsOptional()
   authorName?: string;
@@ -37,10 +30,6 @@ export class CreateReviewDto {
   @IsOptional()
   authorEmail?: string;
 
-  @IsUUID('4', { message: 'Doctor ID must be a valid UUID' })
+  @IsCuid({ message: 'Doctor ID must be a valid CUID' })
   doctorId: string;
-
-  @IsBoolean({ message: 'isPublic must be a boolean value' })
-  @IsOptional()
-  isPublic?: boolean;
 }

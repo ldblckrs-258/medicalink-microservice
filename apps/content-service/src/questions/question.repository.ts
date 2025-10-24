@@ -84,29 +84,17 @@ export class QuestionRepository {
     data: UpdateQuestionDto,
   ): Promise<QuestionResponseDto> {
     const updateData: any = {};
-    if ((data as any).title) updateData.title = (data as any).title;
-    if ((data as any).body) updateData.body = (data as any).body;
-    if ((data as any).authorName !== undefined)
-      updateData.authorName = (data as any).authorName ?? undefined;
-    if ((data as any).authorEmail !== undefined)
-      updateData.authorEmail = (data as any).authorEmail ?? undefined;
-    if ((data as any).specialtyId !== undefined)
-      updateData.specialtyId = (data as any).specialtyId ?? undefined;
-    if ((data as any).status !== undefined)
-      updateData.status = (data as any).status;
+
+    // Chỉ cho phép update specialtyId và status
+    if (data.specialtyId !== undefined)
+      updateData.specialtyId = data.specialtyId ?? undefined;
+    if (data.status !== undefined) updateData.status = data.status;
 
     const question = await this.prisma.question.update({
       where: { id },
       data: updateData,
     });
 
-    if (Array.isArray((data as any).publicIds)) {
-      await this.setEntityAssets(
-        'QUESTION',
-        question.id,
-        (data as any).publicIds as string[],
-      );
-    }
     const publicIds = await this.getPublicIdsForEntity('QUESTION', question.id);
 
     return this.transformQuestionResponse(question, publicIds);
