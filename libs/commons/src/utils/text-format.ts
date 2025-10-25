@@ -28,3 +28,25 @@ export const shortenText = (
 
   return truncated.trim() + (ellipsis ? '...' : '');
 };
+
+export const removeSymbols = (text?: string) => {
+  if (!text) return '';
+  return text.replace(/[^\w\s]/g, '');
+};
+
+export const removeHtmlTags = (text?: string) => {
+  if (!text) return '';
+  return text
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/&[a-zA-Z0-9#]{1,20};/g, '');
+};
+
+export const getInitials = (
+  name: string,
+  maxLength: number = 2,
+  joinChar: string = '',
+) => {
+  const words = removeSymbols(name).split(' ');
+  const initials = words.map((word) => word[0]).join(joinChar);
+  return initials.slice(0, maxLength);
+};

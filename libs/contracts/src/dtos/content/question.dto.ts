@@ -5,7 +5,6 @@ export interface QuestionDto {
   authorName?: string;
   authorEmail?: string;
   specialtyId?: string;
-  isAnswered: boolean;
   status: string;
   publicIds?: string[];
   createdAt: Date;

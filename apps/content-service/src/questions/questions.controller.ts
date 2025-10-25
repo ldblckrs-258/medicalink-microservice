@@ -6,8 +6,10 @@ import {
   UpdateQuestionDto,
   CreateAnswerDto,
   UpdateAnswerDto,
-} from '@app/contracts';
+  GetQuestionsQueryDto,
+} from '@app/contracts/dtos/content';
 import { QUESTIONS_PATTERNS, ANSWERS_PATTERNS } from '@app/contracts/patterns';
+import { SCreateAnswerDto } from './dtos/s-create-answer-dto';
 
 @Controller()
 export class QuestionsController {
@@ -19,9 +21,8 @@ export class QuestionsController {
   }
 
   @MessagePattern(QUESTIONS_PATTERNS.GET_LIST)
-  findAll(@Payload() data: { page?: number; limit?: number }) {
-    const { page = 1, limit = 10 } = data || {};
-    return this.questionsService.getQuestions({ page, limit });
+  findAll(@Payload() payload: GetQuestionsQueryDto) {
+    return this.questionsService.getQuestions(payload);
   }
 
   @MessagePattern(QUESTIONS_PATTERNS.GET_BY_ID)
@@ -49,7 +50,7 @@ export class QuestionsController {
   }
 
   @MessagePattern(ANSWERS_PATTERNS.CREATE)
-  createAnswer(@Payload() createAnswerDto: CreateAnswerDto) {
+  createAnswer(@Payload() createAnswerDto: SCreateAnswerDto) {
     return this.questionsService.createAnswer(createAnswerDto);
   }
 
@@ -61,14 +62,22 @@ export class QuestionsController {
       limit?: number;
       questionId?: string;
       authorId?: string;
+      isAccepted?: boolean;
     },
   ) {
-    const { page = 1, limit = 10, questionId, authorId } = data || {};
+    const {
+      page = 1,
+      limit = 10,
+      questionId,
+      authorId,
+      isAccepted,
+    } = data || {};
     return this.questionsService.getAnswers({
       page,
       limit,
       questionId,
       authorId,
+      isAccepted,
     });
   }
 

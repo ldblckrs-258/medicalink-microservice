@@ -25,6 +25,12 @@ export class PermissionService {
   private readonly CACHE_TTL = 300; // 5 minutes
   private readonly CACHE_KEY_PREFIX = 'permissions:';
 
+  // Define action hierarchy - manage and admin are universal permissions
+  private readonly universalActions = ['manage', 'admin'];
+  private readonly actionHierarchy = {
+    write: ['create', 'update'],
+  };
+
   constructor(
     @Inject('ACCOUNTS_SERVICE') private readonly accountsClient: ClientProxy,
     private readonly redisService: RedisService,
@@ -48,7 +54,37 @@ export class PermissionService {
       // Check if user has the required permission
       const permissionKey = `${resource}:${action}`;
 
-      if (!permissionSnapshot.permissions.has(permissionKey)) {
+      // Check exact match first
+      const exactMatch = permissionSnapshot.permissions.has(permissionKey);
+
+      // Check universal actions - manage and admin cover all actions
+      let hasUniversalPermission = false;
+      for (const universalAction of this.universalActions) {
+        const universalPermissionKey = `${resource}:${universalAction}`;
+        if (permissionSnapshot.permissions.has(universalPermissionKey)) {
+          hasUniversalPermission = true;
+          break;
+        }
+      }
+
+      // Check action hierarchy - if user has a higher-level permission that includes the required action
+      let hasHierarchicalPermission = false;
+      for (const [higherAction, includedActions] of Object.entries(
+        this.actionHierarchy,
+      )) {
+        if (includedActions.includes(action)) {
+          const higherPermissionKey = `${resource}:${higherAction}`;
+          if (permissionSnapshot.permissions.has(higherPermissionKey)) {
+            hasHierarchicalPermission = true;
+            break;
+          }
+        }
+      }
+
+      const hasBasicPermission =
+        exactMatch || hasUniversalPermission || hasHierarchicalPermission;
+
+      if (!hasBasicPermission) {
         this.logger.debug(
           `User ${user.email} does not have permission ${permissionKey}`,
         );

@@ -32,9 +32,9 @@ export interface UserPermissionDetails {
 
 @Injectable()
 export class PermissionRepository {
-  // Define action hierarchy - manage includes all CRUD operations
+  // Define action hierarchy - manage and admin are universal permissions
+  private readonly universalActions = ['manage', 'admin'];
   private readonly actionHierarchy = {
-    manage: ['read', 'write', 'create', 'update', 'delete'],
     write: ['create', 'update'],
   };
 
@@ -302,12 +302,15 @@ export class PermissionRepository {
         tenantId,
       );
 
-      // Find matching permissions (exact match or higher-level permissions)
+      // Find matching permissions (exact match, universal actions, or higher-level permissions)
       const matchingPermissions = permissionDetails.filter((p) => {
         if (p.resource !== resource) return false;
 
         // Exact match
         if (p.action === action) return true;
+
+        // Check universal actions - manage and admin cover all actions
+        if (this.universalActions.includes(p.action)) return true;
 
         // Check if user has higher-level permission that includes the requested action
         if (this.actionHierarchy[p.action]?.includes(action)) return true;

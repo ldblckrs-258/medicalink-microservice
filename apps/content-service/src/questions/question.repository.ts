@@ -6,6 +6,10 @@ import {
   CreateQuestionDto,
   UpdateQuestionDto,
 } from '@app/contracts';
+import { extractAllPublicIdsFromText } from '@app/commons/utils';
+import { QuestionStatus } from 'apps/content-service/prisma/generated/client';
+import { removeHtmlTags, shortenText } from '@app/commons/utils/text-format';
+import { SCreateAnswerDto } from './dtos/s-create-answer-dto';
 
 @Injectable()
 export class QuestionRepository {
@@ -23,16 +27,12 @@ export class QuestionRepository {
       },
     });
 
-    // Persist assets if provided
-    if (Array.isArray((data as any).publicIds)) {
-      await this.setEntityAssets(
-        'QUESTION',
-        question.id,
-        (data as any).publicIds as string[],
-      );
-    }
-    const publicIds = await this.getPublicIdsForEntity('QUESTION', question.id);
+    const publicIds = extractAllPublicIdsFromText(data.body);
 
+    // Persist assets if provided
+    if (Array.isArray(publicIds)) {
+      await this.setEntityAssets('QUESTION', question.id, publicIds);
+    }
     return this.transformQuestionResponse(question, publicIds);
   }
 
@@ -40,13 +40,15 @@ export class QuestionRepository {
     page: number;
     limit: number;
     authorEmail?: string;
-    status?: string;
+    specialtyId?: string;
+    status?: QuestionStatus;
   }) {
-    const { page, limit, authorEmail, status } = params;
+    const { page, limit, authorEmail, specialtyId, status } = params;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (authorEmail) where.authorEmail = authorEmail;
+    if (specialtyId) where.specialtyId = specialtyId;
     if (status) where.status = status;
 
     const [questions, total] = await Promise.all([
@@ -70,7 +72,7 @@ export class QuestionRepository {
 
     return {
       data: dataWithAssets.map(({ question, publicIds }) =>
-        this.transformQuestionResponse(question, publicIds),
+        this.transformQuestionResponse(question, publicIds, true),
       ),
       total,
       page,
@@ -85,9 +87,8 @@ export class QuestionRepository {
   ): Promise<QuestionResponseDto> {
     const updateData: any = {};
 
-    // Chỉ cho phép update specialtyId và status
     if (data.specialtyId !== undefined)
-      updateData.specialtyId = data.specialtyId ?? undefined;
+      updateData.specialtyId = data.specialtyId;
     if (data.status !== undefined) updateData.status = data.status;
 
     const question = await this.prisma.question.update({
@@ -134,11 +135,7 @@ export class QuestionRepository {
     });
   }
 
-  async createAnswer(data: {
-    body: string;
-    questionId: string;
-    authorId: string;
-  }): Promise<AnswerResponseDto> {
+  async createAnswer(data: SCreateAnswerDto): Promise<AnswerResponseDto> {
     const answer = await this.prisma.answer.create({
       data: {
         body: data.body,
@@ -175,6 +172,7 @@ export class QuestionRepository {
     limit: number;
     questionId?: string;
     authorId?: string;
+    isAccepted?: boolean;
   }): Promise<{
     data: AnswerResponseDto[];
     total: number;
@@ -182,12 +180,13 @@ export class QuestionRepository {
     limit: number;
     totalPages: number;
   }> {
-    const { page, limit, questionId, authorId } = params;
+    const { page, limit, questionId, authorId, isAccepted } = params;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (questionId) where.questionId = questionId;
     if (authorId) where.authorId = authorId;
+    if (isAccepted !== undefined) where.isAccepted = isAccepted;
 
     const [answers, total] = await Promise.all([
       this.prisma.answer.findMany({
@@ -214,6 +213,7 @@ export class QuestionRepository {
     id: string,
     data: {
       body?: string;
+      isAccepted?: boolean;
     },
   ): Promise<AnswerResponseDto> {
     const answer = await this.prisma.answer.update({
@@ -263,16 +263,23 @@ export class QuestionRepository {
   private transformQuestionResponse(
     question: any,
     publicIds?: string[],
+    simplifyBody: boolean = false,
   ): QuestionResponseDto {
+    const body = simplifyBody
+      ? // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        shortenText(removeHtmlTags(question.body), 200, {
+          keepWord: true,
+          ellipsis: true,
+        })
+      : question.body;
     return {
       id: question.id,
       title: question.title,
-      body: question.body,
+      body,
       authorName: question.authorName,
       authorEmail: question.authorEmail,
       specialtyId: question.specialtyId,
       publicIds,
-      isAnswered: question.status === 'ANSWERED',
       status: question.status,
       createdAt: question.createdAt,
       updatedAt: question.updatedAt,

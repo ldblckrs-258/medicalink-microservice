@@ -21,8 +21,6 @@ const CORE_PERMISSIONS = [
     action: 'refresh',
     description: 'Refresh authentication token',
   },
-  { resource: 'profile', action: 'read', description: 'View own profile' },
-  { resource: 'profile', action: 'update', description: 'Update own profile' },
 
   // Staff Management (Accounts Service) - Only for admin/super admin management
   {
@@ -229,11 +227,24 @@ const CORE_PERMISSIONS = [
     action: 'delete',
     description: 'Delete Q&A questions',
   },
-  { resource: 'questions', action: 'answer', description: 'Answer questions' },
   {
     resource: 'questions',
     action: 'manage',
-    description: 'Full Q&A management access',
+    description: 'Full Q&A questions management access',
+  },
+  // Answers
+  {
+    resource: 'answers',
+    action: 'create',
+    description: 'Create answers for Q&A questions',
+  },
+  { resource: 'answers', action: 'read', description: 'View Q&A answers' },
+  { resource: 'answers', action: 'update', description: 'Update Q&A answers' },
+  { resource: 'answers', action: 'delete', description: 'Delete Q&A answers' },
+  {
+    resource: 'answers',
+    action: 'manage',
+    description: 'Full Q&A answers management access',
   },
   // Reviews
   { resource: 'reviews', action: 'read', description: 'View reviews' },
@@ -319,15 +330,11 @@ const ROLE_PERMISSION_MAPPING = {
       'schedules:manage',
       'blogs:manage',
       'questions:manage',
+      'answers:manage',
       'reviews:manage',
       'notifications:manage',
     ],
-    conditional: [
-      {
-        permission: 'profile:update',
-        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
-      },
-    ],
+    conditional: [],
   },
   ADMIN: {
     regular: [
@@ -342,6 +349,7 @@ const ROLE_PERMISSION_MAPPING = {
       'schedules:manage',
       'blogs:manage',
       'questions:manage',
+      'answers:manage',
       'reviews:manage',
       'notifications:send',
       'notifications:read',
@@ -351,15 +359,10 @@ const ROLE_PERMISSION_MAPPING = {
         permission: 'staff:update',
         conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
       },
-      {
-        permission: 'profile:update',
-        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
-      },
     ],
   },
   DOCTOR: {
     regular: [
-      'profile:read',
       'doctors:read',
       'patients:read',
       'patients:update',
@@ -371,7 +374,8 @@ const ROLE_PERMISSION_MAPPING = {
       'blogs:read',
       'blogs:create',
       'questions:read',
-      'questions:answer',
+      'answers:read',
+      'answers:create',
       'notifications:read',
     ],
     conditional: [
@@ -384,7 +388,15 @@ const ROLE_PERMISSION_MAPPING = {
         conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
       },
       {
-        permission: 'profile:update',
+        permission: 'blogs:delete',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+      {
+        permission: 'answers:update',
+        conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
+      },
+      {
+        permission: 'answers:delete',
         conditions: [{ field: 'isSelf', operator: 'eq', value: true }],
       },
     ],

@@ -6,7 +6,11 @@ import {
   UpdateSpecialtyDto,
   SpecialtyQueryDto,
 } from '@app/contracts';
-import { slugify } from '@app/commons/utils';
+import {
+  createPlaceholderImageUrl,
+  IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
+  slugify,
+} from '@app/commons/utils';
 
 @Injectable()
 export class SpecialtyRepository {
@@ -100,13 +104,22 @@ export class SpecialtyRepository {
 
   async create(data: CreateSpecialtyDto): Promise<Specialty> {
     const slug = slugify(data.name);
+    const iconUrl =
+      data.iconUrl ||
+      createPlaceholderImageUrl({
+        ...IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
+        width: 200,
+        height: 200,
+        text: data.name,
+        isInitial: true,
+      });
 
     return this.prisma.specialty.create({
       data: {
         name: data.name,
         slug,
         description: data.description,
-        iconUrl: data.iconUrl,
+        iconUrl,
       },
     });
   }

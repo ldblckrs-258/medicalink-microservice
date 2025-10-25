@@ -5,11 +5,14 @@ import {
   UpdateQuestionDto,
   QuestionResponseDto,
   CreateAnswerDto,
-  UpdateAnswerDto,
   AnswerResponseDto,
-} from '@app/contracts';
+  UpdateAnswerDto,
+  GetQuestionsQueryDto,
+} from '@app/contracts/dtos/content';
 import { AssetsMaintenanceService } from '../assets/assets-maintenance.service';
-import { NotFoundError, ForbiddenError } from '@app/domain-errors';
+import { NotFoundError } from '@app/domain-errors';
+import { QuestionStatus } from 'apps/content-service/prisma/generated/client';
+import { SCreateAnswerDto } from './dtos/s-create-answer-dto';
 
 @Injectable()
 export class QuestionsService {
@@ -24,10 +27,16 @@ export class QuestionsService {
     return this.questionRepository.createQuestion(createQuestionDto);
   }
 
-  async getQuestions(params: { page: number; limit: number }) {
-    const result = await this.questionRepository.findAllQuestions(params);
-    const hasNext = params.page * params.limit < result.total;
-    const hasPrev = params.page > 1;
+  async getQuestions(params: GetQuestionsQueryDto) {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const result = await this.questionRepository.findAllQuestions({
+      ...params,
+      page,
+      limit,
+    });
+    const hasNext = page * limit < result.total;
+    const hasPrev = page > 1;
     return {
       data: result.data,
       meta: {
@@ -72,7 +81,7 @@ export class QuestionsService {
   }
 
   async createAnswer(
-    createAnswerDto: CreateAnswerDto,
+    createAnswerDto: SCreateAnswerDto,
   ): Promise<AnswerResponseDto> {
     const data = {
       body: createAnswerDto.body,
@@ -87,6 +96,7 @@ export class QuestionsService {
     limit: number;
     questionId?: string;
     authorId?: string;
+    isAccepted?: boolean;
   }) {
     const result = await this.questionRepository.findAllAnswers(params);
     const hasNext = params.page * params.limit < result.total;
@@ -120,9 +130,7 @@ export class QuestionsService {
     if (!existing) {
       throw new NotFoundError('Answer not found');
     }
-    return this.questionRepository.updateAnswer(id, {
-      body: updateAnswerDto.body,
-    });
+    return this.questionRepository.updateAnswer(id, updateAnswerDto);
   }
 
   async deleteAnswer(id: string): Promise<void> {

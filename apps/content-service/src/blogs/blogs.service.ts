@@ -20,7 +20,7 @@ import {
   createPlaceholderImageUrl,
   IMAGE_PLACEHOLDER_DEFAULT_OPTIONS,
 } from '@app/commons/utils';
-import { shortenText } from '@app/commons/utils/sorten-text';
+import { shortenText } from '@app/commons/utils/text-format';
 import { RabbitMQService } from '@app/rabbitmq';
 import { ORCHESTRATOR_EVENTS } from '@app/contracts/patterns';
 

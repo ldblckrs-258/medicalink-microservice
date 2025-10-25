@@ -16,22 +16,22 @@ import {
   RequireUpdatePermission,
   RequireDeletePermission,
   CurrentUser,
-  type JwtPayloadDto,
-} from '@app/contracts';
+  RequireReadPermission,
+} from '@app/contracts/decorators';
+import { QUESTIONS_PATTERNS, ANSWERS_PATTERNS } from '@app/contracts/patterns';
+import { MicroserviceService } from '../utils/microservice.service';
+import { PublicCreateThrottle } from '../utils/custom-throttle.decorator';
 import {
+  type JwtPayloadDto,
+  PaginationDto,
+  GetQuestionsQueryDto,
+  GetAnswersQueryDto,
   CreateQuestionDto,
   UpdateQuestionDto,
   CreateAnswerDto,
+  UpdateSelfAnswerDto,
   UpdateAnswerDto,
-  QUESTIONS_PATTERNS,
-  ANSWERS_PATTERNS,
-} from '@app/contracts';
-import {
-  GetQuestionsQueryDto,
-  GetAnswersQueryDto,
-} from '@app/contracts/dtos/content';
-import { MicroserviceService } from '../utils/microservice.service';
-import { PublicCreateThrottle } from '../utils/custom-throttle.decorator';
+} from '@app/contracts/dtos';
 
 @Controller('questions')
 export class QuestionsController {
@@ -80,7 +80,6 @@ export class QuestionsController {
   async updateQuestion(
     @Param('id') id: string,
     @Body() dto: UpdateQuestionDto,
-    @CurrentUser() user: JwtPayloadDto,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
@@ -95,10 +94,7 @@ export class QuestionsController {
   // Admin - delete question
   @RequireDeletePermission('questions')
   @Delete(':id')
-  async removeQuestion(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayloadDto,
-  ) {
+  async removeQuestion(@Param('id') id: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
       QUESTIONS_PATTERNS.DELETE,
@@ -125,6 +121,19 @@ export class QuestionsController {
 
   // Public - list answers for a question
   @Public()
+  @Get(':id/answers/accepted')
+  async getAcceptedAnswers(
+    @Param('id') questionId: string,
+    @Query() query: PaginationDto,
+  ) {
+    return this.microserviceService.sendWithTimeout(
+      this.contentClient,
+      ANSWERS_PATTERNS.GET_LIST,
+      { questionId, ...query, isAccepted: true },
+    );
+  }
+
+  @RequireReadPermission('questions')
   @Get(':id/answers')
   async getAnswers(
     @Param('id') questionId: string,
@@ -149,12 +158,11 @@ export class QuestionsController {
   }
 
   // Admin/Author - update answer
-  @RequireUpdatePermission('answers')
+  @RequireUpdatePermission('answers', { isSelf: true })
   @Patch('/answers/:answerId')
   async updateAnswer(
     @Param('answerId') answerId: string,
     @Body() dto: UpdateAnswerDto,
-    @CurrentUser() user: JwtPayloadDto,
   ) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
@@ -166,13 +174,23 @@ export class QuestionsController {
     );
   }
 
+  @RequireUpdatePermission('answers')
+  @Patch('/answers/:answerId/accept')
+  async acceptAnswer(@Param('answerId') answerId: string) {
+    return this.microserviceService.sendWithTimeout(
+      this.contentClient,
+      ANSWERS_PATTERNS.UPDATE,
+      {
+        id: answerId,
+        updateAnswerDto: { isAccepted: true },
+      },
+    );
+  }
+
   // Admin/Author - delete answer
   @RequireDeletePermission('answers')
   @Delete('/answers/:answerId')
-  async deleteAnswer(
-    @Param('answerId') answerId: string,
-    @CurrentUser() user: JwtPayloadDto,
-  ) {
+  async deleteAnswer(@Param('answerId') answerId: string) {
     return this.microserviceService.sendWithTimeout(
       this.contentClient,
       ANSWERS_PATTERNS.DELETE,

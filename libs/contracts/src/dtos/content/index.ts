@@ -15,6 +15,7 @@ export * from './update-blog-doctor.dto';
 export * from './update-blog-category.dto';
 export * from './update-question.dto';
 export * from './update-answer.dto';
+export * from './update-self-answer.dto';
 export * from './update-review.dto';
 
 // Response DTOs

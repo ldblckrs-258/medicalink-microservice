@@ -30,9 +30,4 @@ export class CreateQuestionDto {
   @IsCuid({ message: 'specialtyId must be a valid CUID' })
   @IsOptional()
   specialtyId?: string;
-
-  @IsArray({ message: 'publicIds must be an array of strings' })
-  @IsString({ each: true, message: 'each publicId must be a string' })
-  @IsOptional()
-  publicIds?: string[];
 }

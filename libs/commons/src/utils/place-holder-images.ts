@@ -1,3 +1,5 @@
+import { getInitials } from './text-format';
+
 export const PLACE_HOLDER_DOMAIN = 'https://placehold.co/';
 
 export enum FontOptions {
@@ -21,6 +23,7 @@ export type PlaceHolderImageOptions = {
   width: number;
   height: number;
   text?: string;
+  isInitial?: boolean;
   font?: FontOptionType;
   format?: 'svg' | 'png' | 'jpeg' | 'gif' | 'webp' | 'avif';
 } & (
@@ -34,7 +37,10 @@ export type PlaceHolderImageOptions = {
     }
 );
 
-export function buildPlaceholderText(text: string) {
+export function buildPlaceholderText(text: string, isInitial?: boolean) {
+  if (isInitial) {
+    return getInitials(text);
+  }
   return text.replace(/\s+/g, '+');
 }
 
@@ -79,8 +85,16 @@ export const IMAGE_PLACEHOLDER_DEFAULT_OPTIONS: PlaceHolderImageOptions = {
  * // https://placehold.co/400x300/png/ff0000/ffffff?text=Hello+World&font=roboto
  */
 export function createPlaceholderImageUrl(options: PlaceHolderImageOptions) {
-  const { width, height, text, font, format, textColor, backgroundColor } =
-    options;
+  const {
+    width,
+    height,
+    text,
+    isInitial,
+    font,
+    format,
+    textColor,
+    backgroundColor,
+  } = options;
 
   let url = PLACE_HOLDER_DOMAIN + `${width}x${height}`;
   if (backgroundColor && textColor)
@@ -89,7 +103,7 @@ export function createPlaceholderImageUrl(options: PlaceHolderImageOptions) {
   if (text || font) {
     url += '?';
     if (text) {
-      url += 'text=' + buildPlaceholderText(text);
+      url += 'text=' + buildPlaceholderText(text, isInitial);
     }
     if (font && text) url += '&font=' + (font as string);
     else if (font && !text) url += 'font=' + (font as string);
