@@ -235,7 +235,8 @@ export class AuthService {
     if (staff && !staff.deletedAt) {
       try {
         // Generate and store reset code
-        const resetCode = await this.passwordResetService.createResetCode(email);
+        const resetCode =
+          await this.passwordResetService.createResetCode(email);
 
         // Send email notification via RabbitMQ
         const eventPayload = {
@@ -296,7 +297,9 @@ export class AuthService {
   /**
    * Reset password using the verification code
    */
-  async resetPassword(dto: ResetPasswordDto): Promise<PasswordResetResponseDto> {
+  async resetPassword(
+    dto: ResetPasswordDto,
+  ): Promise<PasswordResetResponseDto> {
     const email = dto.email.toLowerCase();
 
     // Verify the reset code
@@ -319,13 +322,14 @@ export class AuthService {
     await this.passwordResetService.invalidateResetCode(email);
 
     // Increment auth version to invalidate all existing sessions
-    await this.authVersionService.incrementUserVersion(staff.id);
+    await this.authVersionService.incrementUserAuthVersion(staff.id);
 
     this.logger.log(`Password reset completed for email: ${email}`);
 
     return {
       success: true,
-      message: 'Password has been reset successfully. Please log in with your new password.',
+      message:
+        'Password has been reset successfully. Please log in with your new password.',
     };
   }
 }

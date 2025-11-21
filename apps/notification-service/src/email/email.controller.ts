@@ -130,7 +130,8 @@ export class EmailController {
 
   @EventPattern(NOTIFICATION_PATTERNS.PASSWORD_RESET_CODE)
   async handlePasswordResetCode(
-    @Payload() event: {
+    @Payload()
+    event: {
       email: string;
       fullName: string;
       resetCode: string;
